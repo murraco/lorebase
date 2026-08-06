@@ -65,7 +65,7 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": env.db(
         "DATABASE_URL",
-        default="postgres://lorebase:lorebase@localhost:5432/lorebase",
+        default="postgres://lorebase:lorebase@localhost:5434/lorebase",
     ),
 }
 

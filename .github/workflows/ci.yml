@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: lorebase
+          POSTGRES_PASSWORD: lorebase
+          POSTGRES_DB: lorebase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lorebase -d lorebase"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+      DJANGO_ALLOWED_HOSTS: localhost
+      DATABASE_URL: postgres://lorebase:lorebase@localhost:5432/lorebase
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --locked
+
+      # GitHub Actions services can't mount custom init scripts, so the
+      # pgvector/pgvector image starts with the extension unactivated. This
+      # mirrors infra/postgres/init.sql: enable on the app database itself,
+      # and on template1 so Django's disposable test database inherits it
+      # too (Postgres clones template1 on CREATE DATABASE by default).
+      - name: Enable pgvector extension
+        run: |
+          PGPASSWORD=lorebase psql -h localhost -U lorebase -d lorebase -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=lorebase psql -h localhost -U lorebase -d template1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      - name: Lint
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Type check
+        working-directory: backend
+        run: uv run mypy .
+
+      - name: Test
+        working-directory: backend
+        run: uv run pytest
