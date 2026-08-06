@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuaderno — demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#22241f;
+    --ink-soft:#565a4f;
+    --paper:#eef0e6;
+    --paper-card:#f7f8f2;
+    --line:#d8dbcb;
+    --moss:#3f5c47;
+    --moss-soft:#c8d6c4;
+    --amber:#a97a3a;
+    --amber-soft:#eadec2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;}
+  .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh;}
+  .rail{background:var(--paper-card);border-right:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;gap:24px;}
+  .brand{font-family:'Source Serif 4',serif;font-size:20px;font-weight:600;letter-spacing:.2px;}
+  .brand span{color:var(--moss);}
+  .tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px;}
+  .tab{flex:1;text-align:center;padding:6px 0;border-radius:6px;font-size:13px;cursor:pointer;color:var(--ink-soft);}
+  .tab.active{background:var(--paper-card);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+  .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin:0 0 8px;}
+  .source{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:13px;cursor:default;}
+  .source .dot{width:6px;height:6px;border-radius:50%;background:var(--moss);margin-left:auto;flex-shrink:0;}
+  .source .dot.pending{background:var(--amber);}
+  .add-btn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:13px;color:var(--ink-soft);cursor:pointer;background:none;border:1px dashed var(--line);width:100%;text-align:left;font-family:inherit;}
+  .add-btn:hover{border-color:var(--moss);color:var(--moss);}
+  .main{padding:28px 40px;max-width:760px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .thread{display:flex;flex-direction:column;gap:18px;margin-bottom:20px;min-height:340px;}
+  .msg{max-width:78%;}
+  .msg.user{align-self:flex-end;background:var(--moss);color:var(--paper-card);padding:10px 14px;border-radius:10px 10px 2px 10px;font-size:14px;}
+  .msg.assistant{align-self:flex-start;font-family:'Source Serif 4',serif;font-size:16px;line-height:1.65;color:var(--ink);}
+  .cites{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;font-family:'Inter',sans-serif;}
+  .cite{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--amber-soft);color:#5c4419;padding:3px 8px 3px 6px;border-radius:3px;border-left:2px solid var(--amber);}
+  .composer{display:flex;gap:8px;border:1px solid var(--line);background:var(--paper-card);border-radius:10px;padding:6px;}
+  .composer input{flex:1;border:none;background:none;padding:10px 8px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;}
+  .composer button{border:none;background:var(--moss);color:var(--paper-card);padding:0 18px;border-radius:7px;font-size:13px;font-family:inherit;cursor:pointer;}
+  .composer button:hover{background:#33492b;}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  .card{background:var(--paper-card);border:1px solid var(--line);border-radius:10px;padding:14px;}
+  .card p{margin:0;}
+  .card .num{font-family:'Source Serif 4',serif;font-size:26px;margin-top:4px;}
+  .card .label{font-size:12px;color:var(--ink-soft);}
+  h2.page-title{font-family:'Source Serif 4',serif;font-size:22px;margin:0 0 18px;}
+  table.log{width:100%;border-collapse:collapse;font-size:13px;}
+  table.log th{text-align:left;color:var(--ink-soft);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line);}
+  table.log td{padding:8px;border-bottom:1px solid var(--line);}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(34,36,31,.35);display:none;align-items:center;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--paper-card);border-radius:12px;padding:22px;width:340px;font-size:14px;}
+  .modal h3{font-family:'Source Serif 4',serif;margin:0 0 14px;font-size:17px;}
+  .modal .opt{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:none;margin-bottom:8px;font-family:inherit;font-size:13px;cursor:pointer;}
+  .modal .opt:hover{border-color:var(--moss);}
+  .step{display:flex;align-items:center;gap:10px;padding:6px 0;color:var(--ink-soft);font-size:13px;}
+  .step .ring{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;}
+  .step.done .ring{border-color:var(--moss);background:var(--moss);}
+  .step.done{color:var(--ink);}
+  .close{margin-top:14px;font-size:12px;color:var(--ink-soft);cursor:pointer;text-align:right;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="rail">
+    <div class="brand">Cuaderno<span>.</span></div>
+    <div class="tabs">
+      <div class="tab active" data-tab="chat">Chat</div>
+      <div class="tab" data-tab="panel">Panel</div>
+    </div>
+    <div>
+      <p class="section-label">Fuentes</p>
+      <div class="source">Notas (md)<span class="dot"></span></div>
+      <div class="source">PDFs<span class="dot"></span></div>
+      <div class="source">GitHub<span class="dot pending"></span></div>
+      <button class="add-btn" id="addSourceBtn" style="margin-top:6px;">+ Agregar fuente</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="view active" id="view-chat">
+      <div class="thread" id="thread">
+        <div class="msg user">¿Qué definí sobre el chunking de notas?</div>
+        <div class="msg assistant">
+          Para notas cortas, el chunking respeta la nota completa o por encabezado en vez de dividir por tamaño fijo, para no romper el contexto.
+          <div class="cites">
+            <span class="cite">rag-notes.md · l.42</span>
+            <span class="cite">plan.md · l.108</span>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <input id="input" type="text" placeholder="Preguntá algo sobre tus notas, PDFs o repos">
+        <button id="sendBtn">Enviar</button>
+      </div>
+      <p class="hint">Demo con respuestas simuladas — no hay backend real detrás.</p>
+    </div>
+
+    <div class="view" id="view-panel">
+      <h2 class="page-title">Panel</h2>
+      <div class="cards">
+        <div class="card"><p class="label">Documentos</p><p class="num">312</p></div>
+        <div class="card"><p class="label">Queries hoy</p><p class="num">7</p></div>
+        <div class="card"><p class="label">Costo del mes</p><p class="num">$1.20</p></div>
+        <div class="card"><p class="label">Feedback positivo</p><p class="num">92%</p></div>
+      </div>
+      <table class="log">
+        <tr><th>Query</th><th>Fuente citada</th><th>Latencia</th></tr>
+        <tr><td>Chunking de notas</td><td>rag-notes.md</td><td>1.2s</td></tr>
+        <tr><td>Deploy a staging</td><td>runbooks/deploy.md</td><td>0.9s</td></tr>
+        <tr><td>Retrieval híbrido</td><td>plan.md</td><td>1.4s</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Agregar fuente</h3>
+    <div id="modalOptions">
+      <button class="opt" data-src="Carpeta local">📁 Carpeta local (Markdown)</button>
+      <button class="opt" data-src="GitHub">🔗 Repositorio de GitHub</button>
+      <button class="opt" data-src="PDF">📄 Subir PDFs</button>
+    </div>
+    <div id="modalSteps" style="display:none;">
+      <div class="step" id="s1"><span class="ring"></span>Job de sync en cola</div>
+      <div class="step" id="s2"><span class="ring"></span>Parser → chunking → embeddings</div>
+      <div class="step" id="s3"><span class="ring"></span>Fuente lista</div>
+    </div>
+    <div class="close" id="closeModal">cerrar</div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('view-'+t.dataset.tab).classList.add('active');
+}));
+
+const replies = [
+  {a:"El conector de carpeta local recorre el directorio, lee archivos .md y detecta cambios por hash — no depende de ninguna API externa.", c:["conectores.md · l.12"]},
+  {a:"La arquitectura plugin-first permite agregar Slack como un nuevo conector sin tocar el núcleo del sistema.", c:["arquitectura.md · l.30","roadmap.md · l.5"]},
+  {a:"El retrieval combina BM25 con búsqueda densa y aplica un reranker antes de pasarle el contexto al LLM.", c:["retrieval.md · l.8"]}
+];
+let i = 0;
+function send(){
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if(!text) return;
+  const thread = document.getElementById('thread');
+  const u = document.createElement('div');
+  u.className = 'msg user';
+  u.textContent = text;
+  thread.appendChild(u);
+  input.value = '';
+  thread.scrollTop = thread.scrollHeight;
+  setTimeout(()=>{
+    const r = replies[i % replies.length]; i++;
+    const a = document.createElement('div');
+    a.className = 'msg assistant';
+    a.innerHTML = r.a + '<div class="cites">' + r.c.map(c=>'<span class="cite">'+c+'</span>').join('') + '</div>';
+    thread.appendChild(a);
+    thread.scrollTop = thread.scrollHeight;
+  }, 500);
+}
+document.getElementById('sendBtn').addEventListener('click', send);
+document.getElementById('input').addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
+
+const modalBg = document.getElementById('modalBg');
+document.getElementById('addSourceBtn').addEventListener('click', ()=>{
+  modalBg.classList.add('open');
+  document.getElementById('modalOptions').style.display = 'block';
+  document.getElementById('modalSteps').style.display = 'none';
+  ['s1','s2','s3'].forEach(id=>document.getElementById(id).classList.remove('done'));
+});
+document.getElementById('closeModal').addEventListener('click', ()=> modalBg.classList.remove('open'));
+document.querySelectorAll('.opt').forEach(btn=>btn.addEventListener('click', ()=>{
+  document.getElementById('modalOptions').style.display = 'none';
+  document.getElementById('modalSteps').style.display = 'block';
+  ['s1','s2','s3'].forEach((id,idx)=>{
+    setTimeout(()=>document.getElementById(id).classList.add('done'), (idx+1)*600);
+  });
+}));
+</script>
+</body>
+</html>

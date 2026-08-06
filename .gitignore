@@ -7,20 +7,22 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+# Anchored to /backend/ so these common names don't accidentally match
+# frontend directories (e.g. frontend/src/app/lib/).
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
+/backend/build/
+/backend/develop-eggs/
+/backend/dist/
+/backend/downloads/
+/backend/eggs/
+/backend/.eggs/
+/backend/lib/
+/backend/lib64/
+/backend/parts/
+/backend/sdist/
+/backend/var/
+/backend/wheels/
+/backend/share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -195,11 +197,8 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#   and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#   you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/*
+!.vscode/extensions.json
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
@@ -216,3 +215,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Lorebase-specific ---
+
+# Node / Angular (frontend/)
+node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+*.tsbuildinfo
+.eslintcache
+
+# macOS
+.DS_Store
+._*
+
+# JetBrains IDEs
+.idea/
+
+# Docker / infra
+infra/data/
+*.local.yml
+
+# Django runtime (backend/)
+/backend/media/
+/backend/staticfiles/
+/backend/storage/
+
+# Environment variables (keep the documented example)
+.env
+.env.*
+!.env.example
