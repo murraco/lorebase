@@ -58,6 +58,15 @@ EMBEDDING_COST_PER_MILLION_TOKENS_USD = env.float(
     "EMBEDDING_COST_PER_MILLION_TOKENS_USD", default=0.0
 )
 
+# "voyage" or "fake", same idea as EMBEDDING_PROVIDER above.
+RERANK_PROVIDER = env("RERANK_PROVIDER", default="voyage")
+# Verified against https://docs.voyageai.com/docs/pricing: rerank-2.5 is
+# current (rerank-2 is legacy), $0.05/M tokens, 200M free.
+RERANK_MODEL = env("RERANK_MODEL", default="rerank-2.5")
+
+# "lexical", "dense", "hybrid", or "hybrid_reranked".
+RETRIEVAL_STRATEGY = env("RETRIEVAL_STRATEGY", default="hybrid_reranked")
+
 # Safety net: parsing and chunking work entirely in memory, not streaming,
 # so a pathologically large single file could exhaust memory. Connectors
 # skip (and log) anything past this size rather than trying to process it.

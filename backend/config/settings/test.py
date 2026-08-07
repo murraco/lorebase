@@ -13,3 +13,4 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 # Deterministic, no network — CI has no Voyage API key and shouldn't need one.
 EMBEDDING_PROVIDER = "fake"
+RERANK_PROVIDER = "fake"

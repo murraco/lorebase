@@ -1,0 +1,39 @@
+from uuid import UUID
+
+from rag.reranking.factory import get_reranker
+from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
+
+
+class RerankingRetriever(Retriever):
+    """Wraps any other Retriever and reranks its output — a decorator,
+    not a subclass of whatever it wraps. Works over HybridRetriever in
+    production, but the same wrapper works over LexicalRetriever or
+    DenseRetriever alone too, e.g. for isolating what reranking alone
+    contributes in an evaluation run.
+    """
+
+    def __init__(self, inner: Retriever, fetch_k: int = 50) -> None:
+        self._inner = inner
+        self._fetch_k = fetch_k
+
+    def search(
+        self,
+        query: str,
+        *,
+        workspace_id: UUID,
+        top_k: int = 10,
+        filters: RetrievalFilters | None = None,
+    ) -> list[RetrievalResult]:
+        candidates = self._inner.search(
+            query, workspace_id=workspace_id, top_k=self._fetch_k, filters=filters
+        )
+        if not candidates:
+            return []
+
+        reranked = get_reranker().rerank(
+            query, [candidate.chunk.content for candidate in candidates], top_k=top_k
+        )
+        return [
+            RetrievalResult(chunk=candidates[item.index].chunk, score=item.score)
+            for item in reranked
+        ]
