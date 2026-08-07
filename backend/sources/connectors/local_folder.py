@@ -1,8 +1,10 @@
 import hashlib
+import logging
 from collections.abc import Iterator
 from pathlib import Path
 
 import frontmatter
+from django.conf import settings
 
 from sources.connectors.base import (
     Connector,
@@ -11,6 +13,8 @@ from sources.connectors.base import (
     RawDocument,
 )
 from sources.connectors.registry import register_connector
+
+logger = logging.getLogger(__name__)
 
 
 @register_connector("local_folder")
@@ -34,6 +38,16 @@ class LocalFolderConnector(Connector):
     def fetch_documents(self) -> Iterator[RawDocument]:
         root = self._root()
         for file_path in sorted(root.rglob("*.md")):
+            size = file_path.stat().st_size
+            if size > settings.MAX_DOCUMENT_SIZE_BYTES:
+                logger.warning(
+                    "Skipping %s: %d bytes exceeds MAX_DOCUMENT_SIZE_BYTES (%d)",
+                    file_path,
+                    size,
+                    settings.MAX_DOCUMENT_SIZE_BYTES,
+                )
+                continue
+
             relative_path = file_path.relative_to(root).as_posix()
             raw_bytes = file_path.read_bytes()
             content_hash = hashlib.sha256(raw_bytes).hexdigest()

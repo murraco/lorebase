@@ -42,6 +42,11 @@ INSTALLED_APPS = [
 # 1024 matches Voyage's voyage-3 model — confirmed for real in Etapa 9.
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
 
+# Safety net: parsing and chunking work entirely in memory, not streaming,
+# so a pathologically large single file could exhaust memory. Connectors
+# skip (and log) anything past this size rather than trying to process it.
+MAX_DOCUMENT_SIZE_BYTES = env.int("MAX_DOCUMENT_SIZE_BYTES", default=10 * 1024 * 1024)  # 10 MB
+
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -87,3 +88,18 @@ def test_content_hash_is_stable_when_content_is_unchanged(tmp_path: Path) -> Non
     second = next(connector.fetch_documents()).content_hash
 
     assert first == second
+
+
+def test_oversized_file_is_skipped_and_logged(
+    tmp_path: Path, settings, caplog: pytest.LogCaptureFixture
+) -> None:
+    settings.MAX_DOCUMENT_SIZE_BYTES = 10
+    (tmp_path / "huge.md").write_text("this is definitely more than ten bytes")
+    (tmp_path / "small.md").write_text("ok")
+
+    connector = LocalFolderConnector({"path": str(tmp_path)})
+    with caplog.at_level(logging.WARNING):
+        external_ids = {doc.external_id for doc in connector.fetch_documents()}
+
+    assert external_ids == {"small.md"}
+    assert "huge.md" in caplog.text
