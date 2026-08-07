@@ -19,8 +19,8 @@ class ParsedSection:
 
 class Parser(ABC):
     """Format-specific: knows how to find heading structure in one kind of
-    document (Markdown today, PDF-via-Markdown in Etapa 8). Never decides
-    chunk sizes — that's the Chunker's job.
+    document (Markdown today, PDF-via-Markdown once PDF support is added).
+    Never decides chunk sizes — that's the Chunker's job.
     """
 
     @abstractmethod

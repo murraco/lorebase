@@ -17,9 +17,9 @@ class Chunk(BaseModel):
     end_line = models.PositiveIntegerField()
     token_count = models.PositiveIntegerField()
     metadata = models.JSONField(default=dict, blank=True)
-    # NULL until Etapa 9 computes real embeddings — the column and its index
-    # exist from day one so populating it later is a data backfill, not a
-    # schema migration + reindex of everything (hallazgo 4).
+    # NULL until embeddings get computed — the column and its index exist
+    # from day one so populating it later is a data backfill, not a schema
+    # migration plus reindex of everything.
     embedding = VectorField(dimensions=settings.EMBEDDING_DIMENSIONS, null=True, blank=True)
     # DB-computed and always in sync with `content`, by Postgres itself —
     # no trigger to maintain, no risk of drifting out of date.

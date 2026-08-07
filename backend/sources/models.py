@@ -57,3 +57,25 @@ class Document(BaseModel):
 
     def __str__(self) -> str:
         return self.title or self.path
+
+
+class SyncRun(BaseModel):
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name="sync_runs")
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RUNNING)
+    added = models.PositiveIntegerField(default=0)
+    updated = models.PositiveIntegerField(default=0)
+    deleted = models.PositiveIntegerField(default=0)
+    error = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.source} @ {self.started_at:%Y-%m-%d %H:%M}"

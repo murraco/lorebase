@@ -12,4 +12,4 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Full production hardening (HSTS, proxy headers, rate limiting, etc.) is
-# addressed together in Etapa 18.
+# addressed together as part of the deploy-readiness milestone.

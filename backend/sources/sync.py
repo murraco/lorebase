@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
+from django.utils import timezone
+
 from ingestion.pipeline import process_document, purge_chunks_for_documents
 from sources.connectors.registry import get_connector_class
-from sources.models import Document, Source
+from sources.models import Document, Source, SyncRun
 
 
 @dataclass
@@ -80,3 +82,43 @@ def sync_source(source: Source) -> SyncStats:
         purge_chunks_for_documents(missing_document_ids)
 
     return stats
+
+
+def sync_source_with_tracking(source: Source) -> SyncRun:
+    """Wraps sync_source() with the observability the plain function
+    deliberately doesn't have: a SyncRun row recording the attempt, and
+    Source.status/last_error reflecting the outcome. Kept independent of
+    Celery so it's testable without any task machinery — the task in
+    sources/tasks.py is a thin wrapper adding only the lock and retries.
+    """
+    source.status = Source.Status.SYNCING
+    source.save(update_fields=["status"])
+
+    run = SyncRun.objects.create(source=source, status=SyncRun.Status.RUNNING)
+
+    try:
+        stats = sync_source(source)
+    except Exception as exc:
+        run.status = SyncRun.Status.FAILED
+        run.error = str(exc)
+        run.finished_at = timezone.now()
+        run.save(update_fields=["status", "error", "finished_at"])
+
+        source.status = Source.Status.ERROR
+        source.last_error = str(exc)
+        source.save(update_fields=["status", "last_error"])
+        raise
+
+    run.status = SyncRun.Status.SUCCESS
+    run.added = stats.added
+    run.updated = stats.updated
+    run.deleted = stats.deleted
+    run.finished_at = timezone.now()
+    run.save(update_fields=["status", "added", "updated", "deleted", "finished_at"])
+
+    source.status = Source.Status.READY
+    source.last_synced_at = timezone.now()
+    source.last_error = ""
+    source.save(update_fields=["status", "last_synced_at", "last_error"])
+
+    return run

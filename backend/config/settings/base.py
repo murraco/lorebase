@@ -36,10 +36,11 @@ INSTALLED_APPS = [
     "ingestion",
 ]
 
-# Fixed at column-creation time (Etapa 6) since VectorField's dimension is
-# baked into the Postgres column. Cheap to change now (the column is empty);
-# expensive after Etapa 9 populates real embeddings (needs a full re-embed).
-# 1024 matches Voyage's voyage-3 model — confirmed for real in Etapa 9.
+# Fixed at column-creation time since VectorField's dimension is baked into
+# the Postgres column. Cheap to change now (the column is empty); expensive
+# once real embeddings are populated (needs a full re-embed). 1024 matches
+# Voyage's voyage-3 model — to be confirmed against Voyage's docs before
+# embeddings are actually populated.
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
 
 # Safety net: parsing and chunking work entirely in memory, not streaming,
@@ -118,3 +119,17 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+# Native Redis cache backend (built into Django since 4.0, no extra package
+# needed). Used for the per-source sync lock — cache.add() is an atomic
+# "set if not already set", exactly Redis's SET NX under the hood.
+# A different Redis DB index than the Celery broker/backend, not because
+# anything would break sharing one (key names don't collide), but to keep
+# "queue data" and "cache data" cleanly separated.
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default="redis://localhost:6379/1")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_CACHE_URL,
+    }
+}
