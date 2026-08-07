@@ -16,3 +16,9 @@ CELERY_TASK_EAGER_PROPAGATES = True
 EMBEDDING_PROVIDER = "fake"
 RERANK_PROVIDER = "fake"
 LLM_PROVIDER = "fake"
+
+# Throttle state lives in the cache (Redis), not the DB transaction each
+# test rolls back — without this, unrelated tests sharing a throttle scope
+# could fail depending on run order/count. Nothing about the API layer's
+# throttling behavior is under test here.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "DEFAULT_THROTTLE_CLASSES": []}  # noqa: F405

@@ -1,23 +1,34 @@
-"""
-URL configuration for config project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.routers import DefaultRouter
+
+from core.views import csrf_view, login_view, logout_view
+from rag.chat.views import chat_stream_view
+from rag.views import ConversationViewSet, MessageViewSet
+from sources.views import DocumentViewSet, SourceViewSet
+
+router = DefaultRouter()
+router.register("sources", SourceViewSet, basename="source")
+router.register("documents", DocumentViewSet, basename="document")
+router.register("conversations", ConversationViewSet, basename="conversation")
+router.register("messages", MessageViewSet, basename="message")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/", include(router.urls)),
+    path(
+        "api/conversations/<uuid:conversation_id>/chat/",
+        chat_stream_view,
+        name="chat-stream",
+    ),
+    path("api/auth/csrf/", csrf_view, name="auth-csrf"),
+    path("api/auth/login/", login_view, name="auth-login"),
+    path("api/auth/logout/", logout_view, name="auth-logout"),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/schema/swagger-ui/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
 ]
