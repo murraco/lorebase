@@ -38,7 +38,8 @@ class LocalFolderConnector(Connector):
             raw_bytes = file_path.read_bytes()
             content_hash = hashlib.sha256(raw_bytes).hexdigest()
 
-            post = frontmatter.loads(raw_bytes.decode("utf-8"))
+            full_text = raw_bytes.decode("utf-8")
+            post = frontmatter.loads(full_text)
             # YAML front matter can hold any type; metadata.get() is typed as
             # `object`, so coerce explicitly rather than trust the YAML author.
             raw_title = post.metadata.get("title")
@@ -49,7 +50,12 @@ class LocalFolderConnector(Connector):
                 path=relative_path,
                 title=title,
                 content_hash=content_hash,
-                content=post.content,
+                # The FULL file text, front matter included — not
+                # post.content (front matter stripped). Chunk line numbers
+                # must match the real file on disk for citations to be
+                # verifiable; stripping the front matter here would shift
+                # every line number by however many lines it occupied.
+                content=full_text,
                 metadata=post.metadata,
             )
 

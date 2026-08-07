@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from ingestion.pipeline import process_document, purge_chunks_for_documents
 from sources.connectors.registry import get_connector_class
 from sources.models import Document, Source
 
@@ -36,7 +37,7 @@ def sync_source(source: Source) -> SyncStats:
         existing = existing_by_external_id.get(raw_document.external_id)
 
         if existing is None:
-            Document.objects.create(
+            document = Document.objects.create(
                 source=source,
                 external_id=raw_document.external_id,
                 path=raw_document.path,
@@ -44,6 +45,8 @@ def sync_source(source: Source) -> SyncStats:
                 content_hash=raw_document.content_hash,
                 metadata=raw_document.metadata,
             )
+            assert raw_document.content is not None, "binary documents aren't supported yet"
+            process_document(document, raw_document.content)
             stats.added += 1
         elif existing.deleted or existing.content_hash != raw_document.content_hash:
             was_deleted = existing.deleted
@@ -54,6 +57,8 @@ def sync_source(source: Source) -> SyncStats:
             existing.deleted = False
             existing.version += 1
             existing.save()
+            assert raw_document.content is not None, "binary documents aren't supported yet"
+            process_document(existing, raw_document.content)
             stats.added += 1 if was_deleted else 0
             stats.updated += 0 if was_deleted else 1
         # else: content_hash matches and it wasn't deleted -> unchanged, no write.
@@ -64,8 +69,14 @@ def sync_source(source: Source) -> SyncStats:
         if not document.deleted
     } - seen_external_ids
     if missing_external_ids:
+        missing_document_ids = [
+            document.id
+            for external_id, document in existing_by_external_id.items()
+            if external_id in missing_external_ids
+        ]
         stats.deleted = Document.objects.filter(
             source=source, external_id__in=missing_external_ids, deleted=False
         ).update(deleted=True)
+        purge_chunks_for_documents(missing_document_ids)
 
     return stats

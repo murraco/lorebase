@@ -33,16 +33,17 @@ def test_fetch_documents_reads_plain_markdown(tmp_path: Path) -> None:
 
 
 def test_fetch_documents_parses_front_matter(tmp_path: Path) -> None:
-    (tmp_path / "note.md").write_text(
-        "---\ntitle: My Note\ntags: [rag, llm]\n---\nBody text."
-    )
+    raw_text = "---\ntitle: My Note\ntags: [rag, llm]\n---\nBody text."
+    (tmp_path / "note.md").write_text(raw_text)
 
     connector = LocalFolderConnector({"path": str(tmp_path)})
     (doc,) = list(connector.fetch_documents())
 
     assert doc.title == "My Note"
     assert doc.metadata == {"title": "My Note", "tags": ["rag", "llm"]}
-    assert doc.content == "Body text."
+    # The front matter block itself stays in `content` — line numbers must
+    # match the real file on disk, so nothing gets stripped here.
+    assert doc.content == raw_text
 
 
 def test_fetch_documents_recurses_into_subdirectories(tmp_path: Path) -> None:

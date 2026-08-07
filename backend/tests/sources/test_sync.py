@@ -15,7 +15,7 @@ def make_local_source(tmp_path: Path) -> Source:
 
 
 def test_first_sync_creates_documents(tmp_path: Path) -> None:
-    (tmp_path / "a.md").write_text("a")
+    (tmp_path / "a.md").write_text("# Title\n\nSome content.")
     (tmp_path / "b.md").write_text("b")
     source = make_local_source(tmp_path)
 
@@ -23,6 +23,11 @@ def test_first_sync_creates_documents(tmp_path: Path) -> None:
 
     assert (stats.added, stats.updated, stats.deleted) == (2, 0, 0)
     assert source.documents.count() == 2
+
+    document_a = source.documents.get(external_id="a.md")
+    chunk = document_a.chunks.get()
+    assert chunk.heading_path == "Title"
+    assert (chunk.start_line, chunk.end_line) == (1, 3)
 
 
 def test_second_sync_with_no_changes_writes_nothing(tmp_path: Path) -> None:
@@ -51,18 +56,38 @@ def test_modified_file_is_updated_and_version_bumped(tmp_path: Path) -> None:
     assert document.content_hash  # updated, not asserting the exact value
 
 
+def test_modified_file_gets_its_chunks_replaced(tmp_path: Path) -> None:
+    note = tmp_path / "a.md"
+    note.write_text("# Original\n\noriginal content")
+    source = make_local_source(tmp_path)
+    sync_source(source)
+    document = source.documents.get(external_id="a.md")
+    old_chunk_id = document.chunks.get().id
+
+    note.write_text("# Changed\n\nnew content")
+    sync_source(source)
+
+    document.refresh_from_db()
+    chunk = document.chunks.get()
+    assert chunk.id != old_chunk_id
+    assert chunk.heading_path == "Changed"
+
+
 def test_removed_file_is_soft_deleted(tmp_path: Path) -> None:
     note = tmp_path / "a.md"
     note.write_text("a")
     source = make_local_source(tmp_path)
     sync_source(source)
+    document = source.documents.get(external_id="a.md")
+    assert document.chunks.exists()
 
     note.unlink()
     stats = sync_source(source)
 
-    document = source.documents.get(external_id="a.md")
+    document.refresh_from_db()
     assert (stats.added, stats.updated, stats.deleted) == (0, 0, 1)
     assert document.deleted is True
+    assert not document.chunks.exists()
 
 
 def test_readded_file_revives_the_soft_deleted_document(tmp_path: Path) -> None:

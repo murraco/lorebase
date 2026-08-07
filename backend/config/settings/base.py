@@ -29,10 +29,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "rest_framework",
     "core",
     "sources",
+    "ingestion",
 ]
+
+# Fixed at column-creation time (Etapa 6) since VectorField's dimension is
+# baked into the Postgres column. Cheap to change now (the column is empty);
+# expensive after Etapa 9 populates real embeddings (needs a full re-embed).
+# 1024 matches Voyage's voyage-3 model — confirmed for real in Etapa 9.
+EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
 
 AUTH_USER_MODEL = "core.User"
 
