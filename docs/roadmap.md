@@ -15,7 +15,8 @@
 | 1 — Esqueleto del backend con `uv` | ✅ Hecha |
 | 2 — Docker Compose y CI | ✅ Hecha |
 | 3 — Modelos core (`Workspace`, `User`, `Membership`) | ✅ Hecha |
-| 4 en adelante | Pendiente |
+| 4 — Modelos `Source` y `Document` | ✅ Hecha |
+| 5 en adelante | Pendiente |
 
 ## Context
 
@@ -207,7 +208,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 4 — Modelos `Source` y `Document`
+#### Etapa 4 — Modelos `Source` y `Document` ✅
 
 **Objetivo:** representar fuentes y documentos con soporte de reindexado incremental.
 
@@ -219,6 +220,10 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 3.
 **Hecho cuando:** se pueden crear fuentes y documentos desde el admin; el constraint de unicidad se verifica con un test.
+
+**Notas de la implementación real:**
+- `Source.type` por ahora solo tiene `local_folder` y `github` como choices (lo único planificado hasta la Etapa 14); sumar un conector nuevo es agregar un valor acá **y** su implementación en el registry de la Etapa 5, no tocar el modelo de datos.
+- El constraint de unicidad es `(source, external_id)`, no `external_id` global — un mismo `external_id` puede repetirse entre fuentes distintas sin problema (cubierto por test explícito).
 
 ---
 
