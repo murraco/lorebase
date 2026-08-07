@@ -17,7 +17,16 @@
 | 3 — Modelos core (`Workspace`, `User`, `Membership`) | ✅ Hecha |
 | 4 — Modelos `Source` y `Document` | ✅ Hecha |
 | 5 — Interfaz de conectores y carpeta local | ✅ Hecha |
-| 6 en adelante | Pendiente |
+| 6 — Pipeline de ingestion y modelo `Chunk` | ✅ Hecha |
+| 7 en adelante | Pendiente |
+
+## Deuda técnica y pendientes conocidos
+
+Cosas identificadas y **deliberadamente pospuestas**, no descubiertas después. Se van registrando acá a medida que aparecen, para no perderlas entre las notas de cada etapa.
+
+- **Selección de un único archivo en `LocalFolderConnector`** (surgió en la Etapa 5). Hoy `config["path"]` tiene que ser una carpeta; no hay forma de indexar un archivo puntual de una carpeta que por lo demás no querés indexar entera. Es un caso de uso real, pendiente de implementar. Extenderlo no debería tocar la interfaz `Connector` ni la reconciliación — queda acotado a `LocalFolderConnector.fetch_documents()`.
+- **`HeadingChunker` solo fusiona secciones cortas hacia adelante** (surgió en la Etapa 6). El último chunk de un documento puede quedar por debajo de `min_tokens` si es el que sobra al cierre del merge greedy — no hay un segundo paso que lo fusione hacia atrás con el chunk anterior. No es incorrecto (el chunk existe y es citable), solo un candidato más débil para retrieval. El mismo mecanismo tiene un efecto secundario en `heading_path`: si una sección sin heading (ej. el bloque de front matter, que se preserva en el texto — ver el punto de line numbers más abajo) se fusiona hacia adelante con secciones que sí tienen heading, el chunk resultante hereda el `heading_path` vacío de la primera pieza, no el de las secciones que absorbió. Las líneas siguen siendo correctas (la cita abre en el lugar justo), solo el breadcrumb queda menos informativo en ese caso puntual. Si se vuelve un problema real, agregar el paso de fusión hacia atrás es un cambio acotado a `HeadingChunker._merge_short_pieces`.
+- **`Chunk.search_vector` usa `config="english"` fijo**, aunque las notas reales sean una mezcla de español e inglés (surgió en la Etapa 6). El stemming y las stopwords de Postgres son específicos de idioma — con `english` fijo, el retrieval léxico sobre texto en español pierde precisión (no matchea "buscando" con "buscar", no filtra stopwords en español). La solución correcta es un config dinámico por documento (columna `language` + detección de idioma), pospuesta hasta ver en la Etapa 16 si el retrieval léxico en español rinde mal en la práctica — la mitad densa del hybrid search (embeddings, multilingües por defecto) compensa bastante mientras tanto.
 
 ## Context
 
@@ -251,7 +260,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 6 — Pipeline de ingestion y modelo `Chunk`
+#### Etapa 6 — Pipeline de ingestion y modelo `Chunk` ✅
 
 **Objetivo:** convertir documentos en chunks consultables, con el esquema de búsqueda ya listo para las dos mitades del hybrid search.
 
@@ -265,6 +274,13 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 5.
 **Hecho cuando:** un directorio real de notas produce chunks con line ranges correctos; reindexar sin cambios no reescribe nada; borrar una nota elimina sus chunks; `search_vector` poblado en todos.
+
+**Notas de la implementación real:**
+- `ParsedSection`/chunking nunca reconstruyen texto concatenando fragmentos — todo se expresa como rangos `(start_line, end_line)` sobre el texto original, y el contenido siempre se obtiene con un slice directo. Es deliberado: las citas dependen de números de línea exactos, y reconstruir texto a partir de fragmentos copiados es exactamente cómo aparecen los bugs de off-by-one.
+- `search_vector` se implementó con `models.GeneratedField` (Postgres 12+/Django 5+), no con un trigger manual ni con un `.update()` en el pipeline — la columna se recalcula sola, adentro de la base, con la garantía de la propia base de datos de que nunca queda desincronizada de `content`.
+- `config="english"` fijo para `search_vector`, aunque las notas reales sean español + inglés mezclado — ver "Deuda técnica" más arriba.
+- **Bug real encontrado y corregido:** `LocalFolderConnector` pasaba `post.content` (con el front matter YAML ya extraído por `python-frontmatter`) en vez del texto completo del archivo. Eso desplazaba todos los números de línea calculados respecto al archivo real en disco — una cita a "línea 5" podía en realidad estar en la línea 9 si el archivo tenía 4 líneas de front matter arriba. Se corrigió pasando el texto completo (front matter incluido) al parser, y usando `frontmatter.loads()` solo para extraer metadata/título, nunca para recortar el contenido.
+- La integración quedó en `sources/sync.py`, no como un paso separado: `sync_source()` ahora también dispara `ingestion.pipeline.process_document()` para altas/cambios y `purge_chunks_for_documents()` para bajas, usando el contenido que el conector ya trajo en memoria (sin releer el archivo).
 
 ---
 
