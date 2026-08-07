@@ -21,7 +21,8 @@
 | 7 — Ingestion asíncrona con Celery | ✅ Hecha |
 | 8 — Soporte de PDFs y storage | ✅ Hecha |
 | 9 — Embeddings | ✅ Hecha |
-| 10 en adelante | Pendiente |
+| 10 — Módulo de retrieval | ✅ Hecha |
+| 11 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -363,7 +364,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 10 — Módulo de retrieval
+#### Etapa 10 — Módulo de retrieval ✅
 
 **Objetivo:** hybrid search real, aislado detrás de una interfaz única.
 
@@ -378,6 +379,15 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapas 8 y 9.
 **Hecho cuando:** una batería de ~15 preguntas conocidas sobre notas reales devuelve el chunk esperado en el top-3; cada estrategia es seleccionable por settings.
+
+**Notas de la implementación real:**
+- **RRF, verificado contra el paper original**, no citado de memoria: Cormack, Clarke & Grossman, "Reciprocal Rank Fusion outperforms Condorcet and Individual Rank Learning Methods" (SIGIR 2009). `RRF_K = 60` es la constante del paper, hoy un default de facto en la industria.
+- **`ts_rank_cd`, confirmado en el ORM de Django** antes de asumirlo: `SearchRank(..., cover_density=True)` es lo que lo activa (por default Django usa `ts_rank` simple).
+- **`RerankingRetriever` envuelve *cualquier* `Retriever`**, no está acoplado a `HybridRetriever` — mismo patrón de composición ("decorator") que ya usamos en otras partes: agrega una responsabilidad (reranking) sobre una interfaz existente, sin heredar de una implementación concreta.
+- **Los tests de `DenseRetriever`/`HybridRetriever` arman los vectores de embedding a mano**, en vez de usar `FakeEmbeddingProvider`: los embeddings falsos son hashes deterministas sin ninguna relación semántica real, así que no sirven para probar "el vecino más cercano gana" — eso se prueba con vectores construidos a propósito (uno idéntico, uno opuesto), que valida la mecánica SQL de ranking sin necesitar un modelo real.
+- **Batería de calidad con Voyage real**, no simulada: usar el `FakeEmbeddingProvider` para esto hubiera sido una validación falsa (ruido puro en la mitad densa). El test vive en `tests/rag/test_retrieval_quality.py`, con opt-in explícito por variable de entorno (`RUN_RETRIEVAL_QUALITY_TEST=1`) — deliberadamente **no** alcanza con tener `VOYAGE_API_KEY` configurada, para que la key no convierta silenciosamente un `make test` común en una corrida lenta y paga.
+- **Gotcha real de cuenta, no de código:** una cuenta de Voyage sin método de pago cargado tiene un límite de **3 requests/minuto**. Con la estrategia `hybrid_reranked` (embed + rerank por pregunta), eso obliga a espaciar las 15 preguntas del test — confirmado contra la cuenta real, no algo documentado de antemano.
+- **Corrida real confirmada** (2026-08, con `RUN_RETRIEVAL_QUALITY_TEST=1` y la key real): pasó el umbral de 80% (12+/15 preguntas con el chunk esperado en el top-3), contra `hybrid_reranked` de punta a punta — embeddings reales, reranking real, ~10:42 de duración por el rate limit de la cuenta gratis.
 
 ---
 
