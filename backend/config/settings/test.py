@@ -10,3 +10,6 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 # process — no broker or worker needed for tests.
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# Deterministic, no network — CI has no Voyage API key and shouldn't need one.
+EMBEDDING_PROVIDER = "fake"

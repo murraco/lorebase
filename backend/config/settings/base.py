@@ -34,14 +34,29 @@ INSTALLED_APPS = [
     "core",
     "sources",
     "ingestion",
+    "rag",
 ]
 
 # Fixed at column-creation time since VectorField's dimension is baked into
 # the Postgres column. Cheap to change now (the column is empty); expensive
-# once real embeddings are populated (needs a full re-embed). 1024 matches
-# Voyage's voyage-3 model — to be confirmed against Voyage's docs before
-# embeddings are actually populated.
+# once real embeddings are populated (needs a full re-embed). 1024 is
+# voyage-4's default output dimension (Matryoshka learning also supports
+# 2048/512/256) — verified against https://docs.voyageai.com/docs/embeddings.
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
+
+# "voyage" or "fake" (the fake provider is deterministic and makes no
+# network calls — used in tests/CI so nothing needs a real API key).
+EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="voyage")
+EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="voyage-4")
+VOYAGE_API_KEY = env("VOYAGE_API_KEY", default="")
+# $/million tokens, for cost logging only — not wired into any billing
+# path. None by default rather than a guessed number: verified once
+# against https://docs.voyageai.com/docs/pricing (voyage-4: $0.06/M as of
+# 2026-08), but pricing pages change, so this stays override-only instead
+# of silently going stale as a hardcoded default.
+EMBEDDING_COST_PER_MILLION_TOKENS_USD = env.float(
+    "EMBEDDING_COST_PER_MILLION_TOKENS_USD", default=0.0
+)
 
 # Safety net: parsing and chunking work entirely in memory, not streaming,
 # so a pathologically large single file could exhaust memory. Connectors
