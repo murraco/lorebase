@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 @register_connector("local_folder")
 class LocalFolderConnector(Connector):
-    """Reads Markdown notes from a local directory, recursively. The path
-    relative to the configured root is used as both `external_id` and
-    `path`, so identity survives even if the whole folder is later moved to
-    a different absolute location.
+    """Reads Markdown notes and PDFs from a local directory, recursively.
+    The path relative to the configured root is used as both `external_id`
+    and `path`, so identity survives even if the whole folder is later
+    moved to a different absolute location.
     """
 
     def validate_config(self) -> None:
@@ -37,7 +37,8 @@ class LocalFolderConnector(Connector):
 
     def fetch_documents(self) -> Iterator[RawDocument]:
         root = self._root()
-        for file_path in sorted(root.rglob("*.md")):
+        file_paths = sorted([*root.rglob("*.md"), *root.rglob("*.pdf")])
+        for file_path in file_paths:
             size = file_path.stat().st_size
             if size > settings.MAX_DOCUMENT_SIZE_BYTES:
                 logger.warning(
@@ -48,30 +49,49 @@ class LocalFolderConnector(Connector):
                 )
                 continue
 
-            relative_path = file_path.relative_to(root).as_posix()
-            raw_bytes = file_path.read_bytes()
-            content_hash = hashlib.sha256(raw_bytes).hexdigest()
+            if file_path.suffix == ".pdf":
+                yield self._read_pdf(file_path, root)
+            else:
+                yield self._read_markdown(file_path, root)
 
-            full_text = raw_bytes.decode("utf-8")
-            post = frontmatter.loads(full_text)
-            # YAML front matter can hold any type; metadata.get() is typed as
-            # `object`, so coerce explicitly rather than trust the YAML author.
-            raw_title = post.metadata.get("title")
-            title = str(raw_title) if raw_title else file_path.stem
+    def _read_markdown(self, file_path: Path, root: Path) -> RawDocument:
+        relative_path = file_path.relative_to(root).as_posix()
+        raw_bytes = file_path.read_bytes()
+        content_hash = hashlib.sha256(raw_bytes).hexdigest()
 
-            yield RawDocument(
-                external_id=relative_path,
-                path=relative_path,
-                title=title,
-                content_hash=content_hash,
-                # The FULL file text, front matter included — not
-                # post.content (front matter stripped). Chunk line numbers
-                # must match the real file on disk for citations to be
-                # verifiable; stripping the front matter here would shift
-                # every line number by however many lines it occupied.
-                content=full_text,
-                metadata=post.metadata,
-            )
+        full_text = raw_bytes.decode("utf-8")
+        post = frontmatter.loads(full_text)
+        # YAML front matter can hold any type; metadata.get() is typed as
+        # `object`, so coerce explicitly rather than trust the YAML author.
+        raw_title = post.metadata.get("title")
+        title = str(raw_title) if raw_title else file_path.stem
+
+        return RawDocument(
+            external_id=relative_path,
+            path=relative_path,
+            title=title,
+            content_hash=content_hash,
+            # The FULL file text, front matter included — not post.content
+            # (front matter stripped). Chunk line numbers must match the
+            # real file on disk for citations to be verifiable; stripping
+            # the front matter here would shift every line number by
+            # however many lines it occupied.
+            content=full_text,
+            metadata=post.metadata,
+        )
+
+    def _read_pdf(self, file_path: Path, root: Path) -> RawDocument:
+        relative_path = file_path.relative_to(root).as_posix()
+        raw_bytes = file_path.read_bytes()
+        content_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+        return RawDocument(
+            external_id=relative_path,
+            path=relative_path,
+            title=file_path.stem,
+            content_hash=content_hash,
+            binary=raw_bytes,
+        )
 
     def _root(self) -> Path:
         return Path(self.config["path"])

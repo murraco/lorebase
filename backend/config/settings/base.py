@@ -102,6 +102,21 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Local filesystem storage for uploaded originals (PDFs cached for citation
+# purposes). Django's own pluggable storage API, not a custom interface —
+# swapping to S3/Garage later is a settings change (a new STORAGES backend
+# and, typically, django-storages), not a rewrite of any calling code.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "storage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {

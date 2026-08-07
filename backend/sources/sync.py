@@ -1,10 +1,25 @@
 from dataclasses import dataclass
+from pathlib import Path
 
+from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from ingestion.pipeline import process_document, purge_chunks_for_documents
+from sources.connectors.base import RawDocument
 from sources.connectors.registry import get_connector_class
 from sources.models import Document, Source, SyncRun
+
+
+def _ingest(document: Document, raw_document: RawDocument) -> None:
+    if raw_document.binary is not None:
+        # Cached for citation purposes; process_document parses the same
+        # bytes independently, it doesn't read this back.
+        filename = Path(raw_document.path).name
+        document.original_file.save(filename, ContentFile(raw_document.binary), save=True)
+        process_document(document, binary=raw_document.binary)
+    else:
+        assert raw_document.content is not None, "raw document has neither text nor binary"
+        process_document(document, text=raw_document.content)
 
 
 @dataclass
@@ -47,8 +62,7 @@ def sync_source(source: Source) -> SyncStats:
                 content_hash=raw_document.content_hash,
                 metadata=raw_document.metadata,
             )
-            assert raw_document.content is not None, "binary documents aren't supported yet"
-            process_document(document, raw_document.content)
+            _ingest(document, raw_document)
             stats.added += 1
         elif existing.deleted or existing.content_hash != raw_document.content_hash:
             was_deleted = existing.deleted
@@ -59,8 +73,7 @@ def sync_source(source: Source) -> SyncStats:
             existing.deleted = False
             existing.version += 1
             existing.save()
-            assert raw_document.content is not None, "binary documents aren't supported yet"
-            process_document(existing, raw_document.content)
+            _ingest(existing, raw_document)
             stats.added += 1 if was_deleted else 0
             stats.updated += 0 if was_deleted else 1
         # else: content_hash matches and it wasn't deleted -> unchanged, no write.

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from ingestion.parsers.base import ParsedSection
 
@@ -11,6 +12,11 @@ class ChunkData:
     start_line: int
     end_line: int
     token_count: int
+    # Empty for plain text sources. Callers orchestrating something the
+    # Chunker itself doesn't know about — e.g. which PDF page a chunk came
+    # from — can tag it in after the fact without the Chunker needing any
+    # format-specific awareness.
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class Chunker(ABC):

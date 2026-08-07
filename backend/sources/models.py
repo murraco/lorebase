@@ -3,6 +3,12 @@ from django.db import models
 from core.models import BaseModel, Workspace
 
 
+def document_upload_path(instance: "Document", filename: str) -> str:
+    # Namespaced by source: two different sources could otherwise contain
+    # a same-named file (e.g. two PDF folders both with a "resume.pdf").
+    return f"documents/{instance.source_id}/{filename}"
+
+
 class Source(BaseModel):
     class SourceType(models.TextChoices):
         LOCAL_FOLDER = "local_folder", "Local folder"
@@ -43,6 +49,11 @@ class Document(BaseModel):
     version = models.PositiveIntegerField(default=1)
     deleted = models.BooleanField(default=False)
     metadata = models.JSONField(default=dict, blank=True)
+    # Only set for binary sources (PDFs) — cached so it can be displayed or
+    # cited precisely later. Text-based documents (Markdown) have no
+    # original binary to cache; the source file on disk is already the
+    # original.
+    original_file = models.FileField(upload_to=document_upload_path, null=True, blank=True)
 
     class Meta:
         constraints = [

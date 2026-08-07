@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -88,6 +89,33 @@ def test_content_hash_is_stable_when_content_is_unchanged(tmp_path: Path) -> Non
     second = next(connector.fetch_documents()).content_hash
 
     assert first == second
+
+
+def test_fetch_documents_reads_pdf_as_binary(
+    tmp_path: Path, make_pdf_bytes: Callable[[list[tuple[str, str]]], bytes]
+) -> None:
+    (tmp_path / "paper.pdf").write_bytes(make_pdf_bytes([("Heading", "Body text.")]))
+
+    connector = LocalFolderConnector({"path": str(tmp_path)})
+    (doc,) = list(connector.fetch_documents())
+
+    assert doc.external_id == "paper.pdf"
+    assert doc.title == "paper"
+    assert doc.content is None
+    assert doc.binary is not None
+    assert doc.content_hash
+
+
+def test_fetch_documents_returns_both_markdown_and_pdf(
+    tmp_path: Path, make_pdf_bytes: Callable[[list[tuple[str, str]]], bytes]
+) -> None:
+    (tmp_path / "note.md").write_text("a note")
+    (tmp_path / "paper.pdf").write_bytes(make_pdf_bytes([("Heading", "Body.")]))
+
+    connector = LocalFolderConnector({"path": str(tmp_path)})
+    external_ids = {doc.external_id for doc in connector.fetch_documents()}
+
+    assert external_ids == {"note.md", "paper.pdf"}
 
 
 def test_oversized_file_is_skipped_and_logged(

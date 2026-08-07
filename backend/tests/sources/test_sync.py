@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -126,6 +127,32 @@ def test_sync_reports_all_three_kinds_of_change_together(tmp_path: Path) -> None
 
     assert (stats.added, stats.updated, stats.deleted) == (1, 1, 1)
     assert Document.objects.filter(source=source, deleted=False).count() == 3
+
+
+def test_pdf_sync_caches_the_original_and_tags_chunks_with_page(
+    tmp_path: Path, make_pdf_bytes: Callable[[list[tuple[str, str]]], bytes]
+) -> None:
+    (tmp_path / "paper.pdf").write_bytes(
+        make_pdf_bytes(
+            [
+                ("Page One", "First page body."),
+                ("Page Two", "Second page body."),
+            ]
+        )
+    )
+    source = make_local_source(tmp_path)
+
+    stats = sync_source(source)
+
+    assert (stats.added, stats.updated, stats.deleted) == (1, 0, 0)
+    document = source.documents.get(external_id="paper.pdf")
+    assert document.original_file.name
+    assert document.original_file.read()  # the cached bytes are readable back
+
+    chunks = list(document.chunks.order_by("index"))
+    assert len(chunks) == 2
+    assert chunks[0].metadata == {"page": 1}
+    assert chunks[1].metadata == {"page": 2}
 
 
 def _forbid_writes(execute, sql, params, many, context):  # type: ignore[no-untyped-def]
