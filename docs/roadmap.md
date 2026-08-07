@@ -23,7 +23,8 @@
 | 9 — Embeddings | ✅ Hecha |
 | 10 — Módulo de retrieval | ✅ Hecha |
 | 11 — Chat con citas verificables | ✅ Hecha |
-| 12 en adelante | Pendiente |
+| 12 — Capa de API | ✅ Hecha |
+| 13 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -421,7 +422,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ### Bloque D — API y frontend
 
-#### Etapa 12 — Capa de API
+#### Etapa 12 — Capa de API ✅
 
 **Objetivo:** exponer todo con un contrato tipado y autenticación.
 
@@ -434,6 +435,16 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 6. Tests de API por endpoint, incluyendo aislamiento entre workspaces.
 
 **Dependencias:** Etapa 11.
+**Hecho cuando:** el OpenAPI generado valida; un usuario no puede leer datos de otro workspace (test explícito); el flujo completo funciona vía HTTP.
+
+**Notas de la implementación real:**
+- **El aislamiento por workspace se resolvió filtrando `get_queryset()` en cada viewset**, no con una clase de permiso genérica que inspeccione el objeto después de obtenerlo. Cada viewset arma su propio queryset con `...__memberships__user=self.request.user` — es explícito por endpoint, y como los `ModelViewSet` de DRF resuelven `retrieve`/`update`/`delete` a través del mismo `get_queryset()`, filtrar ahí alcanza para bloquear también el acceso a un objeto puntual de otro workspace, no solo los listados. El efecto práctico: pedir un recurso de otro workspace da **404, no 403** — la misma respuesta que "no existe", para no confirmarle a quien pregunta que ese ID pertenece a un workspace ajeno.
+- **Se aplicó el mismo criterio al endpoint de chat** (`rag/chat/views.py`), que no es una vista DRF: un único `Conversation.objects.get(pk=..., workspace__memberships__user=user)` en vez de "buscar y después chequear el workspace por separado" — mismo resultado (404 uniforme) con una sola consulta.
+- **`MessageViewSet` quedó de solo lectura (sin `create`)**: un mensaje de `assistant` únicamente se crea a través de `rag.chat.service.ask()` (retrieval → LLM → validación de citas), nunca por un POST directo. Exponer un `create` genérico hubiera abierto una vía para insertar mensajes "asistente" falsos, con citas nunca validadas.
+- **Bug real de compatibilidad encontrado y corregido:** `djangorestframework==3.17.2` (la versión que traía el lockfile) no soporta Django 6.1 — `rest_framework.views` importa `cc_delim_re` desde `django.utils.cache`, un nombre que Django 6.1 eliminó. No se manifestó antes porque nada había importado `rest_framework.views` todavía (los settings de DRF no lo tocan). Solucionado actualizando a `djangorestframework==3.18.0`.
+- **`drf-spectacular` necesita el patrón `swagger_fake_view`** en cada `get_queryset()` request-dependiente: al generar el schema, la librería instancia el viewset con `swagger_fake_view = True` en vez de un `request` real, y `self.request.user` explota contra `AnonymousUser`. El propio código de `drf_spectacular/plumbing.py` documenta este chequeo (`getattr(self, "swagger_fake_view", False)`) como el patrón esperado — se aplicó a los cuatro viewsets. Antes del fix, `manage.py spectacular` generaba el schema igual pero con 3 warnings (tipo de parámetro de path no inferido); después, cero.
+- **Login/logout quedaron como vistas JSON propias** (`core/views.py`), no las vistas de `django.contrib.auth.urls` (que renderizan templates HTML) — el consumidor real es una SPA de Angular, no un formulario server-rendered. Se sumó también `GET /api/auth/csrf/`, que solo pone la cookie `csrftoken`: sin ella, un visitante no autenticado no tiene nada que mandar en el header `X-CSRFToken` para el primer POST de login.
+- **Verificación manual end-to-end real** (no solo tests con fakes): login vía `/api/auth/login/`, listado de `sources`/`documents` reales de un workspace con datos reales, y una pregunta real a `/api/conversations/<id>/chat/` contra Voyage + Claude Haiku 4.5 reales — la respuesta llegó en streaming, con una cita que apunta a `note.md` líneas 1-6 (archivo y rango reales), y el `Message` quedó persistido con `latency_ms`/`input_tokens`/`output_tokens` reales. Se confirmó además, contra datos reales (no solo el test unitario), que pedir la conversación de otro workspace por HTTP da 404 en los tres frentes: `GET /api/conversations/<id>/`, `POST .../chat/`, y `GET /api/messages/?conversation=<id>` (lista vacía, sin filtrar en el cliente).
 **Hecho cuando:** el OpenAPI generado valida; un usuario no puede leer datos de otro workspace (test explícito); el flujo completo funciona vía HTTP.
 
 ---
