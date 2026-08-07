@@ -18,7 +18,8 @@
 | 4 — Modelos `Source` y `Document` | ✅ Hecha |
 | 5 — Interfaz de conectores y carpeta local | ✅ Hecha |
 | 6 — Pipeline de ingestion y modelo `Chunk` | ✅ Hecha |
-| 7 en adelante | Pendiente |
+| 7 — Ingestion asíncrona con Celery | ✅ Hecha |
+| 8 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -285,7 +286,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 7 — Ingestion asíncrona con Celery
+#### Etapa 7 — Ingestion asíncrona con Celery ✅
 
 **Objetivo:** que las sincronizaciones corran en background, con estado observable y sin pisarse entre sí.
 
@@ -298,6 +299,13 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 6.
 **Hecho cuando:** encolar un sync desde el shell lo ejecuta en el worker y produce un `SyncRun` con contadores correctos; el segundo sync concurrente sobre la misma fuente no arranca.
+
+**Notas de la implementación real:**
+- La lógica se separó en tres capas para que sea testeable sin depender de Celery: `sync_source()` (reconciliación pura, Etapa 5), `sync_source_with_tracking()` (agrega el `SyncRun` y el estado de `Source`, sigue sin saber nada de Celery) y `sync_source_task` (la task en sí, solo agrega el lock y `autoretry_for`/`retry_backoff`). El management command y la task comparten exactamente el mismo lock y la misma función de tracking — no hay dos caminos con comportamiento distinto según se dispare a mano o desde un worker.
+- El lock usa `cache.add()` de Django (backend nativo de Redis, sin paquete extra desde Django 4) — es un `SET NX` atómico: solo el primero en pedirlo lo consigue.
+- Redis quedó separado en dos índices de base de datos: `/0` para el broker de Celery, `/1` para el cache (el lock). No hacía falta por corrección (las claves no chocan), pero mantiene separados dos usos distintos del mismo Redis.
+- **Gotcha real encontrado en Docker:** el volumen nombrado `backend_venv` (pensado para no pisar el entorno del contenedor con el bind-mount de código, ver Etapa 2) persiste *entre* reconstrucciones de imagen — así que había quedado con el `.venv` de antes de agregar `pgvector`/`tiktoken`/`python-frontmatter`, y el contenedor `backend` estaba `unhealthy` por `ModuleNotFoundError`. Hubo que borrar ese volumen a mano (`docker volume rm infra_backend_venv`) para que se repoblara desde la imagen nueva. Vale la pena recordarlo: **cualquier cambio de dependencias exige resetear ese volumen**, no alcanza con `--build`.
+- Otro gotcha de Docker: el worker corre *adentro* del contenedor, que no tiene montado `/tmp` del host — solo `backend/` (como `/app`). Verificar contra una fuente `local_folder` desde el worker real requiere que la carpeta viva dentro de `backend/` (mapea a una ruta válida en ambos lados), no en cualquier lado del host.
 
 ---
 
