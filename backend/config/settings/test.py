@@ -11,6 +11,8 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
-# Deterministic, no network — CI has no Voyage API key and shouldn't need one.
+# Deterministic, no network — CI has no Voyage/Anthropic API keys and
+# shouldn't need any.
 EMBEDDING_PROVIDER = "fake"
 RERANK_PROVIDER = "fake"
+LLM_PROVIDER = "fake"

@@ -67,6 +67,23 @@ RERANK_MODEL = env("RERANK_MODEL", default="rerank-2.5")
 # "lexical", "dense", "hybrid", or "hybrid_reranked".
 RETRIEVAL_STRATEGY = env("RETRIEVAL_STRATEGY", default="hybrid_reranked")
 
+# "anthropic" or "fake" (deterministic, no network — used in tests/CI).
+LLM_PROVIDER = env("LLM_PROVIDER", default="anthropic")
+# Haiku, not Sonnet: a deliberate cost choice for this project, not a
+# capability default.
+LLM_MODEL = env("LLM_MODEL", default="claude-haiku-4-5-20251001")
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+# $/million tokens, logging only, same reasoning as EMBEDDING_COST above:
+# no default rather than a guessed number. Verified once against
+# https://platform.claude.com/docs/en/about-claude/pricing (Haiku 4.5:
+# $1/MTok input, $5/MTok output, as of 2026-08).
+LLM_COST_PER_MILLION_INPUT_TOKENS_USD = env.float(
+    "LLM_COST_PER_MILLION_INPUT_TOKENS_USD", default=0.0
+)
+LLM_COST_PER_MILLION_OUTPUT_TOKENS_USD = env.float(
+    "LLM_COST_PER_MILLION_OUTPUT_TOKENS_USD", default=0.0
+)
+
 # Safety net: parsing and chunking work entirely in memory, not streaming,
 # so a pathologically large single file could exhaust memory. Connectors
 # skip (and log) anything past this size rather than trying to process it.
