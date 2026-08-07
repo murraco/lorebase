@@ -22,7 +22,8 @@
 | 8 — Soporte de PDFs y storage | ✅ Hecha |
 | 9 — Embeddings | ✅ Hecha |
 | 10 — Módulo de retrieval | ✅ Hecha |
-| 11 en adelante | Pendiente |
+| 11 — Chat con citas verificables | ✅ Hecha |
+| 12 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -391,7 +392,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 11 — Chat con citas verificables
+#### Etapa 11 — Chat con citas verificables ✅
 
 **Objetivo:** respuestas generadas cuyas citas están validadas contra el contexto real, con streaming.
 
@@ -407,6 +408,14 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 10.
 **Hecho cuando:** `manage.py ask` responde con citas que apuntan a archivo + línea reales; una cita fabricada por el modelo nunca se persiste; latencia, tokens y costo quedan registrados en cada `Message`.
+
+**Notas de la implementación real:**
+- **Modelo confirmado explícitamente por el usuario**: `claude-haiku-4-5-20251001` (no Sonnet) — decisión de costo deliberada. Precio verificado contra `platform.claude.com/docs/en/about-claude/pricing`: $1/MTok input, $5/MTok output.
+- **`Citation` quedó minimal** (`message`, `chunk`), sin `quote`/`char_range` del borrador original — el wireframe muestra las citas como chips debajo del mensaje, no resaltados inline en el texto, así que esos campos no tenían un consumidor real.
+- **La interfaz `LLMProvider` se simplificó de 3 métodos a 2** (`chat` y `stream_tool`), desviación deliberada del plan: "stream" y "tools" no son necesidades independientes en este proyecto — la única respuesta que necesita *ambas* cosas a la vez es la respuesta final del chat, así que se combinaron en un solo método en vez de forzar una interfaz con métodos que nadie compone entre sí.
+- **El mensaje se persiste *antes* de empezar a transmitir por SSE**, no "al cerrar el stream" como decía el plan original: las citas no se pueden validar hasta que el tool call completo esté resuelto, así que no hay nada seguro para mostrarle al cliente — ni texto ni citas — antes de ese punto. Lo que se transmite después es contenido ya validado, pausado palabra por palabra para el efecto de "tipeo", no texto realmente incremental del modelo.
+- **La vista de streaming quedó síncrona, no async** como pedía el plan: todas las capas de abajo (retrievers, el ORM de Django, los SDKs de Voyage/Anthropic) son síncronas — envolver esto en `async def` solo hubiera significado `sync_to_async` en cada llamada bloqueante, sin ninguna ganancia real de concurrencia.
+- **Bug real encontrado y corregido, en vivo, con la key real:** la reescritura de preguntas de seguimiento armaba el historial como una conversación multi-turno real (`user`/`assistant`/`user`/...). Estructuralmente eso se parece exactamente a un chat en curso, y el modelo — a pesar de que el system prompt le decía explícitamente que reescribiera, no respondiera — **contestó la pregunta nueva en vez de reescribirla**, ignorando la instrucción. El fix: aplanar el historial como texto descriptivo dentro de un único mensaje de usuario, para que no haya ambigüedad estructural de que esto es una tarea de transformación de texto, no una charla. Verificado con dos escenarios reales: uno con un "it" sin antecedente real (para no engañarse pensando que "funcionó" cuando en realidad el modelo estaba adivinando por conocimiento general) y uno con un "it" genuino referido al turno anterior, donde sí resolvió correctamente.
 
 ---
 
