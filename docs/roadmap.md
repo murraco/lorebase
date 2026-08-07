@@ -19,7 +19,8 @@
 | 5 — Interfaz de conectores y carpeta local | ✅ Hecha |
 | 6 — Pipeline de ingestion y modelo `Chunk` | ✅ Hecha |
 | 7 — Ingestion asíncrona con Celery | ✅ Hecha |
-| 8 en adelante | Pendiente |
+| 8 — Soporte de PDFs y storage | ✅ Hecha |
+| 9 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -309,7 +310,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 8 — Soporte de PDFs y storage
+#### Etapa 8 — Soporte de PDFs y storage ✅
 
 **Objetivo:** ingerir PDFs reutilizando el mismo pipeline, guardando el original para poder citarlo.
 
@@ -323,6 +324,13 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 6 (puede ir en paralelo con la 7).
 **Hecho cuando:** un PDF ingerido produce chunks con número de página; el original queda en storage; el mismo chunker sirvió a ambos formatos.
+
+**Notas de la implementación real:**
+- No hay una clase `PdfParser` que implemente la interfaz `Parser` — un PDF es binario y produce *varios* textos (uno por página), no uno solo, así que no encaja en `Parser.parse(text) -> list[ParsedSection]`. En su lugar, `extract_pdf_pages()` (en `ingestion/parsers/pdf.py`) solo convierte el PDF a una lista de strings Markdown, uno por página, y cada página pasa por el **mismo** `MarkdownParser` + `HeadingChunker` que cualquier nota — verificado generando un PDF real con `pymupdf` e inspeccionando la forma exacta que devuelve `pymupdf4llm.to_markdown(..., page_chunks=True)`, en vez de confiar en memoria sobre su API.
+- El número de página se etiqueta **desde afuera**: se agregó `ChunkData.metadata` (vacío por defecto) para que la orquestación de PDFs pueda taggear `{"page": N}` sobre los chunks que ya devolvió el chunker, sin que `Parser` ni `Chunker` necesiten saber que los PDFs existen.
+- `process_document()` pasó a ser keyword-only (`text=` o `binary=`, exactamente uno) — reemplaza el `assert raw_document.content is not None, "binary documents aren't supported yet"` que habíamos dejado a propósito en la Etapa 5 como costura para este momento.
+- El binario original se cachea vía `document.original_file.save(...)`, con el path namespaced por fuente (`documents/<source_id>/<filename>`) para que dos fuentes distintas no choquen si tienen un archivo con el mismo nombre.
+- **Gotcha de Docker repetido:** volver a `uv add` (esta vez `pymupdf4llm`) dejó el volumen `backend_venv` desactualizado otra vez — mismo síntoma que en la Etapa 7 (`ModuleNotFoundError`), mismo fix (`docker volume rm infra_backend_venv` + rebuild). Ya es un patrón: **toda dependencia nueva exige resetear ese volumen**, no hay forma de evitarlo con la arquitectura actual del bind-mount.
 
 ---
 
