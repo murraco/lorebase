@@ -1,0 +1,57 @@
+import hashlib
+from collections.abc import Iterator
+from pathlib import Path
+
+import frontmatter
+
+from sources.connectors.base import (
+    Connector,
+    ConnectorConfigError,
+    ConnectorConnectionError,
+    RawDocument,
+)
+from sources.connectors.registry import register_connector
+
+
+@register_connector("local_folder")
+class LocalFolderConnector(Connector):
+    """Reads Markdown notes from a local directory, recursively. The path
+    relative to the configured root is used as both `external_id` and
+    `path`, so identity survives even if the whole folder is later moved to
+    a different absolute location.
+    """
+
+    def validate_config(self) -> None:
+        path = self.config.get("path")
+        if not path or not isinstance(path, str):
+            raise ConnectorConfigError("config must include a non-empty 'path' string")
+
+    def test_connection(self) -> None:
+        root = self._root()
+        if not root.is_dir():
+            raise ConnectorConnectionError(f"{root} is not a directory")
+
+    def fetch_documents(self) -> Iterator[RawDocument]:
+        root = self._root()
+        for file_path in sorted(root.rglob("*.md")):
+            relative_path = file_path.relative_to(root).as_posix()
+            raw_bytes = file_path.read_bytes()
+            content_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+            post = frontmatter.loads(raw_bytes.decode("utf-8"))
+            # YAML front matter can hold any type; metadata.get() is typed as
+            # `object`, so coerce explicitly rather than trust the YAML author.
+            raw_title = post.metadata.get("title")
+            title = str(raw_title) if raw_title else file_path.stem
+
+            yield RawDocument(
+                external_id=relative_path,
+                path=relative_path,
+                title=title,
+                content_hash=content_hash,
+                content=post.content,
+                metadata=post.metadata,
+            )
+
+    def _root(self) -> Path:
+        return Path(self.config["path"])

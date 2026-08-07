@@ -16,7 +16,8 @@
 | 2 — Docker Compose y CI | ✅ Hecha |
 | 3 — Modelos core (`Workspace`, `User`, `Membership`) | ✅ Hecha |
 | 4 — Modelos `Source` y `Document` | ✅ Hecha |
-| 5 en adelante | Pendiente |
+| 5 — Interfaz de conectores y carpeta local | ✅ Hecha |
+| 6 en adelante | Pendiente |
 
 ## Context
 
@@ -227,7 +228,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 5 — Interfaz de conectores y conector de carpeta local
+#### Etapa 5 — Interfaz de conectores y conector de carpeta local ✅
 
 **Objetivo:** la abstracción plugin-first funcionando, validada con el primer conector real.
 
@@ -241,6 +242,12 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 4.
 **Hecho cuando:** correr el comando dos veces seguidas sin tocar archivos no genera ninguna escritura; agregar/editar/borrar un `.md` se refleja correctamente; tests verdes.
+
+**Notas de la implementación real:**
+- `RawDocument.content_hash` es un campo explícito del dataclass, no algo que la reconciliación calcule — cada conector lo genera como mejor le convenga (sha256 del archivo para `local_folder`; será el SHA de git para GitHub en la Etapa 14). La reconciliación solo compara strings, nunca sabe cómo se generaron.
+- **Bug real encontrado y corregido:** el registro de conectores (`@register_connector`) es un efecto secundario de *importar* el módulo del conector. Sin nada que fuerce esa importación, `sync_source()` fallaba con `No connector registered` en cualquier proceso donde nadie hubiera importado `local_folder.py` antes — lo cual incluía el comando `manage.py sync_source` real, no solo un test aislado. Se resolvió importando los conectores desde `SourcesConfig.ready()`, el hook de Django pensado exactamente para este tipo de registro-al-arrancar.
+- La reconciliación también contempla "revivir" un `Document` soft-deleted cuyo archivo vuelve a aparecer — sin este caso, se violaba el constraint de unicidad `(source, external_id)` al intentar crear un duplicado. Cubierto con test explícito.
+- Selección de un archivo único (en vez de una carpeta entera) quedó **pendiente**, a pedido explícito: es un caso real para el uso personal, pero se prefirió no anticiparlo sin necesidad inmediata. Extenderlo más adelante no debería tocar la interfaz `Connector` ni la reconciliación — es un cambio acotado a `LocalFolderConnector.fetch_documents()`.
 
 ---
 
