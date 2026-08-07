@@ -20,7 +20,8 @@
 | 6 — Pipeline de ingestion y modelo `Chunk` | ✅ Hecha |
 | 7 — Ingestion asíncrona con Celery | ✅ Hecha |
 | 8 — Soporte de PDFs y storage | ✅ Hecha |
-| 9 en adelante | Pendiente |
+| 9 — Embeddings | ✅ Hecha |
+| 10 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -106,6 +107,8 @@ Esto es lo que surgió al analizar el documento de diseño y el entorno antes de
 | Contenedores | Docker Compose | v5 |
 
 > Los identificadores exactos de modelo de Voyage y Anthropic se confirman contra la documentación del proveedor al llegar a las Etapas 9 y 11. Se exponen como settings (`EMBEDDING_MODEL`, `EMBEDDING_DIM`, `RERANK_MODEL`, `LLM_MODEL`), nunca hardcodeados.
+>
+> **Actualización Etapa 9:** confirmado contra `docs.voyageai.com` — el modelo de embeddings vigente es `voyage-4` (no `voyage-3`, que quedó legacy), dimensión por defecto 1024 (coincide con lo que ya habíamos fijado en la Etapa 6), $0.06 por millón de tokens con 200M gratis. `RERANK_MODEL`/`LLM_MODEL` siguen pendientes de confirmar en sus etapas correspondientes.
 
 ## Estructura del repositorio
 
@@ -336,7 +339,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ### Bloque C — Retrieval y chat
 
-#### Etapa 9 — Embeddings
+#### Etapa 9 — Embeddings ✅
 
 **Objetivo:** vectorizar chunks detrás de una interfaz intercambiable.
 
@@ -349,6 +352,14 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 6.
 **Hecho cuando:** todos los chunks tienen embedding no nulo; el CI corre sin API key gracias al provider fake; cambiar de provider es una línea de settings.
+
+**Notas de la implementación real:**
+- **Verificado contra la documentación real de Voyage** (`docs.voyageai.com`), no asumido: el modelo vigente es `voyage-4` (no `voyage-3`, que quedó legacy), 1024 dimensiones por defecto — coincide con lo que ya habíamos fijado en la Etapa 6 — y $0.06/millón de tokens con 200M gratis. `input_type` funciona anteponiendo un prompt en lenguaje natural al texto (`"Represent the query for retrieving supporting documents:"` vs `"Represent the document for retrieval:"`) — el mismo mecanismo que el prefijo manual de los modelos open-source (BGE/E5), solo que automatizado.
+- **`tenacity` se sacó como dependencia directa**: inspeccionando el SDK de Voyage se confirmó que ya trae reintentos con backoff exponencial + jitter incorporados (`Client(max_retries=N)`), cubriendo `RateLimitError`/`ServiceUnavailableError`/`Timeout`. Sumar nuestro propio wrapper hubiera sido duplicar lógica. `tenacity` sigue disponible como dependencia transitiva de `voyageai`.
+- **El batching sí lo hace nuestro código**, no el SDK: `Client.embed()` manda toda la lista de textos en un solo request, sin trocear. `VoyageEmbeddingProvider` usa `voyageai.VOYAGE_EMBED_BATCH_SIZE` (128, la constante real del SDK) para particionar.
+- **El costo no se hardcodeó como número inventado.** `EMBEDDING_COST_PER_MILLION_TOKENS_USD` no tiene default — si no está configurado, se loguean los tokens sin estimar costo en dólares. El número real ($0.06) quedó documentado como referencia verificada, no como default silencioso que se desactualiza solo.
+- **El backfill de embeddings quedó desacoplado del pipeline de ingestion**, no integrado adentro de `process_document()`: se batchea mejor a nivel de *todos* los chunks pendientes de una fuente (o del sistema entero) que a nivel de un documento a la vez, que casi siempre tiene muy pocos chunks. `sync_source_task` encadena `backfill_embeddings_task.delay()` al final, como task separada — así un embedding lento o con rate limit no bloquea que la sync se reporte terminada, y se puede reintentar independiente de la sync.
+- Verificado con Docker real (no solo `CELERY_TASK_ALWAYS_EAGER` de los tests): las dos tasks (`sync_source_task` y `backfill_embeddings_task`) aparecen como IDs distintos en los logs del worker, encadenadas sobre el broker real.
 
 ---
 
