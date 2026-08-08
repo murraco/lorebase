@@ -25,7 +25,16 @@
 | 11 — Chat con citas verificables | ✅ Hecha |
 | 12 — Capa de API | ✅ Hecha |
 | 13 — Frontend Angular | ✅ Hecha |
+| — Trabajo posterior no planificado | 🔄 En curso (ver abajo) |
 | 14 en adelante | Pendiente |
+
+Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
+ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
+reales y mejoras pedidas sobre la marcha. Ese trabajo se lista en
+"[Trabajo posterior a la Etapa 13](#trabajo-posterior-a-la-etapa-13)". Las
+notas técnicas de cada cambio siguen viviendo junto a la etapa cuyo código
+tocan — es donde sirven para entender por qué ese código es como es — pero
+el índice de abajo es lo que dice *qué pasó y cuándo*.
 
 ## Deuda técnica y pendientes conocidos
 
@@ -524,6 +533,8 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 - **El chip de cita ahora lidera con el `heading_path`** (`2025-07-21 > Work`) y deja `path` + línea como ancla verificable debajo, más apagado. El dato ya se calculaba al ingerir y no lo consumía nadie; `notes/journal.md:412-438` solo es legible si ya sabés qué hay en esa línea.
 - **Sidebar colapsable a un rail de íconos** (2026-08, a pedido, siguiendo el patrón de Claude). Colapsa a 64px en vez de ocultarse, para que las acciones primarias (nuevo chat, agregar fuente) queden a un clic. La preferencia persiste en `localStorage`, con `try/catch` porque en navegación privada tira excepción. La transición se anula bajo `prefers-reduced-motion`.
 - **Bug de layout introducido y corregido en el mismo día**: al agregar la lista de conversaciones, `.rail` no tenía altura acotada (`.app` solo declaraba `min-height: 100vh`), así que con suficientes conversaciones el rail crecía más allá del viewport y **empujaba el footer fuera de pantalla — "Sign out" quedaba cortado**. Detectado por el usuario con un screenshot. El fix: `.rail` pasa a `height: 100vh` + `position: sticky`, y solo la lista de conversaciones toma el espacio sobrante con su propio scroll (`flex: 1; min-height: 0; overflow-y: auto`); el bloque de fuentes se capó al 45% para que tampoco pueda ahogar a las conversaciones. Lección concreta: un contenedor flex en columna con `min-height` en vez de `height` no acota a sus hijos, y el `margin-top: auto` del footer solo lo empuja hasta el final del *contenido*, no del viewport.
+- **Segundo bug de layout, consecuencia directa del primer fix**: una vez que `.rail` pasó a tener altura acotada, las filas de la sidebar empezaron a **superponerse entre sí** con suficientes conversaciones. La causa es la contracara de acotar la altura: los hijos de un flex column tienen `flex-shrink: 1` por default, así que en vez de provocar scroll **se comprimen por debajo de su altura de contenido** y el texto se desborda encima de los vecinos. Detectado por el usuario con un screenshot. El fix es `flex-shrink: 0` en cada hijo que debe conservar su tamaño (`.conversation-row`, `.source`, `.section-label`, `.add-btn`, `.conversation`), dejando que el scroll lo resuelva el contenedor. Vale como par: el primer fix acotó la altura, el segundo hizo que esa altura acotada se comportara.
+- **`pending` se mostraba como "Syncing…" para siempre** (encontrado por el usuario, 2026-08). `statusLabel()` e `isInFlight()` trataban `pending` (creada y **nunca** sincronizada) igual que `syncing` (sincronizando ahora). Consecuencias: una fuente que nunca arrancó decía "Syncing…" indefinidamente, y — peor — `anyInFlight()` quedaba permanentemente en `true`, así que el polling disparaba un request cada 4 segundos **para siempre**. Verificado en la base antes de tocar nada: la fuente en cuestión tenía `status=pending` y **cero `SyncRun`**, o sea que efectivamente nunca había empezado. El fix separa los tres estados (`Not synced yet` / `Syncing…` / `Indexing NN%`) y saca `pending` de "en vuelo". Además se agregó un botón de **Sync now** para fuentes en `pending`/`error`: el endpoint de sync existía desde la Etapa 12 pero nadie lo llamaba fuera del alta, así que una fuente en ese estado no tenía forma de arrancar desde la UI.
 - **Borrado de conversaciones** (2026-08, a pedido): `DestroyModelMixin` en `ConversationViewSet` (borrado real, no soft — una conversación descartada no tiene valor, y sus `Message`/`Citation` caen por cascada). Con test explícito de que **los chunks citados sobreviven**: `Citation` apunta a `Chunk`, nunca al revés, así que borrar una conversación no puede llevarse contenido indexado. En la UI el botón aparece con hover/`focus-within` para no ensuciar la lista, y si se borra la conversación abierta se navega a `/chat`.
 - **Panel de estado del sistema** (2026-08, elegido sobre ajustes de retrieval por usuario). `GET /api/system/status/` reporta el **modelo efectivamente en uso** para el proveedor activo, no todos los settings: `EMBEDDING_MODEL` y `LOCAL_EMBEDDING_MODEL` están siempre seteados y solo uno significa algo en cada momento — mostrar los dos es exactamente cómo un proveedor equivocado pasa desapercibido. Incluye un flag `using_fake_providers` que la UI destaca como advertencia. Existe por un bug real: `EMBEDDING_PROVIDER=fake` corrió contra datos reales sin que nada avisara, llenando el índice de vectores sin sentido. Los conteos están scopeados a los workspaces del usuario, no son una vista de admin del servidor.
 - **`GET /api/auth/me/` y el campo `workspaces` en las respuestas de login/me son adiciones nuevas, no estaban en la Etapa 12.** Sin una forma de listar los workspaces del usuario, el frontend no podía saber qué `workspace` mandar al crear un `Source` o una `Conversation` — no existe (ni está planeado) un endpoint `/api/workspaces/` dedicado. Se resolvió reutilizando `Membership` ya existente. Asunción de "un solo workspace real por usuario" en la UI (`AuthService.primaryWorkspace` toma el primero) — el modelo soporta varios, pero no hay switcher; no hacía falta para el alcance de esta etapa.
@@ -560,6 +571,57 @@ flowchart LR
 - **Composer cambiado de `<input>` a `<textarea>`** con `(keydown.enter)` manejado a mano: Enter solo (sin Shift) previene el default y envía; Shift+Enter deja que el `<textarea>` inserte el salto de línea normalmente. Un `<textarea>` no auto-envía en Enter como sí lo hace un `<input type="text">`, así que el manejo explícito es necesario, no cosmético.
 
 ---
+
+### Trabajo posterior a la Etapa 13
+
+Índice cronológico del trabajo que **no pertenece a ninguna etapa del plan**:
+bugs encontrados usando el sistema con datos reales, y mejoras pedidas sobre
+la marcha. Existe porque el plan original se quedó sin estructura para esto —
+todo se venía anotando dentro de etapas ya cerradas, lo que hizo que la
+sección de la Etapa 13 creciera hasta ser la más larga del documento
+describiendo, en su mayoría, cosas hechas **después** de darla por terminada.
+
+Cada línea apunta a dónde está la nota técnica completa.
+
+| # | Cambio | Origen | Nota detallada en |
+|---|---|---|---|
+| 1 | Fuente de la sidebar ilegible, falta borrar fuente, sin indicador de carga en el chat | Bug reportado | Etapa 13 |
+| 2 | 500 real por rate limit de Voyage en el reranker | Bug en producción | Etapa 10 |
+| 3 | CSRF roto detrás de Nginx: no se podía loguear | Bug en producción | Etapa 12 |
+| 4 | Chunking configurable por patrón de sección (`section_boundary_pattern`) | Bug de retrieval | Etapa 6 |
+| 5 | Explorador de carpetas del servidor en vez de path a mano | Pedido | Etapa 13 |
+| 6 | Markdown en las respuestas y Shift+Enter en el composer | Pedido | Etapa 13 |
+| 7 | Deduplicación de documentos con contenido idéntico | Pedido | Etapa 5 |
+| 8 | Soporte de archivos `.txt` | Pedido | Etapa 5 |
+| 9 | `EMBEDDING_PROVIDER=fake` activo contra datos reales | Bug de configuración | Etapa 9 |
+| 10 | `backfill_embeddings_task` no sobrevivía un rate limit | Bug en producción | Etapa 9 |
+| 11 | Doble reintento (SDK + Celery) multiplicando la presión sobre la cuota | Bug propio | Etapa 9 |
+| 12 | `LocalReranker` y `LocalEmbeddingProvider`; adiós a Voyage | Pedido | Etapa 9 y 10 |
+| 13 | Reescritura de query siempre activa + `DateAwareRetriever` | Bug de retrieval | Etapa 10 y 11 |
+| 14 | `heading_path` se calculaba y no lo leía nadie | Auditoría pedida | Etapa 9 |
+| 15 | Providers locales por default | Pedido | Etapa 9 |
+| 16 | Progreso real de indexado (`status=ready` mentía) | Auditoría pedida | Etapa 13 |
+| 17 | Historial de conversaciones, con creación diferida | Pedido | Etapa 13 |
+| 18 | Conversación sin estado: decisión documentada | Pedido | Etapa 11 |
+| 19 | Medición de fechas en inglés; se confirma `DateAwareRetriever` | Pedido | Etapa 9 |
+| 20 | `ruff format --check` en CI; comentarios sin referencias al roadmap | Pedido | — |
+| 21 | Sidebar colapsable a rail de íconos | Pedido | Etapa 13 |
+| 22 | Footer del sidebar fuera de pantalla ("Sign out" cortado) | Bug propio | Etapa 13 |
+| 23 | Borrado de conversaciones | Pedido | Etapa 13 |
+| 24 | Panel de estado del sistema | Pedido | Etapa 13 |
+| 25 | `pending` mostrado como "Syncing…" para siempre | Bug propio | Etapa 13 |
+| 26 | Filas de la sidebar superpuestas con muchas conversaciones | Bug propio | Etapa 13 |
+
+**Lo que dice este listado sobre el proceso:** de 26 cambios, **9 son bugs
+encontrados usando el sistema con datos reales** (no por tests), y **4 son
+bugs introducidos por mí y detectados por el usuario en pantalla**. Ningún
+test los hubiera atrapado: son de configuración, de layout CSS, o de
+semántica de estados que solo se ve mirando la UI. Es el argumento más
+concreto a favor del golden set de la Etapa 16 y de verificar en vivo, no
+solo en verde.
+
+---
+
 
 ### Bloque E — Conectores adicionales
 
