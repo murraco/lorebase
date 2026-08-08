@@ -70,6 +70,57 @@ describe('ChatPage', () => {
     fixture.destroy();
   });
 
+  it('shows a typing indicator until the first delta arrives, then hides it', async () => {
+    let releaseFirstDelta!: () => void;
+    const gate = new Promise<void>((resolve) => (releaseFirstDelta = resolve));
+
+    async function* controlledAsk(): AsyncGenerator<ChatEvent> {
+      await gate;
+      yield { delta: 'Hello' };
+      yield { done: true, message_id: 'm1', citations: [] };
+    }
+
+    await TestBed.configureTestingModule({
+      imports: [ChatPage],
+      providers: [
+        {
+          provide: AuthService,
+          useValue: { primaryWorkspace: () => ({ id: 'ws-1', name: 'Workspace' }) },
+        },
+        {
+          provide: ConversationsService,
+          useValue: { create: vi.fn().mockResolvedValue({ id: 'conv-1' }) },
+        },
+        { provide: ChatService, useValue: { ask: () => controlledAsk() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ChatPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const page = fixture.componentInstance;
+    page['question'] = 'question';
+    const sendPromise = page['send']();
+    // Let the microtask queue drain enough for the placeholder messages
+    // (user + pending assistant) to be pushed onto the signal, without
+    // resolving `gate` yet — the generator is still parked on `await gate`.
+    await Promise.resolve();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.typing-indicator')).toBeTruthy();
+
+    releaseFirstDelta();
+    await sendPromise;
+    fixture.detectChanges();
+
+    expect(el.querySelector('.typing-indicator')).toBeFalsy();
+    expect(el.textContent).toContain('Hello');
+    fixture.destroy();
+  });
+
   it('shows a fallback message when the chat request fails', async () => {
     async function* failingAsk(): AsyncGenerator<ChatEvent> {
       yield { delta: 'partial answer, then ' };

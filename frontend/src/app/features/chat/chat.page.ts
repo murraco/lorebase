@@ -11,6 +11,11 @@ interface ThreadMessage {
   role: 'user' | 'assistant';
   content: string;
   citations: Citation[];
+  // True from the moment the assistant's turn starts until its first
+  // delta arrives. The backend computes the whole answer (retrieval,
+  // rerank, LLM call) before streaming anything, so there's a real gap —
+  // often a second or more — with nothing to show yet.
+  pending: boolean;
 }
 
 @Component({
@@ -49,13 +54,13 @@ export class ChatPage implements OnInit {
     this.question = '';
     this.messages.update((current) => [
       ...current,
-      { id: crypto.randomUUID(), role: 'user', content: question, citations: [] },
+      { id: crypto.randomUUID(), role: 'user', content: question, citations: [], pending: false },
     ]);
 
     const assistantId = crypto.randomUUID();
     this.messages.update((current) => [
       ...current,
-      { id: assistantId, role: 'assistant', content: '', citations: [] },
+      { id: assistantId, role: 'assistant', content: '', citations: [], pending: true },
     ]);
     this.sending.set(true);
 
@@ -77,7 +82,9 @@ export class ChatPage implements OnInit {
   private appendDelta(assistantId: string, delta: string): void {
     this.messages.update((current) =>
       current.map((message) =>
-        message.id === assistantId ? { ...message, content: message.content + delta } : message,
+        message.id === assistantId
+          ? { ...message, content: message.content + delta, pending: false }
+          : message,
       ),
     );
   }
@@ -85,7 +92,9 @@ export class ChatPage implements OnInit {
   private finalizeAnswer(assistantId: string, messageId: string, citations: Citation[]): void {
     this.messages.update((current) =>
       current.map((message) =>
-        message.id === assistantId ? { ...message, id: messageId, citations } : message,
+        message.id === assistantId
+          ? { ...message, id: messageId, citations, pending: false }
+          : message,
       ),
     );
   }

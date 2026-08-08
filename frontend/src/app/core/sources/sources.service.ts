@@ -32,6 +32,14 @@ export class SourcesService {
     if (error) throw new Error('Failed to queue sync.');
   }
 
+  async delete(id: string): Promise<void> {
+    const { error } = await apiClient.DELETE('/api/sources/{id}/', {
+      params: { path: { id } },
+    });
+    if (error) throw new Error('Failed to delete source.');
+    this.sources.update((current) => current.filter((source) => source.id !== id));
+  }
+
   /** Replaces one source in the local list with a freshly fetched copy —
    * used while polling for sync status instead of a full refresh(), so an
    * in-flight edit to another source in the list isn't clobbered. */

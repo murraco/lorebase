@@ -37,9 +37,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 8px;
+  padding: 8px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+}
+
+.source:hover {
+  background: var(--color-paper);
+}
+
+.source .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dot {
@@ -60,10 +73,40 @@
   background: #a13e3e;
 }
 
+.delete-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  font-size: 15px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.delete-btn:hover:not(:disabled) {
+  color: #a13e3e;
+  background: var(--color-amber-soft);
+}
+
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .empty {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-ink-soft);
   margin: 0 0 6px;
+}
+
+.error {
+  font-size: 12px;
+  color: #a13e3e;
+  margin: 4px 0 0;
 }
 
 .add-btn {
@@ -72,7 +115,7 @@
   gap: 8px;
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-ink-soft);
   cursor: pointer;
   background: none;

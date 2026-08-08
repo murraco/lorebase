@@ -6,11 +6,23 @@
       <p class="section-label">Sources</p>
       @for (source of sourcesService.sources(); track source.id) {
         <div class="source">
-          {{ source.name }}
+          <span class="name">{{ source.name }}</span>
           <span class="dot" [class]="source.status"></span>
+          <button
+            type="button"
+            class="delete-btn"
+            title="Delete source"
+            [disabled]="deletingSourceId() === source.id"
+            (click)="deleteSource(source)"
+          >
+            ×
+          </button>
         </div>
       } @empty {
         <p class="empty">No sources yet.</p>
+      }
+      @if (deleteError()) {
+        <p class="error">{{ deleteError() }}</p>
       }
       <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
     </div>

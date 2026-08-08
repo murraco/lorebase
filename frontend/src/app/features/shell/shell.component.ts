@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
+import type { Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
 
@@ -17,9 +18,26 @@ export class ShellComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly showAddSourceModal = signal(false);
+  protected readonly deletingSourceId = signal<string | null>(null);
+  protected readonly deleteError = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     await this.sourcesService.refresh();
+  }
+
+  protected async deleteSource(source: Source): Promise<void> {
+    if (!confirm(`Delete "${source.name}"? This removes it and everything indexed from it.`)) {
+      return;
+    }
+    this.deleteError.set(null);
+    this.deletingSourceId.set(source.id);
+    try {
+      await this.sourcesService.delete(source.id);
+    } catch (err) {
+      this.deleteError.set(err instanceof Error ? err.message : 'Failed to delete source.');
+    } finally {
+      this.deletingSourceId.set(null);
+    }
   }
 
   protected async logout(): Promise<void> {

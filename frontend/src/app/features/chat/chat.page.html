@@ -1,7 +1,13 @@
 <div class="thread">
   @for (message of messages(); track message.id) {
     <div class="msg" [class]="message.role">
-      {{ message.content }}
+      @if (message.pending) {
+        <span class="typing-indicator" aria-label="Thinking">
+          <span></span><span></span><span></span>
+        </span>
+      } @else {
+        {{ message.content }}
+      }
       @if (message.citations.length > 0) {
         <div class="cites">
           @for (citation of message.citations; track citation.id) {
