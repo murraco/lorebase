@@ -45,11 +45,14 @@ INSTALLED_APPS = [
 # 2048/512/256) — verified against https://docs.voyageai.com/docs/embeddings.
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
 
-# "voyage", "local", or "fake". "local" runs a bi-encoder in-process via
-# sentence-transformers — no external API, no rate limit — chosen after
-# Voyage's free-tier rate limit repeatedly broke real usage (see
-# docs/roadmap.md, Etapa 9/10 notes).
-EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="voyage")
+# "local" (default), "voyage", or "fake". "local" runs a bi-encoder
+# in-process via sentence-transformers — no API key, no rate limit — and
+# is the default precisely because "voyage" was: a fresh clone with no
+# .env then starts on a free-tier account whose 3 RPM ceiling broke real
+# usage repeatedly here (see docs/roadmap.md, Etapa 9/10 notes). The
+# trade-off of the local default is a multi-hundred-MB model download on
+# first use instead of an immediate failure nobody expects.
+EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="local")
 EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="voyage-4")
 VOYAGE_API_KEY = env("VOYAGE_API_KEY", default="")
 # Multilingual, MIT licensed, and — the deciding factor — 1024-dimensional
@@ -65,11 +68,11 @@ EMBEDDING_COST_PER_MILLION_TOKENS_USD = env.float(
     "EMBEDDING_COST_PER_MILLION_TOKENS_USD", default=0.0
 )
 
-# "voyage", "local", or "fake". "local" runs a cross-encoder in-process
-# via sentence-transformers — no external API, no rate limit — chosen
-# after Voyage's free-tier rate limit repeatedly turned into either a 500
-# or degraded retrieval quality (see docs/roadmap.md, Etapa 10 notes).
-RERANK_PROVIDER = env("RERANK_PROVIDER", default="voyage")
+# "local" (default), "voyage", or "fake". Same reasoning as
+# EMBEDDING_PROVIDER above — here the rate limit surfaced as either a
+# real 500 or silently degraded retrieval quality once RerankingRetriever
+# fell back to unreranked results (see docs/roadmap.md, Etapa 10 notes).
+RERANK_PROVIDER = env("RERANK_PROVIDER", default="local")
 # Verified against https://docs.voyageai.com/docs/pricing: rerank-2.5 is
 # current (rerank-2 is legacy), $0.05/M tokens, 200M free.
 RERANK_MODEL = env("RERANK_MODEL", default="rerank-2.5")
