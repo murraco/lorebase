@@ -8,6 +8,27 @@
     <p class="error" role="alert">{{ error() }}</p>
   }
 
+  @if (selectedSource(); as source) {
+    <!-- The controls belong where the source is being inspected, not
+         only in the sidebar: this is the screen where you decide whether
+         it needs re-syncing. -->
+    <div class="source-bar">
+      <div class="source-id">
+        <span class="source-name">{{ source.name }}</span>
+        <span class="dot" [class]="source.status"></span>
+        <span class="source-state">{{ sourceStateLabel(source) }}</span>
+      </div>
+      <div class="source-actions">
+        <span class="source-stat">
+          <b>{{ source.embedded_chunk_count }}</b> / {{ source.chunk_count }} embedded
+        </span>
+        <button type="button" [disabled]="syncing()" (click)="syncSelected()">
+          {{ syncing() ? 'Queuing…' : 'Sync now' }}
+        </button>
+      </div>
+    </div>
+  }
+
   <div class="panes">
     <nav class="pane sources" aria-label="Sources">
       <p class="pane-title">Sources</p>
@@ -16,7 +37,7 @@
           type="button"
           class="row"
           [class.selected]="selectedSourceId() === source.id"
-          (click)="selectSource(source.id)"
+          (click)="openSource(source.id)"
         >
           <span class="row-name">{{ source.name }}</span>
           <span class="row-meta">{{ source.chunk_count }} chunks</span>
@@ -83,8 +104,13 @@
           <p class="pane-empty">Loading…</p>
         } @else {
           @for (chunk of visibleChunks(); track chunk.id) {
-            <article class="chunk">
-              <header>
+            <article class="chunk" [class.open]="expandedChunkId() === chunk.id">
+              <button
+                type="button"
+                class="chunk-head"
+                [attr.aria-expanded]="expandedChunkId() === chunk.id"
+                (click)="toggleChunk(chunk.id)"
+              >
                 <span class="chunk-n">#{{ chunk.index }}</span>
                 <span class="chunk-heading">{{ chunk.heading_path || '(no heading)' }}</span>
                 <span class="chunk-meta">
@@ -93,9 +119,12 @@
                 @if (!chunk.embedded) {
                   <span class="chunk-flag">not embedded</span>
                 }
-              </header>
-              <pre>{{ chunk.content }}</pre>
-              @if (chunk.content_with_heading !== chunk.content) {
+              </button>
+              <!-- Collapsed shows a clamped preview and expanded shows the
+                   whole thing. Neither scrolls on its own, so the page is
+                   the only thing that moves under the pointer. -->
+              <pre [class.clamped]="expandedChunkId() !== chunk.id">{{ chunk.content }}</pre>
+              @if (expandedChunkId() === chunk.id && chunk.content_with_heading !== chunk.content) {
                 <!-- The gap between the file's text and what was embedded.
                      Every chunk split below a heading has one, and it is
                      precisely what made those chunks unfindable before. -->

@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import type { IndexedChunk, SourceDocument } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
@@ -22,6 +22,7 @@ export class CorpusPage implements OnInit {
   protected readonly sourcesService = inject(SourcesService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   protected readonly documents = signal<SourceDocument[]>([]);
   protected readonly chunks = signal<IndexedChunk[]>([]);
@@ -36,6 +37,10 @@ export class CorpusPage implements OnInit {
    * split off below a heading. Worth isolating: those are the ones that
    * carry no date or section of their own in `content`. */
   protected readonly onlyDerived = signal(false);
+  /** Chunks are collapsed to a preview until opened. Expanding in place
+   * instead of scrolling inside each card is what removes the nested
+   * scroll: a card is either short, or tall and scrolled by the page. */
+  protected readonly expandedChunkId = signal<string | null>(null);
 
   protected readonly selectedDocument = computed(() =>
     this.documents().find((d) => d.id === this.selectedDocumentId()),
@@ -72,6 +77,18 @@ export class CorpusPage implements OnInit {
     });
   }
 
+  /** Called from the corpus's own source list. Goes through the router
+   * so the URL carries the selection — otherwise reloading or sharing
+   * the page silently lands on a different source than the one on
+   * screen. The queryParamMap subscription above does the actual work. */
+  protected async openSource(sourceId: string): Promise<void> {
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { source: sourceId },
+      replaceUrl: true,
+    });
+  }
+
   protected async selectSource(sourceId: string): Promise<void> {
     this.selectedSourceId.set(sourceId);
     this.selectedDocumentId.set(null);
@@ -89,8 +106,36 @@ export class CorpusPage implements OnInit {
     }
   }
 
+  protected readonly syncing = signal(false);
+
+  protected sourceStateLabel(source: { status: string }): string {
+    if (source.status === 'error') return 'last sync failed';
+    if (source.status === 'pending') return 'never synced';
+    if (source.status === 'syncing') return 'syncing now';
+    return 'ready';
+  }
+
+  protected async syncSelected(): Promise<void> {
+    const sourceId = this.selectedSourceId();
+    if (!sourceId) return;
+    this.syncing.set(true);
+    try {
+      await this.sourcesService.sync(sourceId);
+      await this.sourcesService.refreshOne(sourceId);
+    } catch {
+      this.error.set("Couldn't queue a sync for that source.");
+    } finally {
+      this.syncing.set(false);
+    }
+  }
+
+  protected toggleChunk(chunkId: string): void {
+    this.expandedChunkId.update((current) => (current === chunkId ? null : chunkId));
+  }
+
   protected async selectDocument(documentId: string): Promise<void> {
     this.selectedDocumentId.set(documentId);
+    this.expandedChunkId.set(null);
     this.chunks.set([]);
     this.nextPage = 1;
     await this.loadMore();
@@ -114,6 +159,10 @@ export class CorpusPage implements OnInit {
   }
 
   protected readonly hasMore = computed(() => this.chunks().length < this.totalChunks());
+
+  protected readonly selectedSource = computed(() =>
+    this.sourcesService.sources().find((s) => s.id === this.selectedSourceId()),
+  );
 
   /** A document is only fully searchable once every chunk has a vector. */
   protected coverage(document: SourceDocument): number | null {
