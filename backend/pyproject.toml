@@ -62,8 +62,8 @@ mypy_path = "."
 ignore_missing_imports = true
 # tests/ excluded: factory_boy's DjangoModelFactory returns model instances
 # via metaclass magic mypy can't see, so every `SomeFactory()` call type-checks
-# as `SomeFactory` instead of the model it creates. Gradual typing (per the
-# roadmap) is scoped to core/ and rag/ anyway, not test code.
+# as `SomeFactory` instead of the model it creates. Gradual typing is
+# scoped to core/ and rag/ anyway, not test code.
 exclude = ["migrations/", "tests/"]
 
 [tool.django-stubs]

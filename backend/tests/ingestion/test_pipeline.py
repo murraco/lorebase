@@ -42,8 +42,8 @@ def test_section_boundary_pattern_splits_otherwise_headingless_content() -> None
 
 
 def test_short_entries_merge_but_both_dates_survive_in_the_merged_content() -> None:
-    # HeadingChunker merges consecutive under-min_tokens pieces (existing
-    # behavior, see docs/roadmap.md's deuda técnica) — heading_path only
+    # HeadingChunker merges consecutive under-min_tokens pieces, and
+    # heading_path only
     # keeps the first piece's label. That's fine for grounding: the date
     # text itself, not heading_path, is what actually reaches the
     # embedding/search/prompt, and it's still right there in the content.

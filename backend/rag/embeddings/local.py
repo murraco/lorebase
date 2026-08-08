@@ -7,7 +7,7 @@ class LocalEmbeddingProvider(EmbeddingProvider):
     """A bi-encoder running entirely in-process via sentence-transformers
     — no external API, so no rate limit. Same motivation as
     rag.reranking.local.LocalReranker: Voyage's free-tier rate limit
-    repeatedly broke real usage (see docs/roadmap.md, Etapa 9/10 notes).
+    repeatedly broke real usage.
 
     Default model (settings.LOCAL_EMBEDDING_MODEL) is
     intfloat/multilingual-e5-large: 100 languages, MIT licensed, and —

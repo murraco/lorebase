@@ -24,8 +24,10 @@ class Chunk(BaseModel):
     # DB-computed and always in sync with `content`, by Postgres itself —
     # no trigger to maintain, no risk of drifting out of date.
     # config="english" for now, even though notes are realistically a mix
-    # of Spanish and English — proper per-document language config is
-    # tracked as known debt in the roadmap rather than built speculatively.
+    # of Spanish and English — proper per-document language config
+    # (a `language` column plus detection) is deliberately deferred until
+    # lexical search measurably underperforms, rather than built
+    # speculatively.
     search_vector = models.GeneratedField(
         expression=SearchVector("content", config="english"),
         output_field=SearchVectorField(),

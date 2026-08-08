@@ -17,8 +17,8 @@ def test_chunk_content_matches_the_source_lines_for_its_range() -> None:
 def test_short_sections_merge_forward() -> None:
     """The worked example: a short intro and a short trailing section
     around one normal-sized section. S1 merges into S2 (buffer still short
-    after S1 alone); S3 is last, so nothing merges into it (see the
-    'merge only merges forward' entry in the roadmap's known-debt list).
+    after S1 alone); S3 is last, so nothing merges into it — merging
+    only ever runs forward, so a short trailing section stays short.
     """
     text = "\n".join(
         [

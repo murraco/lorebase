@@ -49,7 +49,7 @@ def test_surfaces_a_lexical_only_and_a_dense_only_match() -> None:
 
 def test_a_chunk_matching_both_lists_outranks_one_matching_only_one() -> None:
     """The RRF property worth internalizing: consensus across both lists
-    beats being #1 in just one — see the roadmap notes for the k=60 math.
+    beats being #1 in just one, which is what the k=60 damping buys.
     """
     workspace = WorkspaceFactory()
     document = DocumentFactory(source__workspace=workspace)
