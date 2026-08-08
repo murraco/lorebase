@@ -47,11 +47,14 @@ def _serialize_citations(message: Message) -> list[dict[str, object]]:
             "chunk_id": str(citation.chunk_id),
             "path": citation.chunk.document.path,
             "heading_path": citation.chunk.heading_path,
+            "source_name": citation.chunk.document.source.name,
+            "rank": citation.rank,
+            "score": citation.score,
             "start_line": citation.chunk.start_line,
             "end_line": citation.chunk.end_line,
             "content": citation.chunk.content,
         }
-        for citation in message.citations.select_related("chunk__document")
+        for citation in message.citations.select_related("chunk__document__source")
     ]
 
 

@@ -9,6 +9,9 @@ class CitationSerializer(serializers.ModelSerializer):
     # legible in a citation chip than "notes/journal.md:412-438" alone,
     # and already computed at ingestion time.
     heading_path = serializers.CharField(source="chunk.heading_path", read_only=True)
+    # Retrieval provenance, so the evidence panel can show where a
+    # chunk placed and what it scored rather than just naming it.
+    source_name = serializers.CharField(source="chunk.document.source.name", read_only=True)
     start_line = serializers.IntegerField(source="chunk.start_line", read_only=True)
     end_line = serializers.IntegerField(source="chunk.end_line", read_only=True)
     # The cited passage itself — lets a citation chip show the fragment it
@@ -18,7 +21,18 @@ class CitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Citation
-        fields = ["id", "chunk", "path", "heading_path", "start_line", "end_line", "content"]
+        fields = [
+            "id",
+            "chunk",
+            "path",
+            "heading_path",
+            "source_name",
+            "rank",
+            "score",
+            "start_line",
+            "end_line",
+            "content",
+        ]
 
 
 class MessageSerializer(serializers.ModelSerializer):

@@ -51,8 +51,20 @@ class Citation(BaseModel):
 
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="citations")
     chunk = models.ForeignKey(Chunk, on_delete=models.CASCADE, related_name="citations")
+    # 1-based position of this chunk in the context that was sent to the
+    # model, so a reader can tell the top hit from the fifth one. Also
+    # what Meta.ordering sorts on: without it the queryset order was
+    # undefined, which is fine for unordered chips but wrong the moment
+    # citations are numbered.
+    rank = models.PositiveIntegerField(default=0)
+    # The retriever's score for that chunk. Nullable because it is not
+    # comparable across strategies — a cross-encoder logit, an RRF sum and
+    # a ts_rank value live on different scales — so it is provenance to
+    # show, never a number to threshold on.
+    score = models.FloatField(null=True, blank=True)
 
     class Meta:
+        ordering = ["rank"]
         constraints = [
             models.UniqueConstraint(
                 fields=["message", "chunk"], name="unique_citation_per_message_chunk"

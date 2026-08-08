@@ -37,6 +37,13 @@ def ask(conversation: Conversation, question: str) -> Message:
 
     context = build_context(results)
     chunks_by_id = {str(result.chunk.id): result.chunk for result in results}
+    # Retrieval provenance, keyed the same way, so a citation can carry
+    # where the chunk placed and what it scored. Captured here because
+    # `results` is the only place that knows it — once we drop to
+    # chunk_ids the ranking is gone.
+    provenance = {
+        str(result.chunk.id): (rank, result.score) for rank, result in enumerate(results, start=1)
+    }
     user_content = f"{context}\n\nQuestion: {question}" if results else f"Question: {question}"
 
     start = time.monotonic()
@@ -54,6 +61,11 @@ def ask(conversation: Conversation, question: str) -> Message:
     # else — a typo'd id, a chunk cited from an earlier turn, a plausible
     # guess — is silently dropped, never persisted as a Citation.
     validated_chunk_ids = [chunk_id for chunk_id in claimed_chunk_ids if chunk_id in chunks_by_id]
+    # Sorted by retrieval position rather than by the order the model
+    # happened to list them: the numbering a reader sees should mean
+    # "how the retriever ranked this", which is a fact, not "the order the
+    # model mentioned it", which is arbitrary.
+    validated_chunk_ids.sort(key=lambda chunk_id: provenance[chunk_id][0])
 
     with transaction.atomic():
         message = Message.objects.create(
@@ -66,7 +78,12 @@ def ask(conversation: Conversation, question: str) -> Message:
             cost=_estimate_cost(result.input_tokens, result.output_tokens),
         )
         Citation.objects.bulk_create(
-            Citation(message=message, chunk=chunks_by_id[chunk_id])
+            Citation(
+                message=message,
+                chunk=chunks_by_id[chunk_id],
+                rank=provenance[chunk_id][0],
+                score=provenance[chunk_id][1],
+            )
             for chunk_id in validated_chunk_ids
         )
     return message

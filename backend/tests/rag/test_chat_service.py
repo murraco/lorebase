@@ -167,3 +167,49 @@ def test_truncates_a_long_first_question_into_the_title() -> None:
     conversation.refresh_from_db()
     assert len(conversation.title) <= 60
     assert conversation.title.endswith("…")
+
+
+def test_citations_record_their_retrieval_rank_and_score() -> None:
+    conversation = ConversationFactory()
+    document = DocumentFactory(source__workspace=conversation.workspace)
+    top, second = (
+        ChunkFactory(document=document, content="first"),
+        ChunkFactory(document=document, content="second"),
+    )
+    results = [
+        RetrievalResult(chunk=top, score=0.91),
+        RetrievalResult(chunk=second, score=0.42),
+    ]
+
+    message = _ask_with_stubbed_retrieval(
+        conversation,
+        "q",
+        results,
+        {"answer": "a", "cited_chunk_ids": [str(second.id), str(top.id)]},
+    )
+
+    citations = list(message.citations.all())
+    # Ordered by retrieval position, not by the order the model listed
+    # them — the model cited the second chunk first here.
+    assert [c.chunk_id for c in citations] == [top.id, second.id]
+    assert [c.rank for c in citations] == [1, 2]
+    assert citations[0].score == pytest.approx(0.91)
+    assert citations[1].score == pytest.approx(0.42)
+
+
+def test_citation_rank_reflects_position_in_the_full_context() -> None:
+    """A chunk retrieved third keeps rank 3 even when the two above it
+    were never cited — the number means "how the retriever ranked this",
+    which is only true if it survives the model's selection.
+    """
+    conversation = ConversationFactory()
+    document = DocumentFactory(source__workspace=conversation.workspace)
+    chunks = [ChunkFactory(document=document, content=f"c{i}") for i in range(3)]
+    results = [RetrievalResult(chunk=c, score=1.0 - i / 10) for i, c in enumerate(chunks)]
+
+    message = _ask_with_stubbed_retrieval(
+        conversation, "q", results, {"answer": "a", "cited_chunk_ids": [str(chunks[2].id)]}
+    )
+
+    citation = message.citations.get()
+    assert citation.rank == 3
