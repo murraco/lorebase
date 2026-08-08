@@ -75,6 +75,18 @@
               }
             </div>
             <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
+            @if (source.status === 'pending' || source.status === 'error') {
+              <button
+                type="button"
+                class="sync-btn"
+                title="Sync now"
+                aria-label="Sync now"
+                [disabled]="syncingSourceId() === source.id"
+                (click)="syncSource(source)"
+              >
+                ⟳
+              </button>
+            }
             <button
               type="button"
               class="delete-btn"

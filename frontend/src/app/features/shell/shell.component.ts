@@ -38,6 +38,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   protected readonly showAddSourceModal = signal(false);
   protected readonly showSystemStatus = signal(false);
+  protected readonly syncingSourceId = signal<string | null>(null);
   protected readonly sourcePendingDeletion = signal<Source | null>(null);
   protected readonly conversationPendingDeletion = signal<Conversation | null>(null);
   protected readonly deleting = signal(false);
@@ -66,8 +67,13 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (this.pollHandle) clearInterval(this.pollHandle);
   }
 
+  /** "pending" is deliberately NOT in flight: it means the source was
+   * created and never synced, so nothing is happening and nothing will
+   * unless someone starts it. Treating it as in-flight showed a permanent
+   * "Syncing…" on a source that had never run, and kept the poll below
+   * firing every few seconds forever. */
   protected isInFlight(source: Source): boolean {
-    if (source.status === 'syncing' || source.status === 'pending') return true;
+    if (source.status === 'syncing') return true;
     return source.chunk_count > 0 && source.embedded_chunk_count < source.chunk_count;
   }
 
@@ -81,9 +87,26 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   protected statusLabel(source: Source): string | null {
     if (source.status === 'error') return 'Failed';
-    if (source.status === 'syncing' || source.status === 'pending') return 'Syncing…';
+    if (source.status === 'pending') return 'Not synced yet';
+    if (source.status === 'syncing') return 'Syncing…';
     const progress = this.embeddingProgress(source);
     return progress === null ? null : `Indexing ${progress}%`;
+  }
+
+  /** A "pending" source has no way forward from the UI otherwise — the
+   * sync endpoint existed from the start but nothing ever called it
+   * outside the add-source flow. */
+  protected async syncSource(source: Source): Promise<void> {
+    this.syncingSourceId.set(source.id);
+    try {
+      await this.sourcesService.sync(source.id);
+      await this.sourcesService.refreshOne(source.id);
+    } catch {
+      // The next poll reflects whatever actually happened; a failed
+      // enqueue surfaces as the source's own error status.
+    } finally {
+      this.syncingSourceId.set(null);
+    }
   }
 
   protected async confirmDelete(): Promise<void> {

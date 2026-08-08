@@ -126,6 +126,7 @@
 }
 
 .section-label {
+  flex-shrink: 0;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -139,6 +140,7 @@
   gap: 8px;
   padding: 8px;
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .source:hover {
@@ -230,13 +232,19 @@
   overflow-y: auto;
 }
 
-/* The delete button only appears on hover/focus-within, so the list stays
-   a clean column of titles at rest. focus-within (not just hover) keeps it
-   reachable by keyboard. */
+/* Two things at once here:
+   - flex-shrink: 0 is load-bearing. Children of a flex column with a
+     bounded height get squeezed below their content height at the
+     default flex-shrink: 1, instead of making the container scroll —
+     the text then spills out and overlaps the neighbouring rows.
+   - The delete button only shows on hover/focus-within, so the list
+     stays a clean column of titles at rest. focus-within (not just
+     hover) is what keeps it reachable by keyboard. */
 .conversation-row {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .conversation-row .delete-btn {
@@ -254,6 +262,7 @@
 }
 
 .conversation {
+  flex-shrink: 0;
   font-size: 13.5px;
   color: var(--color-ink-soft);
   text-decoration: none;
@@ -347,6 +356,32 @@
   cursor: default;
 }
 
+/* Only rendered for sources that are "pending" or "error" — the states
+   where nothing is happening and nothing will unless it's started. */
+.sync-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.sync-btn:hover:not(:disabled) {
+  color: var(--color-moss);
+  background: var(--color-paper);
+}
+
+.sync-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .delete-btn {
   border: none;
   background: none;
@@ -384,6 +419,7 @@
 }
 
 .add-btn {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
