@@ -20,7 +20,11 @@ def embed_pending_chunks(batch_size: int = 100) -> int:
         if not chunks:
             break
 
-        vectors = provider.embed_documents([chunk.content for chunk in chunks])
+        # content_with_heading, not content: without the heading
+        # breadcrumb, every chunk after the first of a split section is
+        # embedded with no idea what section it belongs to. See the
+        # property's docstring.
+        vectors = provider.embed_documents([chunk.content_with_heading for chunk in chunks])
         for chunk, vector in zip(chunks, vectors, strict=True):
             chunk.embedding = vector
         Chunk.objects.bulk_update(chunks, ["embedding"])

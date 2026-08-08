@@ -49,5 +49,29 @@ class Chunk(BaseModel):
             ),
         ]
 
+    @property
+    def content_with_heading(self) -> str:
+        """What retrieval should actually work over: the chunk's text with
+        its heading breadcrumb prepended.
+
+        Deliberately not folded into `content` itself — that stays a
+        faithful slice of the source file, which is what makes
+        start_line/end_line (and therefore every citation) exact. This is
+        a derived view for embedding and prompting only.
+
+        It exists because a chunk's own text frequently does NOT contain
+        its heading: HeadingChunker splits any section over max_tokens at
+        paragraph boundaries, and every piece after the first starts below
+        the heading line, so it cannot include it. In a dated journal that
+        means most chunks of a long entry have no date anywhere in
+        `content` — the date lives only in heading_path. Embedding and
+        prompting on `content` alone made those chunks effectively
+        undateable, which is the root cause DateAwareRetriever was
+        working around from the other end.
+        """
+        if not self.heading_path:
+            return self.content
+        return f"{self.heading_path}\n\n{self.content}"
+
     def __str__(self) -> str:
         return f"{self.document} #{self.index}"

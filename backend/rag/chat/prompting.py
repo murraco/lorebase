@@ -33,6 +33,7 @@ ANSWER_TOOL = ToolSpec(
 
 def build_context(results: list[RetrievalResult]) -> str:
     return "\n\n".join(
-        f"[{result.chunk.id}] (from {result.chunk.document.path})\n{result.chunk.content}"
+        f"[{result.chunk.id}] (from {result.chunk.document.path})\n"
+        f"{result.chunk.content_with_heading}"
         for result in results
     )

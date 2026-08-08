@@ -1,10 +1,28 @@
+from unittest.mock import patch
+
 import pytest
 
+from ingestion.factories import ChunkFactory
 from ingestion.pipeline import process_document
 from rag.embeddings.service import embed_pending_chunks
 from sources.factories import DocumentFactory
 
 pytestmark = pytest.mark.django_db
+
+
+def test_embeds_the_heading_path_along_with_the_content() -> None:
+    """What gets embedded is content_with_heading, not content — otherwise
+    a chunk split off the middle of a dated section carries no date into
+    its vector at all.
+    """
+    ChunkFactory(heading_path="2025-07-21 > Work", content="Finished the refactor.")
+
+    with patch("rag.embeddings.service.get_embedding_provider") as mock_get_provider:
+        mock_get_provider.return_value.embed_documents.return_value = [[0.0] * 1024]
+        embed_pending_chunks()
+
+    embedded_texts = mock_get_provider.return_value.embed_documents.call_args[0][0]
+    assert embedded_texts == ["2025-07-21 > Work\n\nFinished the refactor."]
 
 
 def test_embeds_all_pending_chunks() -> None:
