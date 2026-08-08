@@ -11,6 +11,10 @@ def get_reranker() -> Reranker:
         from rag.reranking.voyage import VoyageReranker
 
         return VoyageReranker()
+    if settings.RERANK_PROVIDER == "local":
+        from rag.reranking.local import LocalReranker
+
+        return LocalReranker()
     if settings.RERANK_PROVIDER == "fake":
         from rag.reranking.fake import FakeReranker
 

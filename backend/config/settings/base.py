@@ -45,11 +45,17 @@ INSTALLED_APPS = [
 # 2048/512/256) — verified against https://docs.voyageai.com/docs/embeddings.
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1024)
 
-# "voyage" or "fake" (the fake provider is deterministic and makes no
-# network calls — used in tests/CI so nothing needs a real API key).
+# "voyage", "local", or "fake". "local" runs a bi-encoder in-process via
+# sentence-transformers — no external API, no rate limit — chosen after
+# Voyage's free-tier rate limit repeatedly broke real usage (see
+# docs/roadmap.md, Etapa 9/10 notes).
 EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="voyage")
 EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="voyage-4")
 VOYAGE_API_KEY = env("VOYAGE_API_KEY", default="")
+# Multilingual, MIT licensed, and — the deciding factor — 1024-dimensional
+# natively, matching EMBEDDING_DIMENSIONS above exactly (no schema
+# migration needed to switch providers). See rag/embeddings/local.py.
+LOCAL_EMBEDDING_MODEL = env("LOCAL_EMBEDDING_MODEL", default="intfloat/multilingual-e5-large")
 # $/million tokens, for cost logging only — not wired into any billing
 # path. None by default rather than a guessed number: verified once
 # against https://docs.voyageai.com/docs/pricing (voyage-4: $0.06/M as of
@@ -59,11 +65,19 @@ EMBEDDING_COST_PER_MILLION_TOKENS_USD = env.float(
     "EMBEDDING_COST_PER_MILLION_TOKENS_USD", default=0.0
 )
 
-# "voyage" or "fake", same idea as EMBEDDING_PROVIDER above.
+# "voyage", "local", or "fake". "local" runs a cross-encoder in-process
+# via sentence-transformers — no external API, no rate limit — chosen
+# after Voyage's free-tier rate limit repeatedly turned into either a 500
+# or degraded retrieval quality (see docs/roadmap.md, Etapa 10 notes).
 RERANK_PROVIDER = env("RERANK_PROVIDER", default="voyage")
 # Verified against https://docs.voyageai.com/docs/pricing: rerank-2.5 is
 # current (rerank-2 is legacy), $0.05/M tokens, 200M free.
 RERANK_MODEL = env("RERANK_MODEL", default="rerank-2.5")
+# Multilingual (14 languages via MMARCO, including English and Spanish),
+# not the smaller English-only ms-marco-MiniLM default — the real notes
+# here mix both. Standard architecture, no trust_remote_code needed —
+# see rag/reranking/local.py for why that mattered in practice.
+LOCAL_RERANK_MODEL = env("LOCAL_RERANK_MODEL", default="cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
 
 # "lexical", "dense", "hybrid", or "hybrid_reranked".
 RETRIEVAL_STRATEGY = env("RETRIEVAL_STRATEGY", default="hybrid_reranked")

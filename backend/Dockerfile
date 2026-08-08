@@ -27,6 +27,13 @@ RUN groupadd --system app && useradd --system --gid app app
 COPY --from=builder --chown=app:app /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
+# The `app` user has no home directory (--system, no -m/-d) — Hugging
+# Face's cache defaults to ~/.cache, which would resolve somewhere
+# unwritable. Pointed explicitly at a path under /app, which is already
+# chowned to app:app, and mounted as a named volume in docker-compose.yml
+# so the (multi-hundred-MB) reranker model persists across restarts
+# instead of re-downloading every time.
+ENV HF_HOME=/app/.cache/huggingface
 WORKDIR /app
 
 USER app

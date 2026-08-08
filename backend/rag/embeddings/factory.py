@@ -17,6 +17,10 @@ def get_embedding_provider() -> EmbeddingProvider:
         from rag.embeddings.voyage import VoyageEmbeddingProvider
 
         return VoyageEmbeddingProvider()
+    if settings.EMBEDDING_PROVIDER == "local":
+        from rag.embeddings.local import LocalEmbeddingProvider
+
+        return LocalEmbeddingProvider()
     if settings.EMBEDDING_PROVIDER == "fake":
         from rag.embeddings.fake import FakeEmbeddingProvider
 
