@@ -272,6 +272,7 @@ export interface components {
             output_tokens?: number | null;
             /** Format: decimal */
             cost?: string | null;
+            retrieved_count?: number;
             readonly citations: components["schemas"]["Citation"][];
             /** Format: date-time */
             readonly created_at: string;
@@ -400,6 +401,11 @@ export interface components {
             documents: number;
             chunks: number;
             embedded_chunks: number;
+            answers: number;
+            avg_latency_ms: number | null;
+            /** Format: double */
+            avg_citations_per_answer: number | null;
+            ungrounded_answers: number;
             using_fake_providers: boolean;
         };
         /**

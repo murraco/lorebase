@@ -1,24 +1,11 @@
-/* Two columns: the conversation, and the evidence it stands on. The
-   evidence column only exists once there is an answer to support, so an
-   empty chat and a first question stay a single centred column. */
+/* A single reading column. Sources live in the margin of each answer
+   rather than in a panel of their own — see .memo-notes. */
 .chat {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   height: 100%;
   min-height: 0;
-}
-
-.chat.has-evidence {
-  grid-template-columns: minmax(0, 1fr) 300px;
-}
-
-/* Below this the two columns stop being readable side by side, so the
-   evidence drops under the conversation instead of squeezing it. */
-@media (max-width: 1100px) {
-  .chat.has-evidence {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* The conversation keeps the column behaviour the composer relies on:
@@ -76,30 +63,6 @@
   color: var(--text-muted);
   margin: 0 auto;
   max-width: 46ch;
-}
-
-.msg {
-  max-width: 80%;
-}
-
-.msg.user {
-  align-self: flex-end;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  padding: 11px 15px;
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
-  font-size: var(--text-base);
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.msg.assistant {
-  align-self: flex-start;
-  max-width: 100%;
-  font-family: var(--font-serif);
-  font-size: var(--text-lg);
-  line-height: 1.7;
-  color: var(--text);
 }
 
 .rendered-markdown :first-child {
@@ -309,48 +272,6 @@
   color: var(--accent);
 }
 
-.cites {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  font-family: var(--font-sans);
-}
-
-.cites-label {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  margin-right: 2px;
-}
-
-/* A footnote marker, not a chip: the detail moved to the evidence
-   column, so what's left inline is just the pointer. */
-.cite {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  background: var(--evidence-soft);
-  color: var(--evidence-text);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    border-color var(--transition),
-    background var(--transition);
-}
-
-.cite:hover,
-.cite.focused {
-  border-color: var(--evidence);
-}
-
 .typing-indicator {
   display: inline-flex;
   align-items: center;
@@ -449,4 +370,137 @@
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* The question heads the document that answers it. */
+.query {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 12px 0 0;
+  max-width: 34ch;
+  text-wrap: balance;
+}
+
+.memo {
+  border-top: 2px solid var(--text);
+  padding-top: 12px;
+}
+
+/* Provenance, in mono, above the prose. Uppercase keys, weighted values:
+   the figures have to survive next to 18px serif. */
+.memo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.memo-meta .k {
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-right: 5px;
+}
+
+.memo-meta .v {
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* An answer citing nothing is the one number worth flagging inline. */
+.memo-meta .v.none {
+  color: var(--danger);
+}
+
+.memo-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 28px;
+}
+
+/* Below this the margin has nowhere to go, so the notes fall under the
+   prose instead of being crushed into a column two words wide. */
+@media (max-width: 900px) {
+  .memo-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+.memo-prose {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.memo-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+
+@media (max-width: 900px) {
+  .memo-notes {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 12px 0 0;
+  }
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid var(--evidence);
+  padding: 0 0 0 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.note.focused {
+  background: var(--evidence-soft);
+}
+
+.note-n {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--evidence-text);
+}
+
+.note-h {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.note-m {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.note-empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--danger);
 }

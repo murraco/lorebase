@@ -3,7 +3,7 @@
      are messages the thread takes the space and the composer docks to the
      bottom. Doing this with a modifier class rather than two copies of the
      markup keeps the textarea's state (and focus) across the transition. -->
-<div class="chat" [class.is-empty]="isEmpty()" [class.has-evidence]="evidence().length > 0">
+<div class="chat" [class.is-empty]="isEmpty()">
   <div class="conversation-column">
     <div class="thread">
       @if (loadError()) {
@@ -21,37 +21,86 @@
       }
 
       @for (message of messages(); track message.id) {
-        <div class="msg" [class]="message.role">
-          @if (message.pending) {
-            <span class="typing-indicator" aria-label="Thinking">
-              <span></span><span></span><span></span>
-            </span>
-          } @else if (message.role === 'assistant') {
-            <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
-          } @else {
-            {{ message.content }}
-          }
-          @if (message.citations.length > 0) {
-            <div class="cites">
-              <span class="cites-label">Grounded in</span>
-              @for (citation of message.citations; track citation.id; let i = $index) {
-                <button
-                  class="cite"
-                  type="button"
-                  [class.focused]="focusedCitationId() === citation.id"
-                  [attr.aria-label]="'Source ' + (i + 1) + ': ' + citation.path"
-                  (click)="toggleCitation(citation.id)"
-                  (mouseenter)="focusedCitationId.set(citation.id)"
-                  (mouseleave)="focusedCitationId.set(null)"
-                  (focus)="focusedCitationId.set(citation.id)"
-                  (blur)="focusedCitationId.set(null)"
+        @if (message.role === 'user') {
+          <!-- The question is a heading for the memo that follows, not a
+             speech bubble from someone talking. -->
+          <h2 class="query">{{ message.content }}</h2>
+        } @else if (message.pending) {
+          <span class="typing-indicator" aria-label="Working">
+            <span></span><span></span><span></span>
+          </span>
+        } @else {
+          <article class="memo">
+            <!-- Provenance header: what it took to produce the paragraph
+               below. Every figure comes off the persisted message, so
+               nothing here is decorative. -->
+            <div class="memo-meta">
+              @if (message.retrievedCount) {
+                <span>
+                  <span class="k">retrieved</span>
+                  <span class="v">{{ message.retrievedCount }}</span>
+                </span>
+              }
+              <span>
+                <span class="k">cited</span>
+                <span class="v" [class.none]="message.citations.length === 0">
+                  {{ message.citations.length }}
+                </span>
+              </span>
+              @if (latencySeconds(message.latencyMs); as latency) {
+                <span
+                  ><span class="k">took</span><span class="v">{{ latency }}s</span></span
                 >
-                  {{ i + 1 }}
-                </button>
+              }
+              @if (formatCost(message.cost); as cost) {
+                <span
+                  ><span class="k">cost</span><span class="v">{{ cost }}</span></span
+                >
               }
             </div>
-          }
-        </div>
+
+            <div class="memo-body">
+              <div
+                class="memo-prose rendered-markdown"
+                [innerHTML]="message.content | markdown"
+              ></div>
+
+              @if (message.citations.length > 0) {
+                <!-- Margin notes, aligned with the prose they support. This
+                   is the whole idea: the citation sits beside the claim,
+                   the way a footnote does in a printed document. -->
+                <aside class="memo-notes" aria-label="Sources">
+                  @for (citation of message.citations; track citation.id; let i = $index) {
+                    <button
+                      type="button"
+                      class="note"
+                      [class.focused]="focusedCitationId() === citation.id"
+                      (click)="toggleCitation(citation.id)"
+                      (mouseenter)="focusedCitationId.set(citation.id)"
+                      (mouseleave)="focusedCitationId.set(null)"
+                    >
+                      <span class="note-n">{{ i + 1 }}</span>
+                      <span class="note-h">{{ citation.heading_path || citation.path }}</span>
+                      <span class="note-m">{{ citation.path }}</span>
+                      <span class="note-m">
+                        l.{{ citation.start_line }}–{{ citation.end_line }}
+                        @if (citation.score !== null && citation.score !== undefined) {
+                          · {{ citation.score.toFixed(3) }}
+                        }
+                      </span>
+                    </button>
+                  }
+                </aside>
+              } @else {
+                <aside class="memo-notes" aria-label="Sources">
+                  <p class="note-empty">
+                    No source was cited for this answer. Treat it as unverified.
+                  </p>
+                </aside>
+              }
+            </div>
+          </article>
+        }
       }
     </div>
 
@@ -87,14 +136,4 @@
       }
     </div>
   </div>
-
-  @if (evidence().length > 0) {
-    <lorebase-evidence-panel
-      [citations]="evidence()"
-      [focusedId]="focusedCitationId()"
-      [expandedId]="expandedCitationId()"
-      (focusChanged)="focusedCitationId.set($event)"
-      (toggled)="toggleCitation($event)"
-    />
-  }
 </div>
