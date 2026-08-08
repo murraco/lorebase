@@ -33,7 +33,7 @@
 .thread {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -384,22 +384,54 @@
   white-space: nowrap;
 }
 
-/* The question heads the document that answers it. */
+/* The question opens a turn. Without the label and the rule above it,
+   a thread of several exchanges reads as one continuous article — every
+   question looks like just another section heading. */
 .query {
+  display: block;
+  margin: 26px 0 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+/* No rule above the first turn: there is nothing to separate it from. */
+.thread > .query:first-of-type {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.query-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 7px;
+}
+
+.query h2 {
   font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.01em;
   color: var(--text);
-  margin: 12px 0 0;
+  margin: 0;
   max-width: 34ch;
   text-wrap: balance;
 }
 
+/* Answers sit inside the turn the question opened, indented and set on
+   a raised ground so the boundary between "what I asked" and "what it
+   answered" is a surface change, not just more text. */
 .memo {
-  border-top: 2px solid var(--text);
-  padding-top: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 13px 16px 15px;
 }
 
 /* Provenance, in mono, above the prose. Uppercase keys, weighted values:

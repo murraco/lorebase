@@ -22,9 +22,14 @@
 
       @for (message of messages(); track message.id) {
         @if (message.role === 'user') {
-          <!-- The question is a heading for the memo that follows, not a
-             speech bubble from someone talking. -->
-          <h2 class="query">{{ message.content }}</h2>
+          <!-- Opens a turn. The label and the rule above it are what keep
+               two consecutive exchanges from reading as one long
+               article, with every question looking like a section
+               heading. -->
+          <header class="query">
+            <span class="query-label">Question</span>
+            <h2>{{ message.content }}</h2>
+          </header>
         } @else if (message.pending) {
           <span class="typing-indicator" aria-label="Working">
             <span></span><span></span><span></span>
