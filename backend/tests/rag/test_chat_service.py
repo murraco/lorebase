@@ -131,3 +131,39 @@ def test_works_with_no_retrieval_results() -> None:
 
     assert message.content == "I don't have notes about that."
     assert not message.citations.exists()
+
+
+def test_titles_the_conversation_after_its_first_question() -> None:
+    conversation = ConversationFactory(title="")
+
+    _ask_with_stubbed_retrieval(
+        conversation, "What did I do in July?", [], {"answer": "a", "cited_chunk_ids": []}
+    )
+
+    conversation.refresh_from_db()
+    assert conversation.title == "What did I do in July?"
+
+
+def test_does_not_retitle_the_conversation_on_later_questions() -> None:
+    conversation = ConversationFactory(title="")
+
+    _ask_with_stubbed_retrieval(
+        conversation, "First question", [], {"answer": "a", "cited_chunk_ids": []}
+    )
+    _ask_with_stubbed_retrieval(
+        conversation, "Second question", [], {"answer": "b", "cited_chunk_ids": []}
+    )
+
+    conversation.refresh_from_db()
+    assert conversation.title == "First question"
+
+
+def test_truncates_a_long_first_question_into_the_title() -> None:
+    conversation = ConversationFactory(title="")
+    question = "word " * 40
+
+    _ask_with_stubbed_retrieval(conversation, question, [], {"answer": "a", "cited_chunk_ids": []})
+
+    conversation.refresh_from_db()
+    assert len(conversation.title) <= 60
+    assert conversation.title.endswith("…")
