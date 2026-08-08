@@ -15,22 +15,26 @@
  * call site. With these, a theme is a block of values, not a rewrite.
  */
 :root {
-  /* Near-neutral with a faint cool bias. The previous cream (#f7f4ed)
-     was the colour of aged paper, which — together with a large serif
-     and wide leading — made the whole thing read as a personal diary
-     rather than an instrument. Cooling the ground also makes the warm
-     amber of the evidence stand out more, not less: it is now the only
-     warm thing on screen. */
-  --surface: #f4f4f3;
-  --surface-raised: #fcfcfb;
-  --surface-sunken: #e8e9e9;
+  /* A midpoint. The original cream (#f7f4ed) read as aged paper and
+     pushed the whole thing toward "diary"; the cool grey that replaced
+     it fixed that but went flat, and left the amber of the evidence
+     looking olive by simultaneous contrast against a blue-grey ground.
+     These keep a slight warm bias — enough to stay in the same family
+     as the evidence, not enough to read as paper.
 
-  --text: #16181a;
-  --text-muted: #5d6165;
-  --text-faint: #8a8e92;
+     Everything below shares that bias on purpose: neutrals, ink accent
+     and evidence all sit in a warm hue band, so nothing looks borrowed
+     from another palette. */
+  --surface: #f6f4f0;
+  --surface-raised: #fdfcfa;
+  --surface-sunken: #eae7e1;
 
-  --border: #e0e1e1;
-  --border-strong: #c5c7c8;
+  --text: #1a1917;
+  --text-muted: #625e58;
+  --text-faint: #8d8983;
+
+  --border: #e2ded7;
+  --border-strong: #c8c3ba;
 
   /* Graphite, not a hue: the accent is ink. That leaves the amber of the
      evidence as the only colour on screen, which is exactly where the
@@ -38,26 +42,26 @@
      the interface exists to point at. Forest green, oxblood, indigo and
      teal were all measured and all passed contrast; this is the one that
      doesn't fight the evidence. */
-  --accent: #26292b;
-  --accent-hover: #121416;
-  --accent-soft: #d6d8d9;
-  --accent-tint: #e9eaeb;
-  --accent-contrast: #fcfcfb;
+  --accent: #2a2825;
+  --accent-hover: #141310;
+  --accent-soft: #dad6cf;
+  --accent-tint: #edeae4;
+  --accent-contrast: #fdfcfa;
 
   /* Citations and retrieval provenance only. Deliberately never used for
      a primary action, so "this is evidence" stays unambiguous. */
-  --evidence: #a8701f;
-  --evidence-soft: #f5e7cc;
-  --evidence-text: #5e3f10;
+  --evidence: #a06c22;
+  --evidence-soft: #f2e6cf;
+  --evidence-text: #5a3d13;
 
-  --danger: #a33a34;
-  --danger-soft: #f6e1de;
-  --danger-contrast: #fffdf8;
+  --danger: #a13c33;
+  --danger-soft: #f5e0dc;
+  --danger-contrast: #fdfcfa;
 
-  --overlay: rgba(20, 22, 24, 0.36);
+  --overlay: rgba(26, 24, 20, 0.36);
 
-  --shadow-md: 0 2px 8px rgba(20, 22, 24, 0.07);
-  --shadow-lg: 0 12px 32px rgba(20, 22, 24, 0.14);
+  --shadow-md: 0 2px 8px rgba(26, 24, 20, 0.07);
+  --shadow-lg: 0 12px 32px rgba(26, 24, 20, 0.14);
 
   /* Fraunces for display only — a few glyphs where character pays off.
      Newsreader carries the actual reading, where comfort matters more
@@ -103,32 +107,30 @@
    different product. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #131517;
-    --surface-raised: #1b1e20;
-    --surface-sunken: #0e1012;
+    --surface: #171613;
+    --surface-raised: #1f1e1a;
+    --surface-sunken: #100f0d;
 
-    --text: #e7eaec;
-    --text-muted: #989ea3;
-    --text-faint: #6b7176;
+    --text: #eae7e0;
+    --text-muted: #9d9890;
+    --text-faint: #6d6960;
 
-    --border: #272b2e;
-    --border-strong: #383d41;
+    --border: #2b2925;
+    --border-strong: #3b3833;
 
-    /* Inverted rather than lightened: on a dark surface the ink accent
-       becomes the paper one. */
-    --accent: #c9c2b4;
-    --accent-hover: #e0d9ca;
-    --accent-soft: #34302a;
-    --accent-tint: #23201b;
-    --accent-contrast: #14130f;
+    --accent: #c6c1b7;
+    --accent-hover: #ded9cf;
+    --accent-soft: #33302b;
+    --accent-tint: #22201c;
+    --accent-contrast: #171613;
 
-    --evidence: #d9a253;
-    --evidence-soft: #372b18;
-    --evidence-text: #f0d9ae;
+    --evidence: #d5a05a;
+    --evidence-soft: #362a1a;
+    --evidence-text: #eed9b2;
 
-    --danger: #e07d75;
-    --danger-soft: #3a1f1d;
-    --danger-contrast: #14130f;
+    --danger: #dd7d74;
+    --danger-soft: #3a201d;
+    --danger-contrast: #171613;
 
     --overlay: rgba(0, 0, 0, 0.62);
 
@@ -141,30 +143,30 @@
 
 /* Explicit choice wins over the system preference, in both directions. */
 :root[data-theme='dark'] {
-  --surface: #131517;
-  --surface-raised: #1b1e20;
-  --surface-sunken: #0e1012;
+  --surface: #171613;
+  --surface-raised: #1f1e1a;
+  --surface-sunken: #100f0d;
 
-  --text: #e7eaec;
-  --text-muted: #989ea3;
-  --text-faint: #6b7176;
+  --text: #eae7e0;
+  --text-muted: #9d9890;
+  --text-faint: #6d6960;
 
-  --border: #272b2e;
-  --border-strong: #383d41;
+  --border: #2b2925;
+  --border-strong: #3b3833;
 
-  --accent: #c9c2b4;
-  --accent-hover: #e0d9ca;
-  --accent-soft: #34302a;
-  --accent-tint: #23201b;
-  --accent-contrast: #14130f;
+  --accent: #c6c1b7;
+  --accent-hover: #ded9cf;
+  --accent-soft: #33302b;
+  --accent-tint: #22201c;
+  --accent-contrast: #171613;
 
-  --evidence: #d9a253;
-  --evidence-soft: #372b18;
-  --evidence-text: #f0d9ae;
+  --evidence: #d5a05a;
+  --evidence-soft: #362a1a;
+  --evidence-text: #eed9b2;
 
-  --danger: #e07d75;
-  --danger-soft: #3a1f1d;
-  --danger-contrast: #14130f;
+  --danger: #dd7d74;
+  --danger-soft: #3a201d;
+  --danger-contrast: #171613;
 
   --overlay: rgba(0, 0, 0, 0.62);
 
