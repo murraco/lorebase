@@ -8,6 +8,7 @@ import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
 
 const POLL_INTERVAL_MS = 4000;
+const SIDEBAR_COLLAPSED_KEY = 'lorebase.sidebarCollapsed';
 
 @Component({
   selector: 'lorebase-shell',
@@ -21,6 +22,12 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly conversationsService = inject(ConversationsService);
   private readonly router = inject(Router);
   private pollHandle?: ReturnType<typeof setInterval>;
+
+  // Collapses to a narrow icon rail rather than hiding outright, so the
+  // primary actions (new chat, add source) stay one click away. Persisted
+  // because a layout preference that resets on every reload is worse than
+  // not having the toggle at all.
+  protected readonly collapsed = signal(this.readCollapsedPreference());
 
   protected readonly showAddSourceModal = signal(false);
   protected readonly sourcePendingDeletion = signal<Source | null>(null);
@@ -88,6 +95,29 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected cancelDelete(): void {
     this.sourcePendingDeletion.set(null);
     this.deleteError.set(null);
+  }
+
+  protected toggleCollapsed(): void {
+    this.collapsed.update((value) => !value);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(this.collapsed()));
+    } catch {
+      // Private browsing or a storage quota error — the toggle still
+      // works for this session, it just won't be remembered.
+    }
+  }
+
+  private readCollapsedPreference(): boolean {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /** First letter of the username, for the collapsed rail's avatar. */
+  protected userInitial(): string {
+    return (this.auth.currentUser()?.username ?? '?').charAt(0).toUpperCase();
   }
 
   protected async logout(): Promise<void> {
