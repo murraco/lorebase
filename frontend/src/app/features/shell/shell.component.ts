@@ -7,6 +7,7 @@ import type { Conversation, Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
 import { ConfirmDialogComponent } from './confirm-dialog.component';
+import { MetricsBarComponent } from './metrics-bar.component';
 import { ThemeService } from '../../core/theme/theme.service';
 import { SystemStatusModalComponent } from './system-status-modal.component';
 
@@ -25,6 +26,7 @@ const NARROW_QUERY = '(max-width: 900px)';
     RouterLinkActive,
     AddSourceModalComponent,
     ConfirmDialogComponent,
+    MetricsBarComponent,
     SystemStatusModalComponent,
   ],
   templateUrl: './shell.component.html',

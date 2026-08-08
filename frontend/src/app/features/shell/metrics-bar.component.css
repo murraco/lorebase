@@ -1,0 +1,60 @@
+/* A strip, not a dashboard: it sits above the content all the time, so
+   it has to stay quiet enough to ignore and precise enough to trust. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 18px;
+  padding: 7px 0 9px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.k {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Weight is what keeps figures from disappearing next to their labels. */
+.v {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.metric.warn .v {
+  color: var(--evidence-text);
+  background: var(--evidence-soft);
+  padding: 0 5px;
+}
+
+.metric.bad .v {
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 0 5px;
+}
+
+.strategy {
+  margin-left: auto;
+}
+
+.strategy .v {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+@media (max-width: 720px) {
+  .strategy {
+    display: none;
+  }
+}

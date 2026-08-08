@@ -1,0 +1,42 @@
+@if (status(); as s) {
+  <div class="bar">
+    @if (s.using_fake_providers) {
+      <span class="metric warn" title="A fake provider is active — its output is meaningless">
+        <span class="k">provider</span><span class="v">fake</span>
+      </span>
+    }
+    <span class="metric">
+      <span class="k">chunks</span><span class="v">{{ s.chunks | number }}</span>
+    </span>
+    @if (embeddedPercent() !== null) {
+      <span class="metric" [class.warn]="embeddedPercent()! < 100" title="Chunks with an embedding">
+        <span class="k">indexed</span><span class="v">{{ embeddedPercent() }}%</span>
+      </span>
+    }
+    <span class="metric">
+      <span class="k">docs</span><span class="v">{{ s.documents | number }}</span>
+    </span>
+    @if (latencySeconds(s.avg_latency_ms); as latency) {
+      <span class="metric" title="Mean time to answer">
+        <span class="k">latency</span><span class="v">{{ latency }}s</span>
+      </span>
+    }
+    @if (s.avg_citations_per_answer !== null) {
+      <span class="metric" title="Mean sources cited per answer">
+        <span class="k">cites/ans</span><span class="v">{{ s.avg_citations_per_answer }}</span>
+      </span>
+    }
+    @if (ungroundedPercent() !== null) {
+      <span
+        class="metric"
+        [class.bad]="ungroundedPercent()! > 0"
+        title="Answers that cited no source at all"
+      >
+        <span class="k">ungrounded</span><span class="v">{{ ungroundedPercent() }}%</span>
+      </span>
+    }
+    <span class="metric strategy" title="Active retrieval strategy">
+      <span class="v">{{ s.retrieval_strategy }}</span>
+    </span>
+  </div>
+}
