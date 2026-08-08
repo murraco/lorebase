@@ -1,0 +1,99 @@
+/* Docked to the viewport, not inline in the thread: a passage opened
+   under a long answer landed off-screen, and switching notes meant
+   scrolling back for the list. */
+.reader {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 42vw);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 820px) {
+  .reader {
+    width: 100%;
+    border-left: none;
+  }
+}
+
+.reader header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.reader-n {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  background: var(--evidence-soft);
+  color: var(--evidence-text);
+}
+
+.reader-id {
+  min-width: 0;
+  flex: 1;
+}
+
+.reader-heading {
+  margin: 0 0 2px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.reader-meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.reader-close {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.reader-close:hover {
+  color: var(--text);
+}
+
+.reader pre {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}

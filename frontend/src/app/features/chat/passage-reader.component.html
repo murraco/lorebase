@@ -1,0 +1,13 @@
+<aside class="reader" aria-label="Cited passage">
+  <header>
+    <span class="reader-n">{{ index() }}</span>
+    <div class="reader-id">
+      <p class="reader-heading">{{ citation().heading_path || citation().path }}</p>
+      <p class="reader-meta">
+        {{ citation().path }} · lines {{ citation().start_line }}–{{ citation().end_line }}
+      </p>
+    </div>
+    <button type="button" class="reader-close" aria-label="Close" (click)="closed.emit()">×</button>
+  </header>
+  <pre>{{ citation().content }}</pre>
+</aside>

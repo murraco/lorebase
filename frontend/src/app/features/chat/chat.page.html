@@ -109,23 +109,6 @@
                 </aside>
               }
             </div>
-
-            @for (citation of message.citations; track citation.id; let i = $index) {
-              @if (expandedCitationId() === citation.id) {
-                <!-- The passage itself, full width where it is actually
-                     readable rather than squeezed into the margin. -->
-                <figure class="passage">
-                  <figcaption>
-                    <span class="passage-n">{{ i + 1 }}</span>
-                    <span class="passage-path">{{ citation.path }}</span>
-                    <span class="passage-lines"
-                      >lines {{ citation.start_line }}–{{ citation.end_line }}</span
-                    >
-                  </figcaption>
-                  <pre>{{ citation.content }}</pre>
-                </figure>
-              }
-            }
           </article>
         }
       }
@@ -140,9 +123,14 @@
           placeholder="Ask something about your notes…"
           [disabled]="sending()"
           (keydown.enter)="onEnter($event)"
+          (input)="autoGrow($event)"
         ></textarea>
         <div class="composer-actions">
-          <span class="composer-hint">Shift + Enter for a new line</span>
+          @if (question.trim()) {
+            <span class="composer-hint">Shift + Enter for a new line</span>
+          } @else {
+            <span></span>
+          }
           <button type="submit" [disabled]="sending() || !question.trim()" aria-label="Send">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <line x1="12" y1="19" x2="12" y2="5" />
@@ -163,4 +151,12 @@
       }
     </div>
   </div>
+
+  @if (expandedCitation(); as citation) {
+    <lorebase-passage-reader
+      [citation]="citation"
+      [index]="expandedIndex()"
+      (closed)="toggleCitation(citation.id)"
+    />
+  }
 </div>

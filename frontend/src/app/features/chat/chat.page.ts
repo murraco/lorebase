@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ChatService, type ChatDoneEvent } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
 import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
+import { PassageReaderComponent } from './passage-reader.component';
 import type { Citation } from '../../core/models';
 
 interface ThreadMessage {
@@ -34,7 +35,7 @@ const SUGGESTIONS = [
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule, MarkdownPipe],
+  imports: [FormsModule, MarkdownPipe, PassageReaderComponent],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -137,6 +138,13 @@ export class ChatPage implements OnInit {
     this.question = suggestion;
   }
 
+  /** Clearing the model does not undo an inline height set by autoGrow,
+   * so the box would stay tall after sending a long question. */
+  private resetComposerHeight(): void {
+    const textarea = document.querySelector<HTMLTextAreaElement>('.composer textarea');
+    if (textarea) textarea.style.height = '';
+  }
+
   protected onEnter(event: Event): void {
     // Angular types (keydown.enter)'s $event as the generic Event, even
     // though it's always a KeyboardEvent at runtime.
@@ -153,6 +161,7 @@ export class ChatPage implements OnInit {
     if (!conversationId) return;
 
     this.question = '';
+    this.resetComposerHeight();
     this.messages.update((current) => [
       ...current,
       { id: crypto.randomUUID(), role: 'user', content: question, citations: [], pending: false },
@@ -249,6 +258,37 @@ export class ChatPage implements OnInit {
       percent: span === 0 ? 100 : Math.round(((citation.score - worst) / span) * 100),
       score: citation.score.toFixed(3),
     };
+  }
+
+  /** The citation currently open in the reader, looked up across every
+   * message so the panel survives scrolling past its own answer. */
+  protected readonly expandedCitation = computed<Citation | null>(() => {
+    const id = this.expandedCitationId();
+    if (!id) return null;
+    for (const message of this.messages()) {
+      const found = message.citations.find((c) => c.id === id);
+      if (found) return found;
+    }
+    return null;
+  });
+
+  /** Its number within its own answer, matching the margin note. */
+  protected readonly expandedIndex = computed(() => {
+    const id = this.expandedCitationId();
+    for (const message of this.messages()) {
+      const index = message.citations.findIndex((c) => c.id === id);
+      if (index >= 0) return index + 1;
+    }
+    return null;
+  });
+
+  /** Grows the composer with its content up to the CSS max-height, so a
+   * long question stays readable while it is being written instead of
+   * scrolling inside a one-line box. */
+  protected autoGrow(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
   protected latencySeconds(ms: number | null | undefined): string | null {
