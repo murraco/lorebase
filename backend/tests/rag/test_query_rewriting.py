@@ -16,18 +16,25 @@ def _clear_llm_cache():
     get_llm_provider.cache_clear()
 
 
-def test_first_message_skips_rewriting_entirely() -> None:
-    """No history to resolve pronouns/references against, so there's
-    nothing a rewrite could do — and skipping means not paying for an LLM
-    call with no purpose.
+def test_first_message_still_gets_rewritten_for_date_normalization() -> None:
+    """No history to resolve pronouns against, but the rewrite step also
+    normalizes dates mentioned in the question itself — just as relevant
+    on a first message as a fifth, so this no longer skips the LLM call.
     """
     conversation = ConversationFactory()
     fake_llm = get_llm_provider()
+    fake_llm.next_chat_result = ChatResult(
+        text="What did I do on July 21st 2025 (2025-07-21)?",
+        input_tokens=10,
+        output_tokens=5,
+    )
 
-    result = rewrite_query(conversation, "What is hybrid search?")
+    result = rewrite_query(conversation, "What did I do on July 21st 2025?")
 
-    assert result == "What is hybrid search?"
-    assert fake_llm.calls == []
+    assert result == "What did I do on July 21st 2025 (2025-07-21)?"
+    assert len(fake_llm.calls) == 1
+    assert fake_llm.calls[0].messages[0]["role"] == "user"
+    assert "(no previous messages)" in fake_llm.calls[0].messages[0]["content"]
 
 
 def test_follow_up_message_gets_rewritten_using_history() -> None:

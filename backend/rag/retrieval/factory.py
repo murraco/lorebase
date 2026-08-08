@@ -8,6 +8,9 @@ from rag.retrieval.base import Retriever
 @lru_cache
 def get_retriever() -> Retriever:
     strategy = settings.RETRIEVAL_STRATEGY
+    # "lexical"/"dense" stay unwrapped deliberately: they exist to
+    # evaluate one half's isolated quality (see test_retrieval_quality.py),
+    # and forcing in date matches would corrupt that measurement.
     if strategy == "lexical":
         from rag.retrieval.lexical import LexicalRetriever
 
@@ -17,12 +20,14 @@ def get_retriever() -> Retriever:
 
         return DenseRetriever()
     if strategy == "hybrid":
+        from rag.retrieval.date_matching import DateAwareRetriever
         from rag.retrieval.hybrid import HybridRetriever
 
-        return HybridRetriever()
+        return DateAwareRetriever(HybridRetriever())
     if strategy == "hybrid_reranked":
+        from rag.retrieval.date_matching import DateAwareRetriever
         from rag.retrieval.hybrid import HybridRetriever
         from rag.retrieval.reranking import RerankingRetriever
 
-        return RerankingRetriever(HybridRetriever())
+        return DateAwareRetriever(RerankingRetriever(HybridRetriever()))
     raise ValueError(f"Unknown RETRIEVAL_STRATEGY: {strategy!r}")
