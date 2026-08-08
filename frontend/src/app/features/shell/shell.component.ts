@@ -3,16 +3,23 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthService } from '../../core/auth/auth.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
-import type { Source } from '../../core/models';
+import type { Conversation, Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
+import { SystemStatusModalComponent } from './system-status-modal.component';
 
 const POLL_INTERVAL_MS = 4000;
 const SIDEBAR_COLLAPSED_KEY = 'lorebase.sidebarCollapsed';
 
 @Component({
   selector: 'lorebase-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AddSourceModalComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    AddSourceModalComponent,
+    SystemStatusModalComponent,
+  ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css',
 })
@@ -30,7 +37,9 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly collapsed = signal(this.readCollapsedPreference());
 
   protected readonly showAddSourceModal = signal(false);
+  protected readonly showSystemStatus = signal(false);
   protected readonly sourcePendingDeletion = signal<Source | null>(null);
+  protected readonly conversationPendingDeletion = signal<Conversation | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
 
@@ -92,8 +101,29 @@ export class ShellComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected async confirmDeleteConversation(): Promise<void> {
+    const conversation = this.conversationPendingDeletion();
+    if (!conversation) return;
+    this.deleteError.set(null);
+    this.deleting.set(true);
+    try {
+      await this.conversationsService.delete(conversation.id);
+      this.conversationPendingDeletion.set(null);
+      // Deleting the conversation currently open would otherwise leave the
+      // chat pointing at an id the API no longer serves.
+      if (this.router.url === `/chat/${conversation.id}`) {
+        await this.router.navigateByUrl('/chat');
+      }
+    } catch (err) {
+      this.deleteError.set(err instanceof Error ? err.message : 'Failed to delete conversation.');
+    } finally {
+      this.deleting.set(false);
+    }
+  }
+
   protected cancelDelete(): void {
     this.sourcePendingDeletion.set(null);
+    this.conversationPendingDeletion.set(null);
     this.deleteError.set(null);
   }
 

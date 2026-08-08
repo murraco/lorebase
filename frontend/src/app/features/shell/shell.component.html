@@ -48,10 +48,23 @@
       </div>
 
       <div class="rail-footer">
+        <button
+          type="button"
+          class="icon-btn"
+          title="System status"
+          aria-label="System status"
+          (click)="showSystemStatus.set(true)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="11" x2="12" y2="16" />
+            <line x1="12" y1="8" x2="12" y2="8" />
+          </svg>
+        </button>
         <span class="avatar" [title]="auth.currentUser()?.username ?? ''">{{ userInitial() }}</span>
       </div>
     } @else {
-      <div>
+      <div class="sources">
         <p class="section-label">Sources</p>
         @for (source of sourcesService.sources(); track source.id) {
           <div class="source">
@@ -87,20 +100,34 @@
           >+ New chat</a
         >
         @for (conversation of conversationsService.conversations(); track conversation.id) {
-          <a
-            class="conversation"
-            [routerLink]="['/chat', conversation.id]"
-            routerLinkActive="active"
-            [title]="conversation.title"
-          >
-            {{ conversation.title || 'Untitled' }}
-          </a>
+          <div class="conversation-row">
+            <a
+              class="conversation"
+              [routerLink]="['/chat', conversation.id]"
+              routerLinkActive="active"
+              [title]="conversation.title"
+            >
+              {{ conversation.title || 'Untitled' }}
+            </a>
+            <button
+              type="button"
+              class="delete-btn"
+              title="Delete conversation"
+              aria-label="Delete conversation"
+              (click)="conversationPendingDeletion.set(conversation)"
+            >
+              ×
+            </button>
+          </div>
         }
       </div>
 
       <div class="rail-footer">
         <p class="username">{{ auth.currentUser()?.username }}</p>
-        <button class="link-btn" (click)="logout()">Sign out</button>
+        <div class="footer-actions">
+          <button class="link-btn" (click)="showSystemStatus.set(true)">System status</button>
+          <button class="link-btn" (click)="logout()">Sign out</button>
+        </div>
       </div>
     }
   </div>
@@ -112,6 +139,10 @@
 
 @if (showAddSourceModal()) {
   <lorebase-add-source-modal (closed)="showAddSourceModal.set(false)" />
+}
+
+@if (showSystemStatus()) {
+  <lorebase-system-status-modal (closed)="showSystemStatus.set(false)" />
 }
 
 @if (sourcePendingDeletion(); as source) {
@@ -129,6 +160,30 @@
         Cancel
       </button>
       <button type="button" class="danger" (click)="confirmDelete()" [disabled]="deleting()">
+        {{ deleting() ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (conversationPendingDeletion(); as conversation) {
+  <button type="button" class="backdrop" aria-label="Cancel" (click)="cancelDelete()"></button>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-conversation-title">
+    <h2 id="delete-conversation-title">Delete “{{ conversation.title || 'Untitled' }}”?</h2>
+    <p>This removes the conversation and its messages. Your indexed notes are not touched.</p>
+    @if (deleteError()) {
+      <p class="error">{{ deleteError() }}</p>
+    }
+    <div class="dialog-actions">
+      <button type="button" class="secondary" (click)="cancelDelete()" [disabled]="deleting()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger"
+        (click)="confirmDeleteConversation()"
+        [disabled]="deleting()"
+      >
         {{ deleting() ? 'Deleting…' : 'Delete' }}
       </button>
     </div>
