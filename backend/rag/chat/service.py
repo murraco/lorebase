@@ -76,6 +76,7 @@ def ask(conversation: Conversation, question: str) -> Message:
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
             cost=_estimate_cost(result.input_tokens, result.output_tokens),
+            retrieved_count=len(results),
         )
         Citation.objects.bulk_create(
             Citation(

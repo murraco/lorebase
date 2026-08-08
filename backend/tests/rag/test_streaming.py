@@ -4,11 +4,13 @@ from unittest.mock import patch
 import pytest
 
 from ingestion.factories import ChunkFactory
-from rag.chat.streaming import stream_chat_response
+from rag.chat.streaming import _serialize_citations, stream_chat_response
 from rag.factories import ConversationFactory
 from rag.llm.base import ToolCallResult
 from rag.llm.factory import get_llm_provider
+from rag.models import Citation, Message
 from rag.retrieval.base import RetrievalResult
+from rag.serializers import CitationSerializer
 from sources.factories import DocumentFactory
 
 pytestmark = pytest.mark.django_db
@@ -60,3 +62,46 @@ def test_stream_yields_the_answer_then_a_done_event_with_citations() -> None:
     assert done_payload["citations"][0]["path"] == document.path
     assert done_payload["citations"][0]["start_line"] == 3
     assert done_payload["citations"][0]["end_line"] == 7
+
+
+def test_streamed_citations_match_the_api_serializer_fields() -> None:
+    """The two paths that deliver a citation must agree on its shape.
+
+    They drifted once: the stream sent `chunk_id` and no `id`, while the
+    API sent `id`. The client types both against the same generated
+    `Citation`, so nothing failed until an answer cited more than one
+    chunk and the UI's track-by-id collapsed on duplicate undefined keys.
+    """
+    conversation = ConversationFactory()
+    document = DocumentFactory(source__workspace=conversation.workspace)
+    chunk = ChunkFactory(document=document)
+    message = Message.objects.create(
+        conversation=conversation, role=Message.Role.ASSISTANT, content="answer"
+    )
+    Citation.objects.create(message=message, chunk=chunk, rank=1, score=0.5)
+
+    streamed = _serialize_citations(message)[0]
+    serialized = CitationSerializer(message.citations.get()).data
+
+    assert set(streamed) == set(serialized)
+
+
+def test_streamed_citations_have_unique_ids() -> None:
+    """What the UI tracks on. Several citations sharing a key is what
+    made them vanish rather than merely render oddly.
+    """
+    conversation = ConversationFactory()
+    document = DocumentFactory(source__workspace=conversation.workspace)
+    message = Message.objects.create(
+        conversation=conversation, role=Message.Role.ASSISTANT, content="answer"
+    )
+    for rank in range(1, 4):
+        Citation.objects.create(
+            message=message, chunk=ChunkFactory(document=document), rank=rank, score=0.5
+        )
+
+    ids = [citation["id"] for citation in _serialize_citations(message)]
+
+    assert len(ids) == 3
+    assert len(set(ids)) == 3
+    assert all(ids)

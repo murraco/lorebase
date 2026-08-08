@@ -49,6 +49,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "input_tokens",
             "output_tokens",
             "cost",
+            "retrieved_count",
             "citations",
             "created_at",
         ]

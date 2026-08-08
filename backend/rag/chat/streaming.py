@@ -31,6 +31,14 @@ def stream_chat_response(conversation: Conversation, question: str) -> Streaming
             {
                 "done": True,
                 "message_id": str(message.id),
+                # The provenance header renders straight from the stream,
+                # so it must arrive with the answer rather than requiring
+                # a follow-up fetch of the message that was just written.
+                "latency_ms": message.latency_ms,
+                "input_tokens": message.input_tokens,
+                "output_tokens": message.output_tokens,
+                "cost": float(message.cost) if message.cost is not None else None,
+                "retrieved_count": message.retrieved_count,
                 "citations": _serialize_citations(message),
             }
         )
@@ -42,9 +50,20 @@ def stream_chat_response(conversation: Conversation, question: str) -> Streaming
 
 
 def _serialize_citations(message: Message) -> list[dict[str, object]]:
+    """Must produce the same shape as CitationSerializer: the client types
+    both against one generated `Citation`, so a field that exists on only
+    one path is a lie the type checker can't catch.
+
+    This emitted `chunk_id` and no `id` for a long time, which meant every
+    streamed citation arrived with `id: undefined`. Harmless while answers
+    cited a single chunk; the moment one cited several, the UI's
+    `track citation.id` saw duplicate keys and rendered no citations at
+    all. See the test that compares both field sets.
+    """
     return [
         {
-            "chunk_id": str(citation.chunk_id),
+            "id": str(citation.id),
+            "chunk": str(citation.chunk_id),
             "path": citation.chunk.document.path,
             "heading_path": citation.chunk.heading_path,
             "source_name": citation.chunk.document.source.name,

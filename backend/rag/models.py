@@ -35,6 +35,10 @@ class Message(BaseModel):
     input_tokens = models.PositiveIntegerField(null=True, blank=True)
     output_tokens = models.PositiveIntegerField(null=True, blank=True)
     cost = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    # How many chunks were retrieved and put in front of the model for
+    # this answer. Paired with the citation count it says something the
+    # answer alone cannot: five passages were considered, two were used.
+    retrieved_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["created_at"]
