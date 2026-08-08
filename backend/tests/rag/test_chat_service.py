@@ -73,7 +73,7 @@ def test_valid_citation_is_persisted() -> None:
 
 
 def test_hallucinated_citation_is_never_persisted() -> None:
-    """The core guarantee of this stage: a chunk_id the model claims but
+    """The core guarantee of citation validation: a chunk_id the model claims but
     that wasn't part of the context it was actually given never becomes a
     Citation row — not flagged, not stored anywhere, simply absent.
     """
