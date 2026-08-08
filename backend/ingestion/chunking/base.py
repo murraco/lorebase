@@ -26,5 +26,4 @@ class Chunker(ABC):
     """
 
     @abstractmethod
-    def chunk(self, text: str, sections: list[ParsedSection]) -> list[ChunkData]:
-        ...
+    def chunk(self, text: str, sections: list[ParsedSection]) -> list[ChunkData]: ...

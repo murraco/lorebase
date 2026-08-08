@@ -64,7 +64,5 @@ class Command(BaseCommand):
         if not workspaces:
             raise CommandError("No workspace exists yet.")
         if len(workspaces) > 1:
-            raise CommandError(
-                "Multiple workspaces exist — pass --workspace <id> to pick one."
-            )
+            raise CommandError("Multiple workspaces exist — pass --workspace <id> to pick one.")
         return workspaces[0]

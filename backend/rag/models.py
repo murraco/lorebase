@@ -6,9 +6,7 @@ from ingestion.models import Chunk
 
 
 class Conversation(BaseModel):
-    workspace = models.ForeignKey(
-        Workspace, on_delete=models.CASCADE, related_name="conversations"
-    )
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="conversations")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="conversations"
     )

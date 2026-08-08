@@ -79,8 +79,7 @@ QUESTIONS = [
     ("What Redis command provides atomic set-if-not-exists?", 5),
     ("What index does pgvector use for approximate nearest neighbor search?", 6),
     (
-        "How do vector databases search millions of embeddings quickly, "
-        "without checking each one?",
+        "How do vector databases search millions of embeddings quickly, without checking each one?",
         6,
     ),
     ("How does an embeddings API differentiate embedding a query from a document?", 7),

@@ -20,15 +20,11 @@ class Source(BaseModel):
         READY = "ready", "Ready"
         ERROR = "error", "Error"
 
-    workspace = models.ForeignKey(
-        Workspace, on_delete=models.CASCADE, related_name="sources"
-    )
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="sources")
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=SourceType.choices)
     config = models.JSONField(default=dict, blank=True)
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True, default="")
 
@@ -37,9 +33,7 @@ class Source(BaseModel):
 
 
 class Document(BaseModel):
-    source = models.ForeignKey(
-        Source, on_delete=models.CASCADE, related_name="documents"
-    )
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name="documents")
     # Connector-specific identity used to detect the same document across
     # syncs (e.g. a file path for local_folder, "repo@path" for GitHub).
     external_id = models.CharField(max_length=1024)

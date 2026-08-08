@@ -19,9 +19,7 @@ class AnthropicProvider(LLMProvider):
             system=system,
             messages=messages,  # type: ignore[arg-type]
         )
-        text = "".join(
-            block.text for block in response.content if block.type == "text"
-        )
+        text = "".join(block.text for block in response.content if block.type == "text")
         return ChatResult(
             text=text,
             input_tokens=response.usage.input_tokens,
@@ -47,9 +45,7 @@ class AnthropicProvider(LLMProvider):
         ) as stream:
             final_message = stream.get_final_message()
 
-        tool_use_block = next(
-            block for block in final_message.content if block.type == "tool_use"
-        )
+        tool_use_block = next(block for block in final_message.content if block.type == "tool_use")
         return ToolCallResult(
             output=tool_use_block.input,
             input_tokens=final_message.usage.input_tokens,

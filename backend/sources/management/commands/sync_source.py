@@ -31,7 +31,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"{source.name}: {run.added} added, {run.updated} updated, "
-                f"{run.deleted} deleted"
+                f"{source.name}: {run.added} added, {run.updated} updated, {run.deleted} deleted"
             )
         )
