@@ -1,9 +1,11 @@
-import { Component, inject, OnDestroy, output, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AuthService } from '../../core/auth/auth.service';
-import type { Source } from '../../core/models';
+import type { DirectoryListing, Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
+
+type Step = 'browse' | 'progress';
 
 @Component({
   selector: 'lorebase-add-source-modal',
@@ -11,32 +13,61 @@ import { SourcesService } from '../../core/sources/sources.service';
   templateUrl: './add-source-modal.component.html',
   styleUrl: './add-source-modal.component.css',
 })
-export class AddSourceModalComponent implements OnDestroy {
+export class AddSourceModalComponent implements OnInit, OnDestroy {
   private readonly sourcesService = inject(SourcesService);
   private readonly auth = inject(AuthService);
   private pollHandle?: ReturnType<typeof setInterval>;
 
   readonly closed = output<void>();
 
-  protected path = '';
-  protected readonly step = signal<'form' | 'progress'>('form');
+  protected readonly step = signal<Step>('browse');
+  protected readonly listing = signal<DirectoryListing | null>(null);
+  protected readonly browsing = signal(false);
   protected readonly source = signal<Source | null>(null);
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected sectionBoundaryPattern = '';
 
-  protected async createAndSync(): Promise<void> {
+  async ngOnInit(): Promise<void> {
+    await this.browseTo('');
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  protected async browseTo(path: string): Promise<void> {
+    this.browsing.set(true);
+    this.error.set(null);
+    try {
+      this.listing.set(await this.sourcesService.browse(path));
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Failed to list that folder.');
+    } finally {
+      this.browsing.set(false);
+    }
+  }
+
+  protected async useCurrentFolder(): Promise<void> {
     const workspace = this.auth.primaryWorkspace();
-    const path = this.path.trim();
-    if (!workspace || !path) return;
+    const listing = this.listing();
+    if (!workspace || !listing) return;
+
+    const name = listing.path === '' ? 'root' : (listing.path.split('/').pop() ?? listing.path);
+    const config: Record<string, string> = { path: listing.absolute_path };
+    const pattern = this.sectionBoundaryPattern.trim();
+    if (pattern) {
+      config['section_boundary_pattern'] = pattern;
+    }
 
     this.submitting.set(true);
     this.error.set(null);
     try {
       const created = await this.sourcesService.create({
         workspace: workspace.id,
-        name: path,
+        name,
         type: 'local_folder',
-        config: { path },
+        config,
       });
       this.source.set(created);
       this.step.set('progress');
@@ -52,10 +83,6 @@ export class AddSourceModalComponent implements OnDestroy {
   protected close(): void {
     this.stopPolling();
     this.closed.emit();
-  }
-
-  ngOnDestroy(): void {
-    this.stopPolling();
   }
 
   private pollUntilDone(id: string): void {

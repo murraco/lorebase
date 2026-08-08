@@ -70,6 +70,39 @@ describe('ChatPage', () => {
     fixture.destroy();
   });
 
+  it('renders the assistant answer as actual markdown, not literal asterisks', async () => {
+    const { fixture, page } = await setup([
+      { delta: '**bold claim**' },
+      { done: true, message_id: 'm1', citations: [] },
+    ]);
+
+    page['question'] = 'question';
+    await page['send']();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.rendered-markdown strong')?.textContent).toBe('bold claim');
+    fixture.destroy();
+  });
+
+  it('sends on Enter but inserts a newline on Shift+Enter', async () => {
+    const { fixture, page } = await setup([{ done: true, message_id: 'm1', citations: [] }]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sendSpy = vi.spyOn(page as any, 'send');
+
+    const shiftEnter = { shiftKey: true, preventDefault: vi.fn() } as unknown as Event;
+    page['onEnter'](shiftEnter);
+    expect(shiftEnter.preventDefault).not.toHaveBeenCalled();
+    expect(sendSpy).not.toHaveBeenCalled();
+
+    const plainEnter = { shiftKey: false, preventDefault: vi.fn() } as unknown as Event;
+    page['onEnter'](plainEnter);
+    expect(plainEnter.preventDefault).toHaveBeenCalled();
+    expect(sendSpy).toHaveBeenCalled();
+
+    fixture.destroy();
+  });
+
   it('shows a typing indicator until the first delta arrives, then hides it', async () => {
     let releaseFirstDelta!: () => void;
     const gate = new Promise<void>((resolve) => (releaseFirstDelta = resolve));

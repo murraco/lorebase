@@ -2,26 +2,56 @@
   <div class="modal">
     <h3>Add source</h3>
 
-    @if (step() === 'form') {
-      <form (ngSubmit)="createAndSync()">
-        <label>
-          Local folder path
-          <input
-            name="path"
-            type="text"
-            [(ngModel)]="path"
-            placeholder="/app/storage/my-notes"
-            required
-          />
-        </label>
-        <p class="hint">A path inside the backend container, not your local machine.</p>
-        @if (error()) {
-          <p class="error">{{ error() }}</p>
+    @if (step() === 'browse') {
+      <p class="breadcrumb">/{{ listing()?.path }}</p>
+
+      <div class="listing">
+        @if (browsing()) {
+          <p class="hint">Loading…</p>
+        } @else {
+          @if (listing()?.parent !== null && listing()?.parent !== undefined) {
+            <button type="button" class="entry up" (click)="browseTo(listing()!.parent!)">
+              .. (up)
+            </button>
+          }
+          @for (entry of listing()?.entries; track entry.path) {
+            <button type="button" class="entry" (click)="browseTo(entry.path)">
+              📁 {{ entry.name }}
+            </button>
+          } @empty {
+            @if (listing()?.parent === null || listing()?.parent !== undefined) {
+              <p class="hint">No subfolders here.</p>
+            }
+          }
         }
-        <button type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Adding…' : 'Add and sync' }}
-        </button>
-      </form>
+      </div>
+
+      <label class="advanced">
+        Section boundary pattern (optional, advanced)
+        <input
+          name="sectionBoundaryPattern"
+          type="text"
+          [(ngModel)]="sectionBoundaryPattern"
+          placeholder="e.g. ^\d{4}-\d{2}-\d{2}"
+        />
+      </label>
+      <p class="hint">
+        For files with no Markdown headings but a repeating line pattern (like a daily journal's
+        date stamps) — treats matching lines as section boundaries instead of chunking blindly.
+      </p>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="submitting() || !listing()"
+        (click)="useCurrentFolder()"
+      >
+        {{ submitting() ? 'Adding…' : 'Use this folder' }}
+      </button>
     }
 
     @if (step() === 'progress') {

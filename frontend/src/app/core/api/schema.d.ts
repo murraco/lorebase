@@ -137,6 +137,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sources/browse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sources_browse_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -166,6 +182,17 @@ export interface components {
             /** Format: uuid */
             workspace: string;
             title?: string;
+        };
+        DirectoryEntry: {
+            name: string;
+            path: string;
+            absolute_path: string;
+        };
+        DirectoryListing: {
+            path: string;
+            parent: string | null;
+            absolute_path: string;
+            entries: components["schemas"]["DirectoryEntry"][];
         };
         Document: {
             /** Format: uuid */
@@ -625,6 +652,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncQueued"];
+                };
+            };
+        };
+    };
+    sources_browse_retrieve: {
+        parameters: {
+            query?: {
+                path?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryListing"];
                 };
             };
         };

@@ -26,7 +26,73 @@
   font-size: 16px;
   line-height: 1.65;
   color: var(--color-ink);
-  white-space: pre-wrap;
+}
+
+.rendered-markdown :first-child {
+  margin-top: 0;
+}
+
+.rendered-markdown :last-child {
+  margin-bottom: 0;
+}
+
+.rendered-markdown p,
+.rendered-markdown ul,
+.rendered-markdown ol,
+.rendered-markdown pre,
+.rendered-markdown blockquote {
+  margin: 0 0 0.7em;
+}
+
+.rendered-markdown ul,
+.rendered-markdown ol {
+  padding-left: 1.3em;
+}
+
+.rendered-markdown li {
+  margin-bottom: 0.2em;
+}
+
+.rendered-markdown strong {
+  font-weight: 600;
+}
+
+.rendered-markdown h1,
+.rendered-markdown h2,
+.rendered-markdown h3 {
+  font-family: var(--font-serif);
+  line-height: 1.3;
+  margin: 0.7em 0 0.4em;
+}
+
+.rendered-markdown a {
+  color: var(--color-moss);
+}
+
+.rendered-markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-paper);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.rendered-markdown pre {
+  background: var(--color-paper);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+.rendered-markdown pre code {
+  background: none;
+  padding: 0;
+}
+
+.rendered-markdown blockquote {
+  padding-left: 12px;
+  border-left: 2px solid var(--color-line);
+  color: var(--color-ink-soft);
 }
 
 .typing-indicator {
@@ -107,7 +173,7 @@
   padding: 6px;
 }
 
-.composer input {
+.composer textarea {
   flex: 1;
   border: none;
   background: none;
@@ -116,6 +182,9 @@
   font-family: inherit;
   color: var(--color-ink);
   outline: none;
+  resize: none;
+  max-height: 160px;
+  line-height: 1.4;
 }
 
 .composer button {

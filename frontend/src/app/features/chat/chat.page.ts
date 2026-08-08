@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
 import { ChatService } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
+import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
 import type { Citation } from '../../core/models';
 
 interface ThreadMessage {
@@ -20,7 +21,7 @@ interface ThreadMessage {
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule],
+  imports: [FormsModule, MarkdownPipe],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -45,6 +46,14 @@ export class ChatPage implements OnInit {
 
   protected toggleCitation(citationId: string): void {
     this.expandedCitationId.update((current) => (current === citationId ? null : citationId));
+  }
+
+  protected onEnter(event: Event): void {
+    // Angular types (keydown.enter)'s $event as the generic Event, even
+    // though it's always a KeyboardEvent at runtime.
+    if ((event as KeyboardEvent).shiftKey) return; // let the textarea insert the newline
+    event.preventDefault();
+    void this.send();
   }
 
   protected async send(): Promise<void> {

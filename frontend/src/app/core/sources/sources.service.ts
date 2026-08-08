@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 import { apiClient } from '../api/client';
-import type { Source, SourceType } from '../models';
+import type { DirectoryListing, Source, SourceType } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class SourcesService {
@@ -38,6 +38,14 @@ export class SourcesService {
     });
     if (error) throw new Error('Failed to delete source.');
     this.sources.update((current) => current.filter((source) => source.id !== id));
+  }
+
+  async browse(path: string): Promise<DirectoryListing> {
+    const { data, error } = await apiClient.GET('/api/sources/browse/', {
+      params: { query: { path } },
+    });
+    if (error) throw new Error('Failed to list that folder.');
+    return data;
   }
 
   /** Replaces one source in the local list with a freshly fetched copy —

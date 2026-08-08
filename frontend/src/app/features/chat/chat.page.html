@@ -5,6 +5,8 @@
         <span class="typing-indicator" aria-label="Thinking">
           <span></span><span></span><span></span>
         </span>
+      } @else if (message.role === 'assistant') {
+        <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
       } @else {
         {{ message.content }}
       }
@@ -27,12 +29,13 @@
 </div>
 
 <form class="composer" (ngSubmit)="send()">
-  <input
+  <textarea
     name="question"
-    type="text"
+    rows="1"
     [(ngModel)]="question"
-    placeholder="Ask something about your notes, PDFs, or repos"
+    placeholder="Ask something about your notes, PDFs, or repos (Shift+Enter for a new line)"
     [disabled]="sending()"
-  />
+    (keydown.enter)="onEnter($event)"
+  ></textarea>
   <button type="submit" [disabled]="sending()">Send</button>
 </form>
