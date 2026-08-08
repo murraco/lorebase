@@ -24,7 +24,8 @@
 | 10 — Módulo de retrieval | ✅ Hecha |
 | 11 — Chat con citas verificables | ✅ Hecha |
 | 12 — Capa de API | ✅ Hecha |
-| 13 en adelante | Pendiente |
+| 13 — Frontend Angular | ✅ Hecha |
+| 14 en adelante | Pendiente |
 
 ## Deuda técnica y pendientes conocidos
 
@@ -33,6 +34,9 @@ Cosas identificadas y **deliberadamente pospuestas**, no descubiertas después. 
 - **Selección de un único archivo en `LocalFolderConnector`** (surgió en la Etapa 5). Hoy `config["path"]` tiene que ser una carpeta; no hay forma de indexar un archivo puntual de una carpeta que por lo demás no querés indexar entera. Es un caso de uso real, pendiente de implementar. Extenderlo no debería tocar la interfaz `Connector` ni la reconciliación — queda acotado a `LocalFolderConnector.fetch_documents()`.
 - **`HeadingChunker` solo fusiona secciones cortas hacia adelante** (surgió en la Etapa 6). El último chunk de un documento puede quedar por debajo de `min_tokens` si es el que sobra al cierre del merge greedy — no hay un segundo paso que lo fusione hacia atrás con el chunk anterior. No es incorrecto (el chunk existe y es citable), solo un candidato más débil para retrieval. El mismo mecanismo tiene un efecto secundario en `heading_path`: si una sección sin heading (ej. el bloque de front matter, que se preserva en el texto — ver el punto de line numbers más abajo) se fusiona hacia adelante con secciones que sí tienen heading, el chunk resultante hereda el `heading_path` vacío de la primera pieza, no el de las secciones que absorbió. Las líneas siguen siendo correctas (la cita abre en el lugar justo), solo el breadcrumb queda menos informativo en ese caso puntual. Si se vuelve un problema real, agregar el paso de fusión hacia atrás es un cambio acotado a `HeadingChunker._merge_short_pieces`.
 - **`Chunk.search_vector` usa `config="english"` fijo**, aunque las notas reales sean una mezcla de español e inglés (surgió en la Etapa 6). El stemming y las stopwords de Postgres son específicos de idioma — con `english` fijo, el retrieval léxico sobre texto en español pierde precisión (no matchea "buscando" con "buscar", no filtra stopwords en español). La solución correcta es un config dinámico por documento (columna `language` + detección de idioma), pospuesta hasta ver en la Etapa 16 si el retrieval léxico en español rinde mal en la práctica — la mitad densa del hybrid search (embeddings, multilingües por defecto) compensa bastante mientras tanto.
+- **Sin selector de workspace en la UI** (surgió en la Etapa 13). `AuthService.primaryWorkspace` toma siempre el primer `Membership` del usuario — el modelo soporta pertenecer a varios workspaces, pero no hay forma de elegir entre ellos desde el frontend. No es un problema hoy (mono-usuario, típicamente un solo workspace real), pero si en algún momento se usan varios, hace falta un switcher.
+- **Sin listado ni historial de conversaciones pasadas** (surgió en la Etapa 13). Cada carga de `/chat` crea una `Conversation` nueva; las anteriores quedan en la base pero no hay forma de volver a abrirlas desde la UI. Fiel al wireframe (que tampoco lo muestra), pero es una limitación real de usabilidad si el historial importa.
+- **`openapi-typescript` con `legacy-peer-deps` en `frontend/.npmrc`** (surgió en la Etapa 13): su peer declarado es `typescript@^5.x`, desactualizado contra el TypeScript 6.0 que usa Angular 22. Es una herramienta de build-time nada más, sin riesgo real, pero conviene sacar el override el día que la librería actualice su rango de peers.
 
 ## Context
 
@@ -449,7 +453,7 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 ---
 
-#### Etapa 13 — Frontend Angular
+#### Etapa 13 — Frontend Angular ✅
 
 **Objetivo:** portar el wireframe a una app real conectada al backend.
 
@@ -464,6 +468,37 @@ Las etapas son secuenciales salvo donde se indique. Cada una es un PR.
 
 **Dependencias:** Etapa 12.
 **Hecho cuando:** `docker compose up` levanta el sistema entero; se puede agregar una carpeta local, verla sincronizar y preguntarle, con las citas abriendo el chunk correcto.
+
+**Notas de la implementación real:**
+- **Zoneless + standalone**, no solo standalone: Angular 22 ofrece `--zoneless` como flag de scaffolding — sin `zone.js` en las dependencias, la detección de cambios corre enteramente sobre signals. Encaja natural con "standalone + signals" del plan sin agregar una migración posterior.
+- **Sin vista "Panel"/dashboard todavía** — desviación deliberada del wireframe original, que sí la muestra. El "Hecho cuando" de esta etapa es específicamente sobre el flujo de chat + sync de fuentes; el dashboard con métricas reales (documentos, costo, latencia, feedback) es tarea explícita de la Etapa 15, y no hay endpoint de agregación en el backend todavía. Construirlo ahora hubiera significado datos falsos o un segundo endpoint fuera de alcance.
+- **Sin selector de conversaciones ni historial persistente en la sidebar**: cada carga de `/chat` crea una `Conversation` nueva vía `ConversationsService.create()`. El wireframe tampoco muestra un listado de conversaciones pasadas — es fiel al alcance mostrado, no una simplificación oculta.
+- **`GET /api/auth/me/` y el campo `workspaces` en las respuestas de login/me son adiciones nuevas, no estaban en la Etapa 12.** Sin una forma de listar los workspaces del usuario, el frontend no podía saber qué `workspace` mandar al crear un `Source` o una `Conversation` — no existe (ni está planeado) un endpoint `/api/workspaces/` dedicado. Se resolvió reutilizando `Membership` ya existente. Asunción de "un solo workspace real por usuario" en la UI (`AuthService.primaryWorkspace` toma el primero) — el modelo soporta varios, pero no hay switcher; no hacía falta para el alcance de esta etapa.
+- **`CitationSerializer` y el payload SSE de citas ganaron un campo `content`** (el texto del chunk citado) que no estaba en la Etapa 12. Sin él, un chip de cita no tenía nada real que "abrir" — hubiera hecho falta un endpoint de `Chunk` dedicado solo para esto. Agregar el campo fue más barato y no expone nada que el servidor no le haya mandado ya al LLM en ese turno.
+- **Bug real de contrato OpenAPI, encontrado por el propio generador de tipos**: `SourceViewSet.sync` no tiene body de request, pero `drf-spectacular` infería el body a partir del `serializer_class` del viewset (`Source` completo) por no tener `@extend_schema` propio — el cliente TS generado exigía mandar `id`, `status`, etc. en un POST que no lee nada. Mismo problema con los query params `?source=` y `?conversation=` de `DocumentViewSet`/`MessageViewSet`: al ser filtros manuales en `get_queryset()` (no `filterset_fields`), no aparecían en el schema en absoluto. Los tres se corrigieron con `@extend_schema` explícito. Este es exactamente el tipo de gap que un cliente tipado está pensado para exponer — el contrato "funcionaba" en runtime pero mentía en el schema.
+- **Bug real de tipos, también encontrado por el generador**: por defecto `drf-spectacular` reutiliza el mismo schema (`Source`, `Conversation`) para request y response, así que el TS generado exigía campos de solo lectura (`id`, `status`, `created_at`) al armar el body de un POST. Se activó `COMPONENT_SPLIT_REQUEST` en `SPECTACULAR_SETTINGS`, que genera `SourceRequest`/`ConversationRequest` sin esos campos — el fix estándar para esta combinación drf-spectacular + openapi-typescript.
+- **`openapi-typescript` todavía declara un peer de `typescript@^5.x`**, pero Angular 22 usa TypeScript 6.0 — es una herramienta de build-time (nunca corre en el bundle de producción), así que el desfase de peer no es un riesgo real. Se resolvió con `frontend/.npmrc` (`legacy-peer-deps=true`) en vez de un flag manual, para que `npm ci` (usado en Docker/CI) no fallara igual que `npm install` local.
+- **Streaming SSE por `fetch()` + lectura manual del stream, no `EventSource`**: el endpoint de chat es un POST con body JSON, y `EventSource` nativo del browser solo soporta GET sin body — patrón estándar para SSE sobre POST. El parser de frames (`ChatService.ask`) se probó explícitamente contra un evento partido entre dos chunks del stream, no solo el caso feliz de un evento por chunk.
+- **Verificación manual end-to-end real, contra el stack completo de `docker compose` (incluyendo el nuevo servicio `frontend`/Nginx)**: login, listado de fuentes, alta de una fuente `local_folder` real, sync, poll de estado hasta `ready`, y una pregunta real contra Voyage + Claude Haiku — todo a través del puerto de Nginx (8080), no directo al backend (8000), confirmando que el proxy same-origin y el streaming SSE (`proxy_buffering off`) funcionan de punta a punta. La única parte no verificada por mí es la renderización visual real en un browser — dejé el stack corriendo para que se pueda abrir `http://localhost:8080` y probarlo a mano.
+- **Bug de Docker encontrado de nuevo**: el volumen nombrado `backend_venv` seguía apuntando a la instalación anterior a `drf-spectacular`/Etapa 12 — mismo síntoma y mismo fix que las veces anteriores (`docker volume rm infra_backend_venv` + rebuild).
+
+```mermaid
+flowchart LR
+    browser["Browser"] -->|"same origin :8080"| nginx["Nginx\n(frontend container)"]
+    nginx -->|"/  → static files"| spa["Angular SPA\n(standalone, zoneless)"]
+    nginx -->|"/api/*  (proxy_buffering off)"| backend["Django backend\n:8000"]
+
+    spa --> authSvc["AuthService"]
+    spa --> sourcesSvc["SourcesService"]
+    spa --> chatSvc["ChatService\n(hand-rolled SSE reader)"]
+
+    authSvc -->|"session cookie + CSRF"| nginx
+    sourcesSvc -->|"openapi-fetch\n(typed via generated schema)"| nginx
+    chatSvc -->|"POST + ReadableStream"| nginx
+
+    backend --> db[(Postgres)]
+    backend -.->|"sync_source_task.delay()"| worker["Celery worker"]
+```
 
 ---
 
