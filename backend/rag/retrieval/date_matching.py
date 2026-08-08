@@ -54,6 +54,13 @@ class DateAwareRetriever(Retriever):
             content__icontains=match.group(0)
         )
         qs = apply_filters(qs, filters).exclude(id__in=seen_chunk_ids).select_related("document")
+        # Explicit ordering because the slice below is a LIMIT: neither
+        # Chunk.Meta nor BaseModel.Meta defines `ordering`, so without
+        # this Postgres is free to return any 3 of the matching rows, and
+        # a different query plan can return different ones between runs.
+        # File order is both deterministic and the most natural reading
+        # order for several chunks of the same day.
+        qs = qs.order_by("document__path", "index")
 
         date_matches = [RetrievalResult(chunk=chunk, score=1.0) for chunk in qs[:_MAX_DATE_MATCHES]]
         if not date_matches:
