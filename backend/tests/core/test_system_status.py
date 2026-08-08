@@ -3,6 +3,8 @@ from rest_framework.test import APIClient
 
 from core.factories import MembershipFactory
 from ingestion.factories import ChunkFactory
+from rag.factories import ConversationFactory
+from rag.models import Citation, Message
 from sources.factories import DocumentFactory, SourceFactory
 
 pytestmark = pytest.mark.django_db
@@ -100,3 +102,51 @@ def test_requires_authentication() -> None:
     response = APIClient().get("/api/system/status/")
 
     assert response.status_code in (401, 403)
+
+
+def test_answer_metrics_are_not_distorted_by_the_citation_join() -> None:
+    """Two answers, one citing three chunks and one citing none.
+
+    Aggregating citations in the same query as the answer count would fan
+    the first answer into three rows: the count would read 4 instead of 2,
+    and the average latency would be pulled toward the heavily-cited
+    answer instead of being a plain mean.
+    """
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    document = DocumentFactory(source__workspace=membership.workspace)
+
+    cited = Message.objects.create(
+        conversation=conversation,
+        role=Message.Role.ASSISTANT,
+        content="grounded",
+        latency_ms=1000,
+    )
+    for rank in range(1, 4):
+        Citation.objects.create(
+            message=cited, chunk=ChunkFactory(document=document), rank=rank, score=0.5
+        )
+    Message.objects.create(
+        conversation=conversation,
+        role=Message.Role.ASSISTANT,
+        content="ungrounded",
+        latency_ms=3000,
+    )
+
+    body = _authed_client(membership.user).get("/api/system/status/").json()
+
+    assert body["answers"] == 2
+    assert body["avg_latency_ms"] == 2000  # plain mean, not weighted by citations
+    assert body["avg_citations_per_answer"] == 1.5
+    assert body["ungrounded_answers"] == 1
+
+
+def test_answer_metrics_are_null_when_nothing_has_been_asked() -> None:
+    membership = MembershipFactory()
+
+    body = _authed_client(membership.user).get("/api/system/status/").json()
+
+    assert body["answers"] == 0
+    assert body["avg_latency_ms"] is None
+    assert body["avg_citations_per_answer"] is None
+    assert body["ungrounded_answers"] == 0

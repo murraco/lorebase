@@ -13,9 +13,10 @@ from typing import Any
 from uuid import UUID
 
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, Q
 
 from ingestion.models import Chunk
+from rag.models import Citation, Message
 from sources.models import Document, Source
 
 
@@ -36,6 +37,14 @@ class SystemStatus:
     documents: int
     chunks: int
     embedded_chunks: int
+    answers: int
+    avg_latency_ms: int | None
+    avg_citations_per_answer: float | None
+    # Answers that cited nothing at all. The system prompt forbids
+    # answering outside the retrieved context, so this is not a curiosity:
+    # it counts the turns where retrieval found nothing usable or the
+    # model ignored that instruction. Nothing surfaced it before.
+    ungrounded_answers: int
     # True when a provider that produces meaningless output is active, so
     # the UI can call it out rather than showing it as just another value.
     using_fake_providers: bool
@@ -77,6 +86,21 @@ def get_system_status(workspace_ids: list[UUID]) -> SystemStatus:
         embedded=Count("id", filter=Q(embedding__isnull=False)),
     )
 
+    answers = Message.objects.filter(
+        role=Message.Role.ASSISTANT, conversation__workspace_id__in=workspace_ids
+    )
+    # Deliberately not one aggregate() with Count("citations") in it:
+    # that join fans a message out to one row per citation, which would
+    # inflate Count("id") and silently weight Avg("latency_ms") by how
+    # many sources each answer happened to cite.
+    answer_stats: dict[str, Any] = answers.aggregate(
+        total=Count("id"),
+        latency=Avg("latency_ms"),
+    )
+    total_answers: int = answer_stats["total"] or 0
+    total_citations = Citation.objects.filter(message__in=answers).count()
+    ungrounded = answers.annotate(n=Count("citations")).filter(n=0).count()
+
     embedding = _embedding_status()
     reranking = _reranking_status()
     llm = _llm_status()
@@ -93,5 +117,11 @@ def get_system_status(workspace_ids: list[UUID]) -> SystemStatus:
         ).count(),
         chunks=chunk_counts["total"] or 0,
         embedded_chunks=chunk_counts["embedded"] or 0,
+        answers=total_answers,
+        avg_latency_ms=round(answer_stats["latency"]) if answer_stats["latency"] else None,
+        avg_citations_per_answer=(
+            round(total_citations / total_answers, 2) if total_answers else None
+        ),
+        ungrounded_answers=ungrounded,
         using_fake_providers="fake" in {embedding.provider, reranking.provider, llm.provider},
     )

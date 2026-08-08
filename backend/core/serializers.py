@@ -16,4 +16,8 @@ class SystemStatusSerializer(serializers.Serializer):
     documents = serializers.IntegerField()
     chunks = serializers.IntegerField()
     embedded_chunks = serializers.IntegerField()
+    answers = serializers.IntegerField()
+    avg_latency_ms = serializers.IntegerField(allow_null=True)
+    avg_citations_per_answer = serializers.FloatField(allow_null=True)
+    ungrounded_answers = serializers.IntegerField()
     using_fake_providers = serializers.BooleanField()
