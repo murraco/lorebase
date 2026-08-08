@@ -29,13 +29,16 @@
   --border: #e2dbcc;
   --border-strong: #cdc4b0;
 
-  /* Deep forest rather than the oxblood also considered: evidence is
-     amber, and a red accent next to amber reads as one muddled warm
-     family instead of two distinct roles. */
-  --accent: #1f4d3d;
-  --accent-hover: #173b2e;
-  --accent-soft: #cfe0d7;
-  --accent-tint: #e8f1ec;
+  /* Graphite, not a hue: the accent is ink. That leaves the amber of the
+     evidence as the only colour on screen, which is exactly where the
+     attention belongs — a coloured accent competes with the one thing
+     the interface exists to point at. Forest green, oxblood, indigo and
+     teal were all measured and all passed contrast; this is the one that
+     doesn't fight the evidence. */
+  --accent: #2e2b26;
+  --accent-hover: #171512;
+  --accent-soft: #ddd8cc;
+  --accent-tint: #eeeae0;
   --accent-contrast: #fffdf8;
 
   /* Citations and retrieval provenance only. Deliberately never used for
@@ -100,13 +103,13 @@
     --border: #2c2822;
     --border-strong: #3d382f;
 
-    /* Lightened: the light theme's forest fails contrast against a dark
-       surface, and an accent you can't read is not an accent. */
-    --accent: #5e9e82;
-    --accent-hover: #74b296;
-    --accent-soft: #233a31;
-    --accent-tint: #1a2621;
-    --accent-contrast: #0f1512;
+    /* Inverted rather than lightened: on a dark surface the ink accent
+       becomes the paper one. */
+    --accent: #c9c2b4;
+    --accent-hover: #e0d9ca;
+    --accent-soft: #34302a;
+    --accent-tint: #23201b;
+    --accent-contrast: #14130f;
 
     --evidence: #d9a253;
     --evidence-soft: #372b18;
@@ -138,11 +141,11 @@
   --border: #2c2822;
   --border-strong: #3d382f;
 
-  --accent: #5e9e82;
-  --accent-hover: #74b296;
-  --accent-soft: #233a31;
-  --accent-tint: #1a2621;
-  --accent-contrast: #0f1512;
+  --accent: #c9c2b4;
+  --accent-hover: #e0d9ca;
+  --accent-soft: #34302a;
+  --accent-tint: #23201b;
+  --accent-contrast: #14130f;
 
   --evidence: #d9a253;
   --evidence-soft: #372b18;
