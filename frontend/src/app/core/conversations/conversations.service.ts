@@ -22,6 +22,14 @@ export class ConversationsService {
     return data;
   }
 
+  async delete(id: string): Promise<void> {
+    const { error } = await apiClient.DELETE('/api/conversations/{id}/', {
+      params: { path: { id } },
+    });
+    if (error) throw new Error('Failed to delete conversation.');
+    this.conversations.update((current) => current.filter((c) => c.id !== id));
+  }
+
   async listMessages(conversationId: string): Promise<Message[]> {
     const { data, error } = await apiClient.GET('/api/messages/', {
       params: { query: { conversation: conversationId } },

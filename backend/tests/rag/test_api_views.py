@@ -9,7 +9,7 @@ from ingestion.factories import ChunkFactory
 from rag.factories import ConversationFactory
 from rag.llm.base import ToolCallResult
 from rag.llm.factory import get_llm_provider
-from rag.models import Conversation, Message
+from rag.models import Citation, Conversation, Message
 from rag.retrieval.base import RetrievalResult
 from sources.factories import DocumentFactory
 
@@ -174,3 +174,45 @@ def test_chat_stream_rejects_a_missing_question_field() -> None:
     )
 
     assert response.status_code == 400
+
+
+def test_delete_conversation_removes_it_and_its_messages() -> None:
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    Message.objects.create(conversation=conversation, role=Message.Role.USER, content="hi")
+
+    response = _authed_client(membership.user).delete(f"/api/conversations/{conversation.id}/")
+
+    assert response.status_code == 204
+    assert not Conversation.objects.filter(pk=conversation.id).exists()
+    assert not Message.objects.filter(conversation_id=conversation.id).exists()
+
+
+def test_cannot_delete_a_conversation_from_another_workspace() -> None:
+    membership = MembershipFactory()
+    other_conversation = ConversationFactory()
+
+    response = _authed_client(membership.user).delete(
+        f"/api/conversations/{other_conversation.id}/"
+    )
+
+    assert response.status_code == 404
+    assert Conversation.objects.filter(pk=other_conversation.id).exists()
+
+
+def test_deleting_a_conversation_leaves_the_cited_chunks_alone() -> None:
+    """Citation points at a Chunk, never the reverse — deleting a
+    conversation must not take indexed content with it.
+    """
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    message = Message.objects.create(
+        conversation=conversation, role=Message.Role.ASSISTANT, content="answer"
+    )
+    chunk = ChunkFactory(document__source__workspace=membership.workspace)
+    Citation.objects.create(message=message, chunk=chunk)
+
+    _authed_client(membership.user).delete(f"/api/conversations/{conversation.id}/")
+
+    chunk.refresh_from_db()
+    assert chunk.pk is not None

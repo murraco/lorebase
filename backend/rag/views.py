@@ -10,8 +10,15 @@ class ConversationViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Destroy is a real delete, not a soft one: a conversation carries no
+    value once discarded, and its Messages and Citations cascade away with
+    it. Nothing indexed is touched — Citation points at a Chunk, not the
+    other way around, so the notes themselves are unaffected.
+    """
+
     serializer_class = ConversationSerializer
 
     def get_queryset(self):
