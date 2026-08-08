@@ -45,6 +45,9 @@ export class ChatPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly loadError = signal<string | null>(null);
   protected readonly expandedCitationId = signal<string | null>(null);
+  /** Which evidence card is highlighted, driven by hovering either the
+   * card or the marker in the answer. */
+  protected readonly focusedCitationId = signal<string | null>(null);
   protected readonly suggestions = SUGGESTIONS;
   protected question = '';
 
@@ -95,6 +98,28 @@ export class ChatPage implements OnInit {
 
   protected toggleCitation(citationId: string): void {
     this.expandedCitationId.update((current) => (current === citationId ? null : citationId));
+  }
+
+  /** Every citation from the most recent assistant message. The panel
+   * follows the latest answer rather than accumulating the whole
+   * conversation's sources, which would grow without bound and stop
+   * meaning "what this answer stands on". */
+  protected readonly evidence = computed<Citation[]>(() => {
+    const answers = this.messages().filter((m) => m.role === 'assistant' && !m.pending);
+    return answers.length > 0 ? answers[answers.length - 1].citations : [];
+  });
+
+  /** Trimmed to a few lines: the panel is for scanning, and the full
+   * passage is one click away in the expanded view. */
+  protected preview(citation: Citation): string {
+    const text = citation.content.trim().replace(/\s+/g, ' ');
+    return text.length > 180 ? text.slice(0, 179) + '…' : text;
+  }
+
+  /** Scores are not comparable across retrieval strategies, so this is
+   * shown as provenance and never as a quality bar or a percentage. */
+  protected formatScore(score: number | null | undefined): string | null {
+    return score === null || score === undefined ? null : score.toFixed(3);
   }
 
   protected useSuggestion(suggestion: string): void {

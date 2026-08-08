@@ -3,83 +3,131 @@
      are messages the thread takes the space and the composer docks to the
      bottom. Doing this with a modifier class rather than two copies of the
      markup keeps the textarea's state (and focus) across the transition. -->
-<div class="chat" [class.is-empty]="isEmpty()">
-  <div class="thread">
-    @if (loadError()) {
-      <p class="load-error">{{ loadError() }}</p>
-    }
+<div class="chat" [class.is-empty]="isEmpty()" [class.has-evidence]="evidence().length > 0">
+  <div class="conversation-column">
+    <div class="thread">
+      @if (loadError()) {
+        <p class="load-error">{{ loadError() }}</p>
+      }
 
-    @if (isEmpty()) {
-      <div class="hero">
-        <h1 class="hero-title">What do you want to know?</h1>
-        <p class="hero-subtitle">
-          Ask anything from your notes, PDFs, and repos. Every answer cites the exact lines it came
-          from.
-        </p>
-      </div>
-    }
+      @if (isEmpty()) {
+        <div class="hero">
+          <h1 class="hero-title">What do you want to know?</h1>
+          <p class="hero-subtitle">
+            Ask anything from your notes, PDFs, and repos. Every answer cites the exact lines it
+            came from.
+          </p>
+        </div>
+      }
 
-    @for (message of messages(); track message.id) {
-      <div class="msg" [class]="message.role">
-        @if (message.pending) {
-          <span class="typing-indicator" aria-label="Thinking">
-            <span></span><span></span><span></span>
-          </span>
-        } @else if (message.role === 'assistant') {
-          <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
-        } @else {
-          {{ message.content }}
-        }
-        @if (message.citations.length > 0) {
-          <div class="cites">
-            @for (citation of message.citations; track citation.id) {
-              <button class="cite" type="button" (click)="toggleCitation(citation.id)">
-                @if (citation.heading_path) {
-                  <span class="cite-heading">{{ citation.heading_path }}</span>
-                }
-                <span class="cite-source">{{ citation.path }} · l.{{ citation.start_line }}</span>
-              </button>
-            }
-          </div>
-          @for (citation of message.citations; track citation.id) {
-            @if (expandedCitationId() === citation.id) {
-              <pre class="fragment">{{ citation.content }}</pre>
-            }
+      @for (message of messages(); track message.id) {
+        <div class="msg" [class]="message.role">
+          @if (message.pending) {
+            <span class="typing-indicator" aria-label="Thinking">
+              <span></span><span></span><span></span>
+            </span>
+          } @else if (message.role === 'assistant') {
+            <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
+          } @else {
+            {{ message.content }}
           }
-        }
-      </div>
-    }
-  </div>
+          @if (message.citations.length > 0) {
+            <div class="cites">
+              <span class="cites-label">Grounded in</span>
+              @for (citation of message.citations; track citation.id; let i = $index) {
+                <button
+                  class="cite"
+                  type="button"
+                  [class.focused]="focusedCitationId() === citation.id"
+                  [attr.aria-label]="'Source ' + (i + 1) + ': ' + citation.path"
+                  (click)="toggleCitation(citation.id)"
+                  (mouseenter)="focusedCitationId.set(citation.id)"
+                  (mouseleave)="focusedCitationId.set(null)"
+                  (focus)="focusedCitationId.set(citation.id)"
+                  (blur)="focusedCitationId.set(null)"
+                >
+                  {{ i + 1 }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
 
-  <div class="composer-dock">
-    <form class="composer" (ngSubmit)="send()">
-      <textarea
-        name="question"
-        rows="1"
-        [(ngModel)]="question"
-        placeholder="Ask something about your notes…"
-        [disabled]="sending()"
-        (keydown.enter)="onEnter($event)"
-      ></textarea>
-      <div class="composer-actions">
-        <span class="composer-hint">Shift + Enter for a new line</span>
-        <button type="submit" [disabled]="sending() || !question.trim()" aria-label="Send">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <line x1="12" y1="19" x2="12" y2="5" />
-            <polyline points="6 11 12 5 18 11" />
-          </svg>
-        </button>
-      </div>
-    </form>
-
-    @if (isEmpty()) {
-      <div class="suggestions">
-        @for (suggestion of suggestions; track suggestion) {
-          <button type="button" class="suggestion" (click)="useSuggestion(suggestion)">
-            {{ suggestion }}
+    <div class="composer-dock">
+      <form class="composer" (ngSubmit)="send()">
+        <textarea
+          name="question"
+          rows="1"
+          [(ngModel)]="question"
+          placeholder="Ask something about your notes…"
+          [disabled]="sending()"
+          (keydown.enter)="onEnter($event)"
+        ></textarea>
+        <div class="composer-actions">
+          <span class="composer-hint">Shift + Enter for a new line</span>
+          <button type="submit" [disabled]="sending() || !question.trim()" aria-label="Send">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="12" y1="19" x2="12" y2="5" />
+              <polyline points="6 11 12 5 18 11" />
+            </svg>
           </button>
-        }
-      </div>
-    }
+        </div>
+      </form>
+
+      @if (isEmpty()) {
+        <div class="suggestions">
+          @for (suggestion of suggestions; track suggestion) {
+            <button type="button" class="suggestion" (click)="useSuggestion(suggestion)">
+              {{ suggestion }}
+            </button>
+          }
+        </div>
+      }
+    </div>
   </div>
+
+  <!-- The evidence column is the point of the product: you read the
+       answer while seeing what it stands on, instead of expanding one
+       source at a time and losing your place. It tracks the latest
+       answer only. -->
+  @if (evidence().length > 0) {
+    <aside class="evidence" aria-label="Sources for this answer">
+      <p class="evidence-title">Evidence</p>
+      @for (citation of evidence(); track citation.id; let i = $index) {
+        <article
+          class="evidence-card"
+          [class.focused]="focusedCitationId() === citation.id"
+          (mouseenter)="focusedCitationId.set(citation.id)"
+          (mouseleave)="focusedCitationId.set(null)"
+        >
+          <header class="evidence-head">
+            <span class="evidence-marker">{{ i + 1 }}</span>
+            <span class="evidence-heading">{{ citation.heading_path || citation.path }}</span>
+          </header>
+          <p class="evidence-meta">
+            <span class="evidence-path">{{ citation.path }}</span>
+            <span>l.{{ citation.start_line }}–{{ citation.end_line }}</span>
+            @if (formatScore(citation.score); as score) {
+              <span
+                class="evidence-score"
+                title="Retriever score. Only comparable within one answer."
+              >
+                {{ score }}
+              </span>
+            }
+          </p>
+          @if (expandedCitationId() === citation.id) {
+            <pre class="evidence-full">{{ citation.content }}</pre>
+          } @else {
+            <p class="evidence-preview">{{ preview(citation) }}</p>
+          }
+          <button class="evidence-toggle" type="button" (click)="toggleCitation(citation.id)">
+            {{ expandedCitationId() === citation.id ? 'Show less' : 'Show passage' }}
+          </button>
+        </article>
+      }
+    </aside>
+  }
 </div>

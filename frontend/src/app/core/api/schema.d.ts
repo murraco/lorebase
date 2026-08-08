@@ -4,781 +4,785 @@
  */
 
 export interface paths {
-  '/api/conversations/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/conversations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Destroy is a real delete, not a soft one: a conversation carries no
+         *     value once discarded, and its Messages and Citations cascade away with
+         *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+         *     other way around, so the notes themselves are unaffected.
+         */
+        get: operations["conversations_list"];
+        put?: never;
+        /**
+         * @description Destroy is a real delete, not a soft one: a conversation carries no
+         *     value once discarded, and its Messages and Citations cascade away with
+         *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+         *     other way around, so the notes themselves are unaffected.
+         */
+        post: operations["conversations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Destroy is a real delete, not a soft one: a conversation carries no
-     *     value once discarded, and its Messages and Citations cascade away with
-     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
-     *     other way around, so the notes themselves are unaffected.
-     */
-    get: operations['conversations_list'];
-    put?: never;
-    /**
-     * @description Destroy is a real delete, not a soft one: a conversation carries no
-     *     value once discarded, and its Messages and Citations cascade away with
-     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
-     *     other way around, so the notes themselves are unaffected.
-     */
-    post: operations['conversations_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/conversations/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/conversations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Destroy is a real delete, not a soft one: a conversation carries no
+         *     value once discarded, and its Messages and Citations cascade away with
+         *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+         *     other way around, so the notes themselves are unaffected.
+         */
+        get: operations["conversations_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Destroy is a real delete, not a soft one: a conversation carries no
+         *     value once discarded, and its Messages and Citations cascade away with
+         *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+         *     other way around, so the notes themselves are unaffected.
+         */
+        delete: operations["conversations_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Destroy is a real delete, not a soft one: a conversation carries no
-     *     value once discarded, and its Messages and Citations cascade away with
-     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
-     *     other way around, so the notes themselves are unaffected.
-     */
-    get: operations['conversations_retrieve'];
-    put?: never;
-    post?: never;
-    /**
-     * @description Destroy is a real delete, not a soft one: a conversation carries no
-     *     value once discarded, and its Messages and Citations cascade away with
-     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
-     *     other way around, so the notes themselves are unaffected.
-     */
-    delete: operations['conversations_destroy'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["documents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['documents_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/documents/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/documents/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["documents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['documents_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/messages/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read-only: assistant messages are only ever created by the chat
+         *     orchestration in rag.chat.service.ask() (retrieval, LLM call, citation
+         *     validation), never via a plain CRUD POST here.
+         */
+        get: operations["messages_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Read-only: assistant messages are only ever created by the chat
-     *     orchestration in rag.chat.service.ask() (retrieval, LLM call, citation
-     *     validation), never via a plain CRUD POST here.
-     */
-    get: operations['messages_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/sources/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/sources/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sources_list"];
+        put?: never;
+        post: operations["sources_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['sources_list'];
-    put?: never;
-    post: operations['sources_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/sources/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/sources/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sources_retrieve"];
+        put: operations["sources_update"];
+        post?: never;
+        delete: operations["sources_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["sources_partial_update"];
+        trace?: never;
     };
-    get: operations['sources_retrieve'];
-    put: operations['sources_update'];
-    post?: never;
-    delete: operations['sources_destroy'];
-    options?: never;
-    head?: never;
-    patch: operations['sources_partial_update'];
-    trace?: never;
-  };
-  '/api/sources/{id}/sync/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/sources/{id}/sync/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sources_sync_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations['sources_sync_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/sources/browse/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/sources/browse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sources_browse_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['sources_browse_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/system/status/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/system/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read-only. Kept in DRF (unlike the plain Django auth views next
+         *     door in core/views.py) so it lands in the OpenAPI schema and the SPA
+         *     gets a generated type for it like every other endpoint.
+         */
+        get: operations["system_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Read-only. Kept in DRF (unlike the plain Django auth views next
-     *     door in core/views.py) so it lands in the OpenAPI schema and the SPA
-     *     gets a generated type for it like every other endpoint.
-     */
-    get: operations['system_status_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    Citation: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      chunk: string;
-      readonly path: string;
-      readonly heading_path: string;
-      readonly start_line: number;
-      readonly end_line: number;
-      readonly content: string;
+    schemas: {
+        Citation: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            chunk: string;
+            readonly path: string;
+            readonly heading_path: string;
+            readonly source_name: string;
+            rank?: number;
+            /** Format: double */
+            score?: number | null;
+            readonly start_line: number;
+            readonly end_line: number;
+            readonly content: string;
+        };
+        Conversation: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            workspace: string;
+            /** Format: uuid */
+            readonly user: string;
+            title?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ConversationRequest: {
+            /** Format: uuid */
+            workspace: string;
+            title?: string;
+        };
+        DirectoryEntry: {
+            name: string;
+            path: string;
+            absolute_path: string;
+        };
+        DirectoryListing: {
+            path: string;
+            parent: string | null;
+            absolute_path: string;
+            entries: components["schemas"]["DirectoryEntry"][];
+        };
+        Document: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            source: string;
+            external_id: string;
+            path: string;
+            title?: string;
+            version?: number;
+            deleted?: boolean;
+            metadata?: unknown;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        Message: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            conversation: string;
+            role: components["schemas"]["RoleEnum"];
+            content: string;
+            latency_ms?: number | null;
+            input_tokens?: number | null;
+            output_tokens?: number | null;
+            /** Format: decimal */
+            cost?: string | null;
+            readonly citations: components["schemas"]["Citation"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PaginatedConversationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Conversation"][];
+        };
+        PaginatedDocumentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Document"][];
+        };
+        PaginatedMessageList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Message"][];
+        };
+        PaginatedSourceList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Source"][];
+        };
+        PatchedSourceRequest: {
+            /** Format: uuid */
+            workspace?: string;
+            name?: string;
+            type?: components["schemas"]["TypeEnum"];
+            config?: unknown;
+        };
+        ProviderStatus: {
+            provider: string;
+            model: string;
+        };
+        /**
+         * @description * `user` - User
+         *     * `assistant` - Assistant
+         * @enum {string}
+         */
+        RoleEnum: "user" | "assistant";
+        Source: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            workspace: string;
+            name: string;
+            type: components["schemas"]["TypeEnum"];
+            config?: unknown;
+            readonly status: components["schemas"]["StatusEnum"];
+            readonly chunk_count: number;
+            readonly embedded_chunk_count: number;
+            /** Format: date-time */
+            readonly last_synced_at: string | null;
+            readonly last_error: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        SourceRequest: {
+            /** Format: uuid */
+            workspace: string;
+            name: string;
+            type: components["schemas"]["TypeEnum"];
+            config?: unknown;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `syncing` - Syncing
+         *     * `ready` - Ready
+         *     * `error` - Error
+         * @enum {string}
+         */
+        StatusEnum: "pending" | "syncing" | "ready" | "error";
+        SyncQueued: {
+            status: string;
+        };
+        SystemStatus: {
+            embedding: components["schemas"]["ProviderStatus"];
+            reranking: components["schemas"]["ProviderStatus"];
+            llm: components["schemas"]["ProviderStatus"];
+            embedding_dimensions: number;
+            retrieval_strategy: string;
+            sources: number;
+            documents: number;
+            chunks: number;
+            embedded_chunks: number;
+            using_fake_providers: boolean;
+        };
+        /**
+         * @description * `local_folder` - Local folder
+         *     * `github` - GitHub
+         * @enum {string}
+         */
+        TypeEnum: "local_folder" | "github";
     };
-    Conversation: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      workspace: string;
-      /** Format: uuid */
-      readonly user: string;
-      title?: string;
-      /** Format: date-time */
-      readonly created_at: string;
-    };
-    ConversationRequest: {
-      /** Format: uuid */
-      workspace: string;
-      title?: string;
-    };
-    DirectoryEntry: {
-      name: string;
-      path: string;
-      absolute_path: string;
-    };
-    DirectoryListing: {
-      path: string;
-      parent: string | null;
-      absolute_path: string;
-      entries: components['schemas']['DirectoryEntry'][];
-    };
-    Document: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      source: string;
-      external_id: string;
-      path: string;
-      title?: string;
-      version?: number;
-      deleted?: boolean;
-      metadata?: unknown;
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly updated_at: string;
-    };
-    Message: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      conversation: string;
-      role: components['schemas']['RoleEnum'];
-      content: string;
-      latency_ms?: number | null;
-      input_tokens?: number | null;
-      output_tokens?: number | null;
-      /** Format: decimal */
-      cost?: string | null;
-      readonly citations: components['schemas']['Citation'][];
-      /** Format: date-time */
-      readonly created_at: string;
-    };
-    PaginatedConversationList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Conversation'][];
-    };
-    PaginatedDocumentList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Document'][];
-    };
-    PaginatedMessageList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Message'][];
-    };
-    PaginatedSourceList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Source'][];
-    };
-    PatchedSourceRequest: {
-      /** Format: uuid */
-      workspace?: string;
-      name?: string;
-      type?: components['schemas']['TypeEnum'];
-      config?: unknown;
-    };
-    ProviderStatus: {
-      provider: string;
-      model: string;
-    };
-    /**
-     * @description * `user` - User
-     *     * `assistant` - Assistant
-     * @enum {string}
-     */
-    RoleEnum: 'user' | 'assistant';
-    Source: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      workspace: string;
-      name: string;
-      type: components['schemas']['TypeEnum'];
-      config?: unknown;
-      readonly status: components['schemas']['StatusEnum'];
-      readonly chunk_count: number;
-      readonly embedded_chunk_count: number;
-      /** Format: date-time */
-      readonly last_synced_at: string | null;
-      readonly last_error: string;
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly updated_at: string;
-    };
-    SourceRequest: {
-      /** Format: uuid */
-      workspace: string;
-      name: string;
-      type: components['schemas']['TypeEnum'];
-      config?: unknown;
-    };
-    /**
-     * @description * `pending` - Pending
-     *     * `syncing` - Syncing
-     *     * `ready` - Ready
-     *     * `error` - Error
-     * @enum {string}
-     */
-    StatusEnum: 'pending' | 'syncing' | 'ready' | 'error';
-    SyncQueued: {
-      status: string;
-    };
-    SystemStatus: {
-      embedding: components['schemas']['ProviderStatus'];
-      reranking: components['schemas']['ProviderStatus'];
-      llm: components['schemas']['ProviderStatus'];
-      embedding_dimensions: number;
-      retrieval_strategy: string;
-      sources: number;
-      documents: number;
-      chunks: number;
-      embedded_chunks: number;
-      using_fake_providers: boolean;
-    };
-    /**
-     * @description * `local_folder` - Local folder
-     *     * `github` - GitHub
-     * @enum {string}
-     */
-    TypeEnum: 'local_folder' | 'github';
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  conversations_list: {
-    parameters: {
-      query?: {
-        /** @description A page number within the paginated result set. */
-        page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    conversations_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedConversationList'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedConversationList"];
+                };
+            };
         };
-      };
     };
-  };
-  conversations_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConversationRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ConversationRequest'];
-        'multipart/form-data': components['schemas']['ConversationRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
+    conversations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Conversation'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConversationRequest"];
+                "multipart/form-data": components["schemas"]["ConversationRequest"];
+            };
         };
-      };
-    };
-  };
-  conversations_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this conversation. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
         };
-        content: {
-          'application/json': components['schemas']['Conversation'];
+    };
+    conversations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this conversation. */
+                id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  conversations_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this conversation. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
         };
-        content?: never;
-      };
     };
-  };
-  documents_list: {
-    parameters: {
-      query?: {
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Filter documents down to a single source. */
-        source?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    conversations_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this conversation. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedDocumentList'];
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
     };
-  };
-  documents_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this document. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    documents_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Filter documents down to a single source. */
+                source?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Document'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDocumentList"];
+                };
+            };
         };
-      };
     };
-  };
-  messages_list: {
-    parameters: {
-      query?: {
-        /** @description Filter messages down to a single conversation. */
-        conversation?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this document. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedMessageList'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
         };
-      };
     };
-  };
-  sources_list: {
-    parameters: {
-      query?: {
-        /** @description A page number within the paginated result set. */
-        page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    messages_list: {
+        parameters: {
+            query?: {
+                /** @description Filter messages down to a single conversation. */
+                conversation?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedSourceList'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedMessageList"];
+                };
+            };
         };
-      };
     };
-  };
-  sources_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SourceRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['SourceRequest'];
-        'multipart/form-data': components['schemas']['SourceRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
+    sources_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Source'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSourceList"];
+                };
+            };
         };
-      };
     };
-  };
-  sources_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this source. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    sources_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Source'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SourceRequest"];
+                "multipart/form-data": components["schemas"]["SourceRequest"];
+            };
         };
-      };
-    };
-  };
-  sources_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this source. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SourceRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['SourceRequest'];
-        'multipart/form-data': components['schemas']['SourceRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"];
+                };
+            };
         };
-        content: {
-          'application/json': components['schemas']['Source'];
+    };
+    sources_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this source. */
+                id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  sources_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this source. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"];
+                };
+            };
         };
-        content?: never;
-      };
     };
-  };
-  sources_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this source. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedSourceRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedSourceRequest'];
-        'multipart/form-data': components['schemas']['PatchedSourceRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    sources_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this source. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Source'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SourceRequest"];
+                "multipart/form-data": components["schemas"]["SourceRequest"];
+            };
         };
-      };
-    };
-  };
-  sources_sync_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this source. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"];
+                };
+            };
         };
-        content: {
-          'application/json': components['schemas']['SyncQueued'];
-        };
-      };
     };
-  };
-  sources_browse_retrieve: {
-    parameters: {
-      query?: {
-        path?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    sources_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this source. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['DirectoryListing'];
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
     };
-  };
-  system_status_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    sources_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this source. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['SystemStatus'];
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSourceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSourceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSourceRequest"];
+            };
         };
-      };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"];
+                };
+            };
+        };
     };
-  };
+    sources_sync_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this source. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncQueued"];
+                };
+            };
+        };
+    };
+    sources_browse_retrieve: {
+        parameters: {
+            query?: {
+                path?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryListing"];
+                };
+            };
+        };
+    };
+    system_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStatus"];
+                };
+            };
+        };
+    };
 }
