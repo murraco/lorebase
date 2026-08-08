@@ -1,25 +1,63 @@
-<div class="wrap">
-  <form class="card" (ngSubmit)="submit()">
+<!-- Two panels: what this is, and the way in. The left panel exists
+     because a bare login card says nothing about the product to anyone
+     opening it for the first time. It collapses away on narrow screens,
+     where the form is all that matters. -->
+<div class="page">
+  <section class="pitch">
     <p class="brand">Lorebase<span>.</span></p>
-    <label>
-      Username
-      <input name="username" type="text" [(ngModel)]="username" autocomplete="username" required />
-    </label>
-    <label>
-      Password
-      <input
-        name="password"
-        type="password"
-        [(ngModel)]="password"
-        autocomplete="current-password"
-        required
-      />
-    </label>
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-    <button type="submit" [disabled]="submitting()">
-      {{ submitting() ? 'Signing in…' : 'Sign in' }}
-    </button>
-  </form>
+    <h1 class="headline">Ask your own notes, and check the answer.</h1>
+    <p class="lede">
+      A personal knowledge base over your notes, PDFs, and repos. Every answer is grounded in
+      passages it actually retrieved — and shows you which ones.
+    </p>
+
+    <!-- A sample of the real thing rather than a decorative graphic: an
+         answer next to the evidence it stands on, which is the product. -->
+    <div class="sample" aria-hidden="true">
+      <p class="sample-answer">
+        The refactor shipped on Tuesday and the deploy is still pending.<span class="sample-marker"
+          >1</span
+        >
+      </p>
+      <div class="sample-evidence">
+        <span class="sample-marker">1</span>
+        <div>
+          <p class="sample-heading">2025-07-21 &rsaquo; Work</p>
+          <p class="sample-meta">daily.md · l.412–438 · 0.879</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="gate">
+    <form class="card" (ngSubmit)="submit()">
+      <h2 class="card-title">Sign in</h2>
+      <label>
+        Username
+        <input
+          name="username"
+          type="text"
+          [(ngModel)]="username"
+          autocomplete="username"
+          required
+        />
+      </label>
+      <label>
+        Password
+        <input
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+  </section>
 </div>

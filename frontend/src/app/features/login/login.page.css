@@ -1,30 +1,148 @@
-.wrap {
+.page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
 }
 
-.card {
+/* Below this the pitch stops fitting alongside the form, and the form is
+   the only thing that's actually required to get in. */
+@media (max-width: 860px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pitch {
+    display: none;
+  }
+}
+
+.pitch {
   background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 28px;
-  width: 300px;
+  border-right: 1px solid var(--border);
+  padding: 56px 52px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 14px;
 }
 
 .brand {
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: 600;
-  margin: 0 0 6px;
+  margin: 0 0 10px;
+  color: var(--text);
 }
 
 .brand span {
   color: var(--accent);
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+  max-width: 18ch;
+}
+
+.lede {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 44ch;
+}
+
+.sample {
+  margin-top: 22px;
+  max-width: 400px;
+}
+
+/* Serif for the answer, mono for the evidence — the same rule the real
+   interface follows, which is why this works as a preview at all. */
+.sample-answer {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 0 0 8px;
+}
+
+.sample-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--evidence-soft);
+  color: var(--evidence-text);
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.sample-evidence {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--evidence);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.sample-evidence .sample-marker {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
+.sample-heading {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+
+.sample-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 2px;
 }
 
 label {
@@ -36,23 +154,31 @@ label {
 }
 
 input {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
   font-size: var(--text-base);
   font-family: inherit;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-raised);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
 input:focus {
-  outline: 2px solid var(--accent-soft);
+  outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
 }
 
 .error {
   color: var(--danger);
+  background: var(--danger-soft);
   font-size: var(--text-sm);
+  line-height: 1.45;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
   margin: 0;
 }
 
@@ -60,11 +186,14 @@ button {
   border: none;
   background: var(--accent);
   color: var(--accent-contrast);
-  padding: 10px;
+  padding: 11px;
   border-radius: var(--radius-md);
   font-size: var(--text-base);
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
+  transition: background var(--transition);
+  margin-top: 2px;
 }
 
 button:hover:not(:disabled) {
