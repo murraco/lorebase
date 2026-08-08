@@ -21,6 +21,42 @@ def test_process_document_creates_chunks() -> None:
     assert "Some body text." in chunk.content
 
 
+def test_section_boundary_pattern_splits_otherwise_headingless_content() -> None:
+    # Entries long enough to clear min_tokens on their own, so they land
+    # in separate chunks — the realistic case (an actual day's journal
+    # entry, not a two-word stub).
+    document = DocumentFactory()
+    text = "\n\n".join(
+        [
+            f"2023-05-15\n{'first entry content. ' * 20}",
+            f"2023-05-16\n{'second entry content. ' * 20}",
+        ]
+    )
+
+    process_document(document, text=text, section_boundary_pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+    chunks = list(document.chunks.order_by("index"))
+    assert [c.heading_path for c in chunks] == ["2023-05-15", "2023-05-16"]
+    assert "first entry" in chunks[0].content
+    assert "second entry" in chunks[1].content
+
+
+def test_short_entries_merge_but_both_dates_survive_in_the_merged_content() -> None:
+    # HeadingChunker merges consecutive under-min_tokens pieces (existing
+    # behavior, see docs/roadmap.md's deuda técnica) — heading_path only
+    # keeps the first piece's label. That's fine for grounding: the date
+    # text itself, not heading_path, is what actually reaches the
+    # embedding/search/prompt, and it's still right there in the content.
+    document = DocumentFactory()
+    text = "2023-05-15\nfirst entry\n\n2023-05-16\nsecond entry"
+
+    process_document(document, text=text, section_boundary_pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+    chunk = document.chunks.get()
+    assert "2023-05-15" in chunk.content
+    assert "2023-05-16" in chunk.content
+
+
 def test_reprocessing_replaces_chunks_entirely() -> None:
     document = DocumentFactory()
     process_document(document, text="# A\n\nfirst version")

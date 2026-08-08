@@ -11,15 +11,70 @@ from sources.models import Document, Source, SyncRun
 
 
 def _ingest(document: Document, raw_document: RawDocument) -> None:
+    canonical = _find_canonical_duplicate(document)
+    if canonical is not None:
+        # Same content already indexed under a different file in this
+        # source — chunking and embedding it again would just duplicate
+        # every resulting chunk as a retrieval candidate, for no benefit
+        # (whichever one gets retrieved, the content is identical) at
+        # real embedding cost. The Document row itself is kept (it's a
+        # real file that exists), just left with no chunks of its own.
+        document.chunks.all().delete()
+        document.metadata = {**document.metadata, "duplicate_of": str(canonical.id)}
+        document.save(update_fields=["metadata"])
+        return
+
+    # Optional, source-level config — content with no Markdown headings
+    # (a flat journal file using bare timestamp lines, say) otherwise
+    # chunks blindly by token budget with no anchor for what any given
+    # chunk is about. See MarkdownParser for how it's used.
+    section_boundary_pattern = document.source.config.get("section_boundary_pattern")
+
     if raw_document.binary is not None:
         # Cached for citation purposes; process_document parses the same
         # bytes independently, it doesn't read this back.
         filename = Path(raw_document.path).name
         document.original_file.save(filename, ContentFile(raw_document.binary), save=True)
-        process_document(document, binary=raw_document.binary)
+        process_document(
+            document, binary=raw_document.binary, section_boundary_pattern=section_boundary_pattern
+        )
     else:
         assert raw_document.content is not None, "raw document has neither text nor binary"
-        process_document(document, text=raw_document.content)
+        process_document(
+            document, text=raw_document.content, section_boundary_pattern=section_boundary_pattern
+        )
+
+
+def _find_canonical_duplicate(document: Document) -> Document | None:
+    """The earliest other non-deleted, non-duplicate Document in the same
+    source sharing this content_hash — but only if it's genuinely earlier
+    than `document` itself. Excluding documents that are themselves
+    already marked as a duplicate prevents two files ingested in the same
+    sync pass (near-identical created_at) from pointing at each other:
+    without it, whichever gets processed second would find the first
+    already flagged and — wrongly — treat that flag as disqualifying,
+    looping back into a duplicate_of the other. Requiring the candidate
+    to actually be earlier (not just "some other document with this
+    hash") is what stops the genuinely-earliest file from getting marked
+    as a duplicate of a later one it happens to be compared against.
+    external_id is the tiebreaker for the rare case of an identical
+    timestamp, so the result is deterministic either way.
+    """
+    candidate = (
+        Document.objects.filter(
+            source=document.source, content_hash=document.content_hash, deleted=False
+        )
+        .exclude(pk=document.pk)
+        .exclude(metadata__has_key="duplicate_of")
+        .order_by("created_at", "external_id")
+        .first()
+    )
+    if candidate is None:
+        return None
+
+    this_key = (document.created_at, document.external_id)
+    candidate_key = (candidate.created_at, candidate.external_id)
+    return candidate if candidate_key < this_key else None
 
 
 @dataclass

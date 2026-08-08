@@ -4,9 +4,10 @@ from pathlib import Path
 import pytest
 from django.db import connection
 
+from sources.connectors.registry import get_connector_class
 from sources.factories import SourceFactory
 from sources.models import Document, Source
-from sources.sync import sync_source
+from sources.sync import _ingest, sync_source
 
 pytestmark = pytest.mark.django_db
 
@@ -127,6 +128,61 @@ def test_sync_reports_all_three_kinds_of_change_together(tmp_path: Path) -> None
 
     assert (stats.added, stats.updated, stats.deleted) == (1, 1, 1)
     assert Document.objects.filter(source=source, deleted=False).count() == 3
+
+
+def test_duplicate_content_is_not_double_indexed(tmp_path: Path) -> None:
+    (tmp_path / "todo1.md").write_text("# Todo\n\nsame content in both files")
+    (tmp_path / "todo2.md").write_text("# Todo\n\nsame content in both files")
+    source = make_local_source(tmp_path)
+
+    sync_source(source)
+
+    canonical = source.documents.get(external_id="todo1.md")
+    duplicate = source.documents.get(external_id="todo2.md")
+    assert canonical.chunks.exists()
+    assert not duplicate.chunks.exists()
+    assert duplicate.metadata["duplicate_of"] == str(canonical.id)
+    assert "duplicate_of" not in canonical.metadata
+
+
+def test_duplicate_resolves_to_the_earliest_file_regardless_of_name(tmp_path: Path) -> None:
+    # "a.md" sorts before "z.md" alphabetically, but sync order (creation
+    # order) is what determines canonical status, not the filename.
+    (tmp_path / "z_first.md").write_text("identical content")
+    source = make_local_source(tmp_path)
+    sync_source(source)
+
+    (tmp_path / "a_second.md").write_text("identical content")
+    sync_source(source)
+
+    first = source.documents.get(external_id="z_first.md")
+    second = source.documents.get(external_id="a_second.md")
+    assert first.chunks.exists()
+    assert not second.chunks.exists()
+    assert second.metadata["duplicate_of"] == str(first.id)
+
+
+def test_reingesting_both_duplicates_does_not_create_a_circular_reference(tmp_path: Path) -> None:
+    # Regression guard for a real bug: re-running ingestion for two
+    # already-existing duplicate documents (e.g. after a config change
+    # that forces a full re-chunk) once made them point at each other —
+    # both ended up with zero chunks and a duplicate_of the other.
+    (tmp_path / "todo1.md").write_text("identical content")
+    (tmp_path / "todo2.md").write_text("identical content")
+    source = make_local_source(tmp_path)
+    sync_source(source)
+
+    connector = get_connector_class(source.type)(source.config)
+    existing = {d.external_id: d for d in source.documents.filter(deleted=False)}
+    for raw_document in connector.fetch_documents():
+        _ingest(existing[raw_document.external_id], raw_document)
+
+    todo1 = source.documents.get(external_id="todo1.md")
+    todo2 = source.documents.get(external_id="todo2.md")
+    assert todo1.chunks.exists()
+    assert not todo2.chunks.exists()
+    assert todo2.metadata["duplicate_of"] == str(todo1.id)
+    assert "duplicate_of" not in todo1.metadata
 
 
 def test_pdf_sync_caches_the_original_and_tags_chunks_with_page(

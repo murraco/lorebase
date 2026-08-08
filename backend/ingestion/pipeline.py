@@ -10,13 +10,16 @@ from ingestion.parsers.markdown import MarkdownParser
 from ingestion.parsers.pdf import extract_pdf_pages
 from sources.models import Document
 
-_parser = MarkdownParser()
 _chunker = HeadingChunker()
 
 
 @transaction.atomic
 def process_document(
-    document: Document, *, text: str | None = None, binary: bytes | None = None
+    document: Document,
+    *,
+    text: str | None = None,
+    binary: bytes | None = None,
+    section_boundary_pattern: str | None = None,
 ) -> None:
     """Parse + chunk a document's current content and persist its Chunks,
     replacing anything left over from a previous version wholesale rather
@@ -24,12 +27,18 @@ def process_document(
 
     Exactly one of `text` (Markdown, from a text-based connector) or
     `binary` (PDF bytes) must be given.
+
+    `section_boundary_pattern` comes from the owning Source's config (see
+    sources.sync._ingest) — content with no Markdown headings at all (a
+    flat journal file using bare timestamp lines, say) otherwise parses as
+    one giant headingless section, chunked blindly by token budget alone.
     """
+    parser = MarkdownParser(extra_boundary_pattern=section_boundary_pattern)
     if binary is not None:
-        chunks_data = _chunk_pdf(binary)
+        chunks_data = _chunk_pdf(binary, parser)
     else:
         assert text is not None, "process_document needs either text or binary"
-        sections = _parser.parse(text)
+        sections = parser.parse(text)
         chunks_data = _chunker.chunk(text, sections)
 
     document.chunks.all().delete()
@@ -48,7 +57,7 @@ def process_document(
     )
 
 
-def _chunk_pdf(binary: bytes) -> list[ChunkData]:
+def _chunk_pdf(binary: bytes, parser: MarkdownParser) -> list[ChunkData]:
     """Each PDF page is parsed and chunked independently — through the
     exact same MarkdownParser + HeadingChunker as any other note, so
     start_line/end_line stay meaningful (relative to that page's own
@@ -57,7 +66,7 @@ def _chunk_pdf(binary: bytes) -> list[ChunkData]:
     """
     all_chunks: list[ChunkData] = []
     for page_number, page_text in enumerate(extract_pdf_pages(binary), start=1):
-        sections = _parser.parse(page_text)
+        sections = parser.parse(page_text)
         for chunk in _chunker.chunk(page_text, sections):
             chunk.metadata = {**chunk.metadata, "page": page_number}
             all_chunks.append(chunk)
