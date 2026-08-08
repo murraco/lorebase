@@ -1,0 +1,62 @@
+<div class="modal-bg">
+  <div class="modal">
+    <h3>Add source</h3>
+
+    @if (step() === 'form') {
+      <form (ngSubmit)="createAndSync()">
+        <label>
+          Local folder path
+          <input
+            name="path"
+            type="text"
+            [(ngModel)]="path"
+            placeholder="/app/storage/my-notes"
+            required
+          />
+        </label>
+        <p class="hint">A path inside the backend container, not your local machine.</p>
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+        <button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Adding…' : 'Add and sync' }}
+        </button>
+      </form>
+    }
+
+    @if (step() === 'progress') {
+      <div class="steps">
+        <div class="step done">
+          <span class="ring"></span>
+          Source created
+        </div>
+        <div
+          class="step"
+          [class.done]="
+            source()?.status === 'syncing' ||
+            source()?.status === 'ready' ||
+            source()?.status === 'error'
+          "
+        >
+          <span class="ring"></span>
+          Sync queued
+        </div>
+        <div
+          class="step"
+          [class.done]="source()?.status === 'ready' || source()?.status === 'error'"
+        >
+          <span class="ring"></span>
+          @if (source()?.status === 'error') {
+            Failed: {{ source()?.last_error }}
+          } @else if (source()?.status === 'ready') {
+            Ready
+          } @else {
+            Parsing → chunking → embeddings
+          }
+        </div>
+      </div>
+    }
+
+    <button type="button" class="close" (click)="close()">close</button>
+  </div>
+</div>

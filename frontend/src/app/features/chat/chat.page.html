@@ -1,0 +1,32 @@
+<div class="thread">
+  @for (message of messages(); track message.id) {
+    <div class="msg" [class]="message.role">
+      {{ message.content }}
+      @if (message.citations.length > 0) {
+        <div class="cites">
+          @for (citation of message.citations; track citation.id) {
+            <button class="cite" type="button" (click)="toggleCitation(citation.id)">
+              {{ citation.path }} · l.{{ citation.start_line }}
+            </button>
+          }
+        </div>
+        @for (citation of message.citations; track citation.id) {
+          @if (expandedCitationId() === citation.id) {
+            <pre class="fragment">{{ citation.content }}</pre>
+          }
+        }
+      }
+    </div>
+  }
+</div>
+
+<form class="composer" (ngSubmit)="send()">
+  <input
+    name="question"
+    type="text"
+    [(ngModel)]="question"
+    placeholder="Ask something about your notes, PDFs, or repos"
+    [disabled]="sending()"
+  />
+  <button type="submit" [disabled]="sending()">Send</button>
+</form>

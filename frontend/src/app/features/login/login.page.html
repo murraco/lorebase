@@ -1,0 +1,25 @@
+<div class="wrap">
+  <form class="card" (ngSubmit)="submit()">
+    <p class="brand">Lorebase<span>.</span></p>
+    <label>
+      Username
+      <input name="username" type="text" [(ngModel)]="username" autocomplete="username" required />
+    </label>
+    <label>
+      Password
+      <input
+        name="password"
+        type="password"
+        [(ngModel)]="password"
+        autocomplete="current-password"
+        required
+      />
+    </label>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+    <button type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</div>

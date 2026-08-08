@@ -1,0 +1,31 @@
+<div class="app">
+  <div class="rail">
+    <p class="brand">Lorebase<span>.</span></p>
+
+    <div>
+      <p class="section-label">Sources</p>
+      @for (source of sourcesService.sources(); track source.id) {
+        <div class="source">
+          {{ source.name }}
+          <span class="dot" [class]="source.status"></span>
+        </div>
+      } @empty {
+        <p class="empty">No sources yet.</p>
+      }
+      <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
+    </div>
+
+    <div class="rail-footer">
+      <p class="username">{{ auth.currentUser()?.username }}</p>
+      <button class="link-btn" (click)="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <router-outlet />
+  </div>
+</div>
+
+@if (showAddSourceModal()) {
+  <lorebase-add-source-modal (closed)="showAddSourceModal.set(false)" />
+}

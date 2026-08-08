@@ -28,8 +28,13 @@ for the full design document.
 docker compose -f infra/docker-compose.yml up --build
 ```
 
-> Backend and frontend scaffolding are being built incrementally — see the
-> project board / commit history for current progress.
+Then open [http://localhost:8080](http://localhost:8080) — Nginx serves the
+Angular app and proxies `/api` to the backend, so it's all one origin (the
+session cookie just works). The API on its own is also reachable directly
+at `http://localhost:8000` (Swagger UI at `/api/schema/swagger-ui/`).
+
+> See [`docs/roadmap.md`](docs/roadmap.md) for the implementation roadmap
+> and current progress.
 
 ## License
 
