@@ -2,6 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from core.factories import MembershipFactory, WorkspaceFactory
+from ingestion.factories import ChunkFactory
 from sources.factories import DocumentFactory, SourceFactory
 from sources.models import Source
 
@@ -24,6 +25,37 @@ def test_list_sources_returns_only_own_workspace() -> None:
     assert response.status_code == 200
     ids = [item["id"] for item in response.json()["results"]]
     assert ids == [str(own_source.id)]
+
+
+def test_list_sources_reports_indexing_progress() -> None:
+    """status="ready" only means the sync finished — embedding runs after
+    it, in a separate task. These counts are what lets a client tell
+    "indexed and queryable" apart from "synced, still embedding".
+    """
+    membership = MembershipFactory()
+    source = SourceFactory(workspace=membership.workspace)
+    document = DocumentFactory(source=source)
+    ChunkFactory(document=document, embedding=[0.0] * 1024)
+    ChunkFactory(document=document, embedding=None)
+    ChunkFactory(document=document, embedding=None)
+
+    response = _authed_client(membership.user).get("/api/sources/")
+
+    assert response.status_code == 200
+    item = response.json()["results"][0]
+    assert item["chunk_count"] == 3
+    assert item["embedded_chunk_count"] == 1
+
+
+def test_source_with_no_documents_reports_zero_chunks() -> None:
+    membership = MembershipFactory()
+    SourceFactory(workspace=membership.workspace)
+
+    response = _authed_client(membership.user).get("/api/sources/")
+
+    item = response.json()["results"][0]
+    assert item["chunk_count"] == 0
+    assert item["embedded_chunk_count"] == 0
 
 
 def test_cannot_retrieve_source_from_another_workspace() -> None:

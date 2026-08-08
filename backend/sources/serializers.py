@@ -6,6 +6,19 @@ from sources.models import Document, Source
 
 
 class SourceSerializer(serializers.ModelSerializer):
+    # Populated by SourceViewSet.get_queryset()'s annotations rather than
+    # computed per instance — as SerializerMethodFields these would be two
+    # extra COUNT queries per source on every list response.
+    #
+    # `status` alone is not enough to tell a client whether a source is
+    # actually queryable: it flips to "ready" when the sync finishes, but
+    # embedding runs afterwards in a separate task, so there's a real
+    # window where a source reads "ready" while dense retrieval still
+    # can't find anything in it. These two counts are what makes that
+    # window visible.
+    chunk_count = serializers.IntegerField(read_only=True)
+    embedded_chunk_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Source
         fields = [
@@ -15,6 +28,8 @@ class SourceSerializer(serializers.ModelSerializer):
             "type",
             "config",
             "status",
+            "chunk_count",
+            "embedded_chunk_count",
             "last_synced_at",
             "last_error",
             "created_at",

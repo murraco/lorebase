@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
@@ -22,8 +23,19 @@ class SourceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Source.objects.none()
-        return Source.objects.filter(workspace__memberships__user=self.request.user).order_by(
-            "name"
+        return (
+            Source.objects.filter(workspace__memberships__user=self.request.user)
+            # distinct=True on both: documents__chunks fans out the row per
+            # chunk, so without it the two counts multiply each other.
+            .annotate(
+                chunk_count=Count("documents__chunks", distinct=True),
+                embedded_chunk_count=Count(
+                    "documents__chunks",
+                    filter=Q(documents__chunks__embedding__isnull=False),
+                    distinct=True,
+                ),
+            )
+            .order_by("name")
         )
 
     # Without this, drf-spectacular falls back to inferring the request
