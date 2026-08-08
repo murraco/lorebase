@@ -1,0 +1,124 @@
+<div class="corpus">
+  <header class="head">
+    <h1>Corpus</h1>
+    <p>What the retriever actually searches — not the files on disk, but the chunks they became.</p>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="panes">
+    <nav class="pane sources" aria-label="Sources">
+      <p class="pane-title">Sources</p>
+      @for (source of sourcesService.sources(); track source.id) {
+        <button
+          type="button"
+          class="row"
+          [class.selected]="selectedSourceId() === source.id"
+          (click)="selectSource(source.id)"
+        >
+          <span class="row-name">{{ source.name }}</span>
+          <span class="row-meta">{{ source.chunk_count }} chunks</span>
+        </button>
+      } @empty {
+        <p class="pane-empty">No sources yet.</p>
+      }
+    </nav>
+
+    <nav class="pane documents" aria-label="Documents">
+      <p class="pane-title">Documents</p>
+      @if (loadingDocuments()) {
+        <p class="pane-empty">Loading…</p>
+      } @else {
+        @for (document of documents(); track document.id) {
+          <button
+            type="button"
+            class="row"
+            [class.selected]="selectedDocumentId() === document.id"
+            (click)="selectDocument(document.id)"
+          >
+            <span class="row-name">{{ document.title || document.path }}</span>
+            <span class="row-meta">
+              {{ document.chunk_count }} chunks
+              @if (coverage(document); as pct) {
+                @if (pct < 100) {
+                  · <span class="warn">{{ pct }}% indexed</span>
+                }
+              }
+            </span>
+          </button>
+        } @empty {
+          <p class="pane-empty">This source has no documents.</p>
+        }
+      }
+    </nav>
+
+    <section class="pane chunks" aria-label="Chunks">
+      @if (selectedDocument(); as document) {
+        <div class="chunks-head">
+          <p class="pane-title">{{ document.path }}</p>
+          <div class="chunks-stats">
+            <span
+              ><b>{{ chunks().length }}</b> chunks</span
+            >
+            <span
+              ><b>{{ loadedTokens() }}</b> tokens</span
+            >
+            <span
+              ><b>{{ document.embedded_chunk_count }}</b> embedded</span
+            >
+          </div>
+          <label class="filter">
+            <input
+              type="checkbox"
+              [checked]="onlyDerived()"
+              (change)="onlyDerived.set(!onlyDerived())"
+            />
+            Only chunks that needed their heading added
+          </label>
+        </div>
+
+        @if (loadingChunks() && chunks().length === 0) {
+          <p class="pane-empty">Loading…</p>
+        } @else {
+          @for (chunk of visibleChunks(); track chunk.id) {
+            <article class="chunk">
+              <header>
+                <span class="chunk-n">#{{ chunk.index }}</span>
+                <span class="chunk-heading">{{ chunk.heading_path || '(no heading)' }}</span>
+                <span class="chunk-meta">
+                  l.{{ chunk.start_line }}–{{ chunk.end_line }} · {{ chunk.token_count }} tok
+                </span>
+                @if (!chunk.embedded) {
+                  <span class="chunk-flag">not embedded</span>
+                }
+              </header>
+              <pre>{{ chunk.content }}</pre>
+              @if (chunk.content_with_heading !== chunk.content) {
+                <!-- The gap between the file's text and what was embedded.
+                     Every chunk split below a heading has one, and it is
+                     precisely what made those chunks unfindable before. -->
+                <p class="chunk-derived">
+                  <span class="chunk-derived-k">embedded as</span>
+                  <span class="chunk-derived-v">{{ chunk.heading_path }}</span>
+                  <span class="chunk-derived-k">+ the text above</span>
+                </p>
+              }
+            </article>
+          } @empty {
+            <p class="pane-empty">Nothing to show with this filter.</p>
+          }
+
+          @if (hasMore()) {
+            <button type="button" class="more" [disabled]="loadingChunks()" (click)="loadMore()">
+              {{ loadingChunks() ? 'Loading…' : 'Load more chunks' }}
+            </button>
+          }
+        }
+      } @else {
+        <p class="pane-empty">Pick a document to see how it was indexed.</p>
+      }
+    </section>
+  </div>
+</div>

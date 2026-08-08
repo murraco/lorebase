@@ -18,6 +18,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),
       },
       {
+        path: 'corpus',
+        loadComponent: () => import('./features/corpus/corpus.page').then((m) => m.CorpusPage),
+      },
+      {
         path: 'chat/:conversationId',
         loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),
       },

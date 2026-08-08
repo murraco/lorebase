@@ -2,6 +2,7 @@ import type { components } from './api/schema';
 
 export type Source = components['schemas']['Source'];
 export type SourceDocument = components['schemas']['Document'];
+export type IndexedChunk = components['schemas']['Chunk'];
 export type Conversation = components['schemas']['Conversation'];
 export type Message = components['schemas']['Message'];
 export type Citation = components['schemas']['Citation'];
