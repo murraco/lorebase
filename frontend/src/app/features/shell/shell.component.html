@@ -6,14 +6,18 @@
       <p class="section-label">Sources</p>
       @for (source of sourcesService.sources(); track source.id) {
         <div class="source">
-          <span class="name">{{ source.name }}</span>
-          <span class="dot" [class]="source.status"></span>
+          <div class="source-text">
+            <span class="name">{{ source.name }}</span>
+            @if (statusLabel(source); as label) {
+              <span class="status-label">{{ label }}</span>
+            }
+          </div>
+          <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
           <button
             type="button"
             class="delete-btn"
             title="Delete source"
-            [disabled]="deletingSourceId() === source.id"
-            (click)="deleteSource(source)"
+            (click)="sourcePendingDeletion.set(source)"
           >
             ×
           </button>
@@ -21,10 +25,28 @@
       } @empty {
         <p class="empty">No sources yet.</p>
       }
-      @if (deleteError()) {
-        <p class="error">{{ deleteError() }}</p>
-      }
       <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
+    </div>
+
+    <div class="conversations">
+      <p class="section-label">Conversations</p>
+      <a
+        class="conversation new"
+        routerLink="/chat"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >+ New chat</a
+      >
+      @for (conversation of conversationsService.conversations(); track conversation.id) {
+        <a
+          class="conversation"
+          [routerLink]="['/chat', conversation.id]"
+          routerLinkActive="active"
+          [title]="conversation.title"
+        >
+          {{ conversation.title || 'Untitled' }}
+        </a>
+      }
     </div>
 
     <div class="rail-footer">
@@ -40,4 +62,25 @@
 
 @if (showAddSourceModal()) {
   <lorebase-add-source-modal (closed)="showAddSourceModal.set(false)" />
+}
+
+@if (sourcePendingDeletion(); as source) {
+  <button type="button" class="backdrop" aria-label="Cancel" (click)="cancelDelete()"></button>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <h2 id="delete-title">Delete “{{ source.name }}”?</h2>
+    <p>
+      This removes the source and everything indexed from it. Your original files are not touched.
+    </p>
+    @if (deleteError()) {
+      <p class="error">{{ deleteError() }}</p>
+    }
+    <div class="dialog-actions">
+      <button type="button" class="secondary" (click)="cancelDelete()" [disabled]="deleting()">
+        Cancel
+      </button>
+      <button type="button" class="danger" (click)="confirmDelete()" [disabled]="deleting()">
+        {{ deleting() ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
 }

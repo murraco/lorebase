@@ -1,4 +1,22 @@
 <div class="thread">
+  @if (loadError()) {
+    <p class="load-error">{{ loadError() }}</p>
+  }
+
+  @if (messages().length === 0 && !loading() && !loadError()) {
+    <div class="empty-state">
+      <p class="empty-title">Ask your notes anything.</p>
+      <p class="empty-hint">Answers cite the exact note and lines they came from.</p>
+      <div class="suggestions">
+        @for (suggestion of suggestions; track suggestion) {
+          <button type="button" class="suggestion" (click)="useSuggestion(suggestion)">
+            {{ suggestion }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
   @for (message of messages(); track message.id) {
     <div class="msg" [class]="message.role">
       @if (message.pending) {
@@ -14,7 +32,10 @@
         <div class="cites">
           @for (citation of message.citations; track citation.id) {
             <button class="cite" type="button" (click)="toggleCitation(citation.id)">
-              {{ citation.path }} · l.{{ citation.start_line }}
+              @if (citation.heading_path) {
+                <span class="cite-heading">{{ citation.heading_path }}</span>
+              }
+              <span class="cite-source">{{ citation.path }} · l.{{ citation.start_line }}</span>
             </button>
           }
         </div>

@@ -149,6 +149,70 @@
   border: none;
   border-left: 2px solid var(--color-amber);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+
+/* The heading breadcrumb ("2025-07-21 > Work") leads, since it says what
+   the fragment is about; the file/line stays as the verifiable anchor
+   underneath, quieter. */
+.cite-heading {
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.cite-source {
+  opacity: 0.75;
+}
+
+.load-error {
+  font-size: 14px;
+  color: #a13e3e;
+  margin: 0 0 12px;
+}
+
+.empty-state {
+  padding: 24px 0 8px;
+}
+
+.empty-title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  margin: 0 0 4px;
+  color: var(--color-ink);
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: var(--color-ink-soft);
+  margin: 0 0 18px;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.suggestion {
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--color-ink-soft);
+  background: none;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.suggestion:hover {
+  border-color: var(--color-moss);
+  color: var(--color-moss);
 }
 
 .fragment {
