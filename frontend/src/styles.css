@@ -15,19 +15,22 @@
  * call site. With these, a theme is a block of values, not a rewrite.
  */
 :root {
-  /* Neutrals: warm, but with no green cast. The previous palette tinted
-     every surface olive, which left the accent with nothing to contrast
-     against. */
-  --surface: #f7f4ed;
-  --surface-raised: #fffdf8;
-  --surface-sunken: #ede8dd;
+  /* Near-neutral with a faint cool bias. The previous cream (#f7f4ed)
+     was the colour of aged paper, which — together with a large serif
+     and wide leading — made the whole thing read as a personal diary
+     rather than an instrument. Cooling the ground also makes the warm
+     amber of the evidence stand out more, not less: it is now the only
+     warm thing on screen. */
+  --surface: #f4f4f3;
+  --surface-raised: #fcfcfb;
+  --surface-sunken: #e8e9e9;
 
-  --text: #1a1713;
-  --text-muted: #6a6357;
-  --text-faint: #928a7b;
+  --text: #16181a;
+  --text-muted: #5d6165;
+  --text-faint: #8a8e92;
 
-  --border: #e2dbcc;
-  --border-strong: #cdc4b0;
+  --border: #e0e1e1;
+  --border-strong: #c5c7c8;
 
   /* Graphite, not a hue: the accent is ink. That leaves the amber of the
      evidence as the only colour on screen, which is exactly where the
@@ -35,11 +38,11 @@
      the interface exists to point at. Forest green, oxblood, indigo and
      teal were all measured and all passed contrast; this is the one that
      doesn't fight the evidence. */
-  --accent: #2e2b26;
-  --accent-hover: #171512;
-  --accent-soft: #ddd8cc;
-  --accent-tint: #eeeae0;
-  --accent-contrast: #fffdf8;
+  --accent: #26292b;
+  --accent-hover: #121416;
+  --accent-soft: #d6d8d9;
+  --accent-tint: #e9eaeb;
+  --accent-contrast: #fcfcfb;
 
   /* Citations and retrieval provenance only. Deliberately never used for
      a primary action, so "this is evidence" stays unambiguous. */
@@ -51,10 +54,10 @@
   --danger-soft: #f6e1de;
   --danger-contrast: #fffdf8;
 
-  --overlay: rgba(26, 23, 19, 0.34);
+  --overlay: rgba(20, 22, 24, 0.36);
 
-  --shadow-md: 0 2px 8px rgba(26, 23, 19, 0.07);
-  --shadow-lg: 0 12px 32px rgba(26, 23, 19, 0.14);
+  --shadow-md: 0 2px 8px rgba(20, 22, 24, 0.07);
+  --shadow-lg: 0 12px 32px rgba(20, 22, 24, 0.14);
 
   /* Fraunces for display only — a few glyphs where character pays off.
      Newsreader carries the actual reading, where comfort matters more
@@ -100,16 +103,16 @@
    different product. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #14130f;
-    --surface-raised: #1c1a16;
-    --surface-sunken: #0f0e0b;
+    --surface: #131517;
+    --surface-raised: #1b1e20;
+    --surface-sunken: #0e1012;
 
-    --text: #ede8dc;
-    --text-muted: #a29a8a;
-    --text-faint: #6f6859;
+    --text: #e7eaec;
+    --text-muted: #989ea3;
+    --text-faint: #6b7176;
 
-    --border: #2c2822;
-    --border-strong: #3d382f;
+    --border: #272b2e;
+    --border-strong: #383d41;
 
     /* Inverted rather than lightened: on a dark surface the ink accent
        becomes the paper one. */
@@ -138,16 +141,16 @@
 
 /* Explicit choice wins over the system preference, in both directions. */
 :root[data-theme='dark'] {
-  --surface: #14130f;
-  --surface-raised: #1c1a16;
-  --surface-sunken: #0f0e0b;
+  --surface: #131517;
+  --surface-raised: #1b1e20;
+  --surface-sunken: #0e1012;
 
-  --text: #ede8dc;
-  --text-muted: #a29a8a;
-  --text-faint: #6f6859;
+  --text: #e7eaec;
+  --text-muted: #989ea3;
+  --text-faint: #6b7176;
 
-  --border: #2c2822;
-  --border-strong: #3d382f;
+  --border: #272b2e;
+  --border-strong: #383d41;
 
   --accent: #c9c2b4;
   --accent-hover: #e0d9ca;
