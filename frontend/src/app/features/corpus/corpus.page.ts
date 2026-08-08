@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
 import type { IndexedChunk, SourceDocument } from '../../core/models';
@@ -20,6 +21,7 @@ import { SourcesService } from '../../core/sources/sources.service';
 export class CorpusPage implements OnInit {
   protected readonly sourcesService = inject(SourcesService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly documents = signal<SourceDocument[]>([]);
   protected readonly chunks = signal<IndexedChunk[]>([]);
@@ -55,12 +57,19 @@ export class CorpusPage implements OnInit {
     if (this.sourcesService.sources().length === 0) {
       await this.sourcesService.refresh().catch(() => undefined);
     }
-    // ?source= comes from clicking a source in the sidebar; otherwise
-    // open the first one so the screen is never empty on arrival.
-    const requested = this.route.snapshot.queryParamMap.get('source');
-    const sources = this.sourcesService.sources();
-    const target = sources.find((s) => s.id === requested) ?? sources[0];
-    if (target) await this.selectSource(target.id);
+    // Subscribed rather than read once from `snapshot`: clicking another
+    // source in the sidebar only changes the query parameter, and Angular
+    // reuses this component for that, so ngOnInit never runs again and a
+    // snapshot read would leave the previous source selected forever.
+    // Same failure the chat page had with its route parameter.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const requested = params.get('source');
+      const sources = this.sourcesService.sources();
+      // Falls back to the first source so arriving without a parameter
+      // never lands on an empty screen.
+      const target = sources.find((s) => s.id === requested) ?? sources[0];
+      if (target && target.id !== this.selectedSourceId()) void this.selectSource(target.id);
+    });
   }
 
   protected async selectSource(sourceId: string): Promise<void> {
