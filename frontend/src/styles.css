@@ -1,50 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* Design tokens.
  *
- * The identity is a commonplace book: paper, ink, and a botanical accent.
- * The previous palette had the right idea but a green cast in the neutrals
- * (paper was #eef0e6) which made every surface read slightly olive and
- * washed out. The neutrals here are warm but *neutral*, so the green is
- * the only thing that reads as green — which is what makes it an accent
- * instead of a tint over everything.
+ * Direction: an archive with technical evidence. Prose is set in a serif
+ * on warm paper because it's meant to be read; retrieval evidence
+ * (citations, paths, line numbers, scores) is set in mono because it's
+ * meant to be scanned and checked. That tension is the product: natural
+ * language grounded in something verifiable.
+ *
+ * Names are SEMANTIC (--surface, --text, --accent), not literal
+ * (--color-paper, --color-ink, --color-moss). The literal names were what
+ * made dark mode awkward to even describe — "paper" that is nearly black
+ * is a contradiction — and they hardcoded a palette decision into every
+ * call site. With these, a theme is a block of values, not a rewrite.
  */
 :root {
-  /* Neutrals — warm, no green cast. */
-  --color-paper: #f4f2ec;
-  --color-paper-card: #fdfcf9;
-  --color-paper-sunken: #ebe8e0;
-  --color-ink: #1c1a16;
-  --color-ink-soft: #6d675c;
-  --color-ink-faint: #9a9488;
-  --color-line: #e3ded3;
-  --color-line-strong: #cfc8b9;
+  /* Neutrals: warm, but with no green cast. The previous palette tinted
+     every surface olive, which left the accent with nothing to contrast
+     against. */
+  --surface: #f7f4ed;
+  --surface-raised: #fffdf8;
+  --surface-sunken: #ede8dd;
 
-  /* Accent: deeper and more saturated than the old olive, so it reads as
-     a deliberate choice rather than a muted neutral. */
-  --color-moss: #2d5c4d;
-  --color-moss-dark: #224a3e;
-  --color-moss-soft: #d3e3db;
-  --color-moss-tint: #eaf2ee;
+  --text: #1a1713;
+  --text-muted: #6a6357;
+  --text-faint: #928a7b;
 
-  /* Citations only. Kept visually distinct from the accent so a citation
-     never reads as a primary action. */
-  --color-amber: #b0762c;
-  --color-amber-soft: #f6e9cf;
-  --color-amber-ink: #6b4a16;
+  --border: #e2dbcc;
+  --border-strong: #cdc4b0;
 
-  /* Was #a13e3e hardcoded in ten different places across four files. */
-  --color-danger: #a83b3b;
-  --color-danger-soft: #f6e2e0;
+  /* Deep forest rather than the oxblood also considered: evidence is
+     amber, and a red accent next to amber reads as one muddled warm
+     family instead of two distinct roles. */
+  --accent: #1f4d3d;
+  --accent-hover: #173b2e;
+  --accent-soft: #cfe0d7;
+  --accent-tint: #e8f1ec;
+  --accent-contrast: #fffdf8;
 
-  --color-overlay: rgba(28, 26, 22, 0.32);
+  /* Citations and retrieval provenance only. Deliberately never used for
+     a primary action, so "this is evidence" stays unambiguous. */
+  --evidence: #a8701f;
+  --evidence-soft: #f5e7cc;
+  --evidence-text: #5e3f10;
 
-  --font-serif: 'Source Serif 4', serif;
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --danger: #a33a34;
+  --danger-soft: #f6e1de;
+  --danger-contrast: #fffdf8;
 
-  /* A real scale, replacing the twelve ad-hoc sizes between 11px and 22px
-     that had accumulated. */
+  --overlay: rgba(26, 23, 19, 0.34);
+
+  --shadow-md: 0 2px 8px rgba(26, 23, 19, 0.07);
+  --shadow-lg: 0 12px 32px rgba(26, 23, 19, 0.14);
+
+  /* Fraunces for display only — a few glyphs where character pays off.
+     Newsreader carries the actual reading, where comfort matters more
+     than personality. */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-sans: 'Inter Tight', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
   --text-xs: 11px;
   --text-sm: 12.5px;
   --text-base: 14px;
@@ -59,16 +75,89 @@
   --radius-xl: 20px;
   --radius-pill: 999px;
 
-  /* Warm-tinted rather than pure black: a neutral-black shadow over warm
-     paper reads as grey dirt. */
-  --shadow-md: 0 2px 8px rgba(28, 26, 22, 0.07);
-  --shadow-lg: 0 12px 32px rgba(28, 26, 22, 0.14);
-
   --transition: 140ms ease;
 
   /* One source of truth for the reading column, so the chat, its composer
      and any future page line up instead of each picking a max-width. */
   --content-width: 720px;
+
+  color-scheme: light;
+}
+
+/* Warm near-black rather than a blue-grey: the light theme is paper, so
+   the dark theme should read as the same paper at night, not as a
+   different product. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface: #14130f;
+    --surface-raised: #1c1a16;
+    --surface-sunken: #0f0e0b;
+
+    --text: #ede8dc;
+    --text-muted: #a29a8a;
+    --text-faint: #6f6859;
+
+    --border: #2c2822;
+    --border-strong: #3d382f;
+
+    /* Lightened: the light theme's forest fails contrast against a dark
+       surface, and an accent you can't read is not an accent. */
+    --accent: #5e9e82;
+    --accent-hover: #74b296;
+    --accent-soft: #233a31;
+    --accent-tint: #1a2621;
+    --accent-contrast: #0f1512;
+
+    --evidence: #d9a253;
+    --evidence-soft: #372b18;
+    --evidence-text: #f0d9ae;
+
+    --danger: #e07d75;
+    --danger-soft: #3a1f1d;
+    --danger-contrast: #14130f;
+
+    --overlay: rgba(0, 0, 0, 0.62);
+
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+    color-scheme: dark;
+  }
+}
+
+/* Explicit choice wins over the system preference, in both directions. */
+:root[data-theme='dark'] {
+  --surface: #14130f;
+  --surface-raised: #1c1a16;
+  --surface-sunken: #0f0e0b;
+
+  --text: #ede8dc;
+  --text-muted: #a29a8a;
+  --text-faint: #6f6859;
+
+  --border: #2c2822;
+  --border-strong: #3d382f;
+
+  --accent: #5e9e82;
+  --accent-hover: #74b296;
+  --accent-soft: #233a31;
+  --accent-tint: #1a2621;
+  --accent-contrast: #0f1512;
+
+  --evidence: #d9a253;
+  --evidence-soft: #372b18;
+  --evidence-text: #f0d9ae;
+
+  --danger: #e07d75;
+  --danger-soft: #3a1f1d;
+  --danger-contrast: #14130f;
+
+  --overlay: rgba(0, 0, 0, 0.62);
+
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
 }
 
 * {
@@ -82,18 +171,18 @@ body {
 
 body {
   margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--surface);
+  color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--text-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Visible, consistent focus everywhere. The previous styles removed
-   outlines on the composer without putting anything back. */
+/* Visible, consistent focus everywhere. The composer removes its own
+   outline because it draws a ring around the whole control instead. */
 :focus-visible {
-  outline: 2px solid var(--color-moss);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
