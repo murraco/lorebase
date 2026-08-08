@@ -228,6 +228,29 @@ export class ChatPage implements OnInit {
     );
   }
 
+  /** A citation's score drawn against the best score in the same answer.
+   * Absolute scores mean nothing across strategies — a cross-encoder
+   * logit and an RRF sum are different units — but within one answer the
+   * ranking is real, so a relative bar is the honest way to show "how
+   * strong a match this was" without implying a probability. */
+  protected relativeMatch(
+    message: ThreadMessage,
+    citation: Citation,
+  ): { percent: number; score: string } | null {
+    if (citation.score === null || citation.score === undefined) return null;
+    const scores = message.citations
+      .map((c) => c.score)
+      .filter((s): s is number => s !== null && s !== undefined);
+    if (scores.length === 0) return null;
+    const best = Math.max(...scores);
+    const worst = Math.min(...scores, 0);
+    const span = best - worst;
+    return {
+      percent: span === 0 ? 100 : Math.round(((citation.score - worst) / span) * 100),
+      score: citation.score.toFixed(3),
+    };
+  }
+
   protected latencySeconds(ms: number | null | undefined): string | null {
     return ms === null || ms === undefined ? null : (ms / 1000).toFixed(2);
   }

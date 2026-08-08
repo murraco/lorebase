@@ -75,6 +75,7 @@
                       type="button"
                       class="note"
                       [class.focused]="focusedCitationId() === citation.id"
+                      [attr.aria-expanded]="expandedCitationId() === citation.id"
                       (click)="toggleCitation(citation.id)"
                       (mouseenter)="focusedCitationId.set(citation.id)"
                       (mouseleave)="focusedCitationId.set(null)"
@@ -82,12 +83,21 @@
                       <span class="note-n">{{ i + 1 }}</span>
                       <span class="note-h">{{ citation.heading_path || citation.path }}</span>
                       <span class="note-m">{{ citation.path }}</span>
-                      <span class="note-m">
-                        l.{{ citation.start_line }}–{{ citation.end_line }}
-                        @if (citation.score !== null && citation.score !== undefined) {
-                          · {{ citation.score.toFixed(3) }}
-                        }
-                      </span>
+                      <span class="note-m"
+                        >l.{{ citation.start_line }}–{{ citation.end_line }}</span
+                      >
+                      @if (relativeMatch(message, citation); as match) {
+                        <!-- Scores compare only inside one answer, so this
+                             is drawn against that answer's best match and
+                             labelled as such — never as a global
+                             confidence percentage. -->
+                        <span class="note-match" [title]="'Retriever score ' + match.score">
+                          <span class="note-bar"
+                            ><span [style.width.%]="match.percent"></span
+                          ></span>
+                          <span class="note-m">{{ match.score }}</span>
+                        </span>
+                      }
                     </button>
                   }
                 </aside>
@@ -99,6 +109,23 @@
                 </aside>
               }
             </div>
+
+            @for (citation of message.citations; track citation.id; let i = $index) {
+              @if (expandedCitationId() === citation.id) {
+                <!-- The passage itself, full width where it is actually
+                     readable rather than squeezed into the margin. -->
+                <figure class="passage">
+                  <figcaption>
+                    <span class="passage-n">{{ i + 1 }}</span>
+                    <span class="passage-path">{{ citation.path }}</span>
+                    <span class="passage-lines"
+                      >lines {{ citation.start_line }}–{{ citation.end_line }}</span
+                    >
+                  </figcaption>
+                  <pre>{{ citation.content }}</pre>
+                </figure>
+              }
+            }
           </article>
         }
       }
