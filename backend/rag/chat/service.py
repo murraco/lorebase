@@ -49,7 +49,7 @@ def ask(conversation: Conversation, question: str) -> Message:
 
     answer_text = str(result.output.get("answer", ""))
     claimed_chunk_ids = result.output.get("cited_chunk_ids", [])
-    # The one place hallazgo 7 actually gets enforced: only chunk_ids that
+    # The one place finding 7 actually gets enforced: only chunk_ids that
     # were genuinely part of the context we just sent survive. Anything
     # else — a typo'd id, a chunk cited from an earlier turn, a plausible
     # guess — is silently dropped, never persisted as a Citation.
