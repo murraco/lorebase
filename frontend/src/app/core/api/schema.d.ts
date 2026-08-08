@@ -11,8 +11,20 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /**
+     * @description Destroy is a real delete, not a soft one: a conversation carries no
+     *     value once discarded, and its Messages and Citations cascade away with
+     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+     *     other way around, so the notes themselves are unaffected.
+     */
     get: operations['conversations_list'];
     put?: never;
+    /**
+     * @description Destroy is a real delete, not a soft one: a conversation carries no
+     *     value once discarded, and its Messages and Citations cascade away with
+     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+     *     other way around, so the notes themselves are unaffected.
+     */
     post: operations['conversations_create'];
     delete?: never;
     options?: never;
@@ -27,10 +39,22 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /**
+     * @description Destroy is a real delete, not a soft one: a conversation carries no
+     *     value once discarded, and its Messages and Citations cascade away with
+     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+     *     other way around, so the notes themselves are unaffected.
+     */
     get: operations['conversations_retrieve'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * @description Destroy is a real delete, not a soft one: a conversation carries no
+     *     value once discarded, and its Messages and Citations cascade away with
+     *     it. Nothing indexed is touched — Citation points at a Chunk, not the
+     *     other way around, so the notes themselves are unaffected.
+     */
+    delete: operations['conversations_destroy'];
     options?: never;
     head?: never;
     patch?: never;
@@ -145,6 +169,27 @@ export interface paths {
       cookie?: never;
     };
     get: operations['sources_browse_retrieve'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/system/status/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * @description Read-only. Kept in DRF (unlike the plain Django auth views next
+     *     door in core/views.py) so it lands in the OpenAPI schema and the SPA
+     *     gets a generated type for it like every other endpoint.
+     */
+    get: operations['system_status_retrieve'];
     put?: never;
     post?: never;
     delete?: never;
@@ -294,6 +339,10 @@ export interface components {
       type?: components['schemas']['TypeEnum'];
       config?: unknown;
     };
+    ProviderStatus: {
+      provider: string;
+      model: string;
+    };
     /**
      * @description * `user` - User
      *     * `assistant` - Assistant
@@ -336,6 +385,18 @@ export interface components {
     StatusEnum: 'pending' | 'syncing' | 'ready' | 'error';
     SyncQueued: {
       status: string;
+    };
+    SystemStatus: {
+      embedding: components['schemas']['ProviderStatus'];
+      reranking: components['schemas']['ProviderStatus'];
+      llm: components['schemas']['ProviderStatus'];
+      embedding_dimensions: number;
+      retrieval_strategy: string;
+      sources: number;
+      documents: number;
+      chunks: number;
+      embedded_chunks: number;
+      using_fake_providers: boolean;
     };
     /**
      * @description * `local_folder` - Local folder
@@ -418,6 +479,27 @@ export interface operations {
         content: {
           'application/json': components['schemas']['Conversation'];
         };
+      };
+    };
+  };
+  conversations_destroy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A UUID string identifying this conversation. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -676,6 +758,25 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['DirectoryListing'];
+        };
+      };
+    };
+  };
+  system_status_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SystemStatus'];
         };
       };
     };

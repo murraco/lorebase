@@ -1,0 +1,129 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-paper-card);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md, 8px);
+  padding: 22px 24px;
+  width: min(480px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.dialog h2 {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  margin: 0 0 16px;
+}
+
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+  margin: 18px 0 8px;
+}
+
+.section-label:first-of-type {
+  margin-top: 0;
+}
+
+/* Two columns of label/value pairs. Grid rather than a table: it keeps
+   the labels aligned without table markup for what is really a list. */
+.rows {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 7px 12px;
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.rows dt {
+  color: var(--color-ink-soft);
+}
+
+.rows dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.value {
+  font-family: var(--font-mono);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
+}
+
+.tag.amber {
+  background: var(--color-amber-soft);
+  border-color: var(--color-amber);
+  color: var(--color-amber-ink);
+}
+
+.muted {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.note {
+  margin: 12px 0 0;
+  line-height: 1.5;
+}
+
+.warning {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-amber-ink);
+  background: var(--color-amber-soft);
+  border-left: 2px solid var(--color-amber);
+  padding: 9px 12px;
+  border-radius: 3px;
+  margin: 0 0 18px;
+}
+
+.error {
+  font-size: 14px;
+  color: #a13e3e;
+  margin: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.dialog-actions .secondary {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  cursor: pointer;
+}

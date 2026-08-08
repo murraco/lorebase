@@ -1,0 +1,81 @@
+<button type="button" class="backdrop" aria-label="Close" (click)="closed.emit()"></button>
+
+<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="status-title">
+  <h2 id="status-title">System status</h2>
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (error()) {
+    <p class="error">{{ error() }}</p>
+  } @else if (status(); as s) {
+    @if (s.using_fake_providers) {
+      <p class="warning">
+        A fake provider is active. Anything it produces is meaningless — retrieval results cannot be
+        trusted while this is set.
+      </p>
+    }
+
+    <p class="section-label">Models in use</p>
+    <dl class="rows">
+      <dt>Embeddings</dt>
+      <dd>
+        <span class="value">{{ s.embedding.model }}</span>
+        <span class="tag">{{ s.embedding.provider }}</span>
+        <span class="muted">{{ s.embedding_dimensions }} dims</span>
+      </dd>
+
+      <dt>Reranking</dt>
+      <dd>
+        <span class="value">{{ s.reranking.model }}</span>
+        <span class="tag">{{ s.reranking.provider }}</span>
+      </dd>
+
+      <dt>Answers</dt>
+      <dd>
+        <span class="value">{{ s.llm.model }}</span>
+        <span class="tag">{{ s.llm.provider }}</span>
+      </dd>
+
+      <dt>Retrieval</dt>
+      <dd>
+        <span class="value">{{ s.retrieval_strategy }}</span>
+      </dd>
+    </dl>
+
+    <p class="section-label">Indexed content</p>
+    <dl class="rows">
+      <dt>Sources</dt>
+      <dd>
+        <span class="value">{{ s.sources }}</span>
+      </dd>
+
+      <dt>Documents</dt>
+      <dd>
+        <span class="value">{{ s.documents }}</span>
+      </dd>
+
+      <dt>Chunks</dt>
+      <dd>
+        <span class="value">{{ s.chunks }}</span>
+      </dd>
+
+      <dt>Embedded</dt>
+      <dd>
+        <span class="value">{{ s.embedded_chunks }}</span>
+        <span [class]="embeddedPercent(s) === 100 ? 'muted' : 'tag amber'">
+          {{ embeddedPercent(s) }}%
+        </span>
+      </dd>
+    </dl>
+
+    @if (embeddedPercent(s) !== 100) {
+      <p class="muted note">
+        Chunks without an embedding are invisible to semantic search until the backfill finishes.
+      </p>
+    }
+  }
+
+  <div class="dialog-actions">
+    <button type="button" class="secondary" (click)="closed.emit()">Close</button>
+  </div>
+</div>
