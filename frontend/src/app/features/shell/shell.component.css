@@ -147,11 +147,41 @@
   background: var(--surface);
 }
 
+/* The source name is a link into the corpus browser: seeing what a
+   source actually became when indexed is the useful thing to do with
+   it, and it was previously inert text. */
 .source-text {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex: 1;
+  text-decoration: none;
+}
+
+.source-text:hover .name {
+  color: var(--accent);
+}
+
+.corpus-link {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-left: 2px solid transparent;
+}
+
+.corpus-link:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.corpus-link.active {
+  background: var(--accent-tint);
+  color: var(--accent);
+  border-left-color: var(--accent);
 }
 
 .source .name {

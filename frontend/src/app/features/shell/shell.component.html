@@ -118,12 +118,18 @@
         <p class="section-label">Sources</p>
         @for (source of sourcesService.sources(); track source.id) {
           <div class="source">
-            <div class="source-text">
+            <a
+              class="source-text"
+              [routerLink]="['/corpus']"
+              [queryParams]="{ source: source.id }"
+              (click)="closeDrawerIfNarrow()"
+              [title]="'Browse what was indexed from ' + source.name"
+            >
               <span class="name">{{ source.name }}</span>
               @if (statusLabel(source); as label) {
                 <span class="status-label">{{ label }}</span>
               }
-            </div>
+            </a>
             <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
             @if (source.status === 'pending' || source.status === 'error') {
               <button
@@ -155,6 +161,15 @@
         }
         <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
       </div>
+
+      <a
+        class="corpus-link"
+        routerLink="/corpus"
+        routerLinkActive="active"
+        (click)="closeDrawerIfNarrow()"
+      >
+        Corpus
+      </a>
 
       <div class="conversations">
         <p class="section-label">Conversations</p>
