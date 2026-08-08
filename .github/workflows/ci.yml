@@ -68,6 +68,15 @@ jobs:
         working-directory: backend
         run: uv run ruff check .
 
+      # Separate from `ruff check`, which does not look at formatting at
+      # all. Without this the repo silently drifts: line-length was set to
+      # 100 while several files stayed formatted at ruff's default 88 for
+      # a long time, and nothing caught it until an unrelated `ruff
+      # format` run rewrote nine files at once.
+      - name: Format check
+        working-directory: backend
+        run: uv run ruff format --check .
+
       - name: Type check
         working-directory: backend
         run: uv run mypy .
