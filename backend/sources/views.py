@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from sources.filesystem import BrowsePathError, list_directory
 from sources.models import Document, Source
 from sources.serializers import (
+    ChunkSerializer,
     DirectoryListingSerializer,
     DocumentSerializer,
     SourceSerializer,
@@ -82,10 +83,37 @@ class DocumentViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Document.objects.none()
-        queryset = Document.objects.filter(
-            source__workspace__memberships__user=self.request.user
-        ).order_by("-updated_at")
+        queryset = (
+            Document.objects.filter(source__workspace__memberships__user=self.request.user)
+            .annotate(
+                chunk_count=Count("chunks", distinct=True),
+                embedded_chunk_count=Count(
+                    "chunks", filter=Q(chunks__embedding__isnull=False), distinct=True
+                ),
+            )
+            .order_by("path")
+        )
         source_id = self.request.query_params.get("source")
         if source_id:
             queryset = queryset.filter(source_id=source_id)
         return queryset
+
+    @extend_schema(responses=ChunkSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def chunks(self, request: Request, pk: str | None = None) -> Response:
+        """The indexed form of one document, in order.
+
+        Reads through get_object(), so workspace scoping is inherited
+        rather than re-implemented — a chunk endpoint that forgot it
+        would leak another tenant's notes verbatim.
+        """
+        document = self.get_object()
+        chunks = document.chunks.order_by("index")
+        # Paginated for a real reason, not for consistency: the largest
+        # document here splits into 807 chunks, and each one carries its
+        # full text. Returning them in one response would be a multi-MB
+        # payload the browser then has to render in full.
+        page = self.paginate_queryset(chunks)
+        if page is not None:
+            return self.get_paginated_response(ChunkSerializer(page, many=True).data)
+        return Response(ChunkSerializer(chunks, many=True).data)

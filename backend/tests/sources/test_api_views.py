@@ -219,3 +219,77 @@ def test_documents_endpoint_is_read_only() -> None:
     response = _authed_client(membership.user).post("/api/documents/", {}, format="json")
 
     assert response.status_code == 405
+
+
+def test_document_chunks_returns_the_indexed_form_in_order() -> None:
+    membership = MembershipFactory()
+    document = DocumentFactory(source__workspace=membership.workspace)
+    ChunkFactory(document=document, index=1, content="second", heading_path="A > B")
+    ChunkFactory(document=document, index=0, content="first", heading_path="A")
+
+    response = _authed_client(membership.user).get(f"/api/documents/{document.id}/chunks/")
+
+    assert response.status_code == 200
+    body = response.json()["results"]
+    assert [chunk["index"] for chunk in body] == [0, 1]
+    assert body[0]["content"] == "first"
+    # The heading-prefixed form is what actually gets embedded, so the
+    # browser has to be able to show both.
+    assert body[1]["content_with_heading"] == "A > B\n\nsecond"
+
+
+def test_document_chunks_reports_embedding_state_without_the_vector() -> None:
+    membership = MembershipFactory()
+    document = DocumentFactory(source__workspace=membership.workspace)
+    ChunkFactory(document=document, index=0, embedding=[0.0] * 1024)
+    ChunkFactory(document=document, index=1, embedding=None)
+
+    body = (
+        _authed_client(membership.user)
+        .get(f"/api/documents/{document.id}/chunks/")
+        .json()["results"]
+    )
+
+    assert [chunk["embedded"] for chunk in body] == [True, False]
+    assert "embedding" not in body[0]
+
+
+def test_cannot_read_chunks_of_another_workspaces_document() -> None:
+    """The one that matters: this endpoint returns note text verbatim."""
+    membership = MembershipFactory()
+    other_document = DocumentFactory()
+    ChunkFactory(document=other_document, index=0, content="private")
+
+    response = _authed_client(membership.user).get(f"/api/documents/{other_document.id}/chunks/")
+
+    assert response.status_code == 404
+
+
+def test_documents_report_their_chunk_counts() -> None:
+    membership = MembershipFactory()
+    document = DocumentFactory(source__workspace=membership.workspace)
+    ChunkFactory(document=document, index=0, embedding=[0.0] * 1024)
+    ChunkFactory(document=document, index=1, embedding=None)
+
+    body = _authed_client(membership.user).get("/api/documents/").json()
+
+    item = next(d for d in body["results"] if d["id"] == str(document.id))
+    assert item["chunk_count"] == 2
+    assert item["embedded_chunk_count"] == 1
+
+
+def test_document_chunks_are_paginated() -> None:
+    """The biggest real document splits into hundreds of chunks, each
+    carrying its whole text — one unpaginated response would be several
+    megabytes.
+    """
+    membership = MembershipFactory()
+    document = DocumentFactory(source__workspace=membership.workspace)
+    for index in range(30):
+        ChunkFactory(document=document, index=index)
+
+    body = _authed_client(membership.user).get(f"/api/documents/{document.id}/chunks/").json()
+
+    assert body["count"] == 30
+    assert len(body["results"]) == 25
+    assert body["next"] is not None

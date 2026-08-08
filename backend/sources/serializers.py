@@ -73,6 +73,10 @@ class DirectoryListingSerializer(serializers.Serializer):
 
 
 class DocumentSerializer(serializers.ModelSerializer):
+    # Annotated by DocumentViewSet.get_queryset(), not computed per row.
+    chunk_count = serializers.IntegerField(read_only=True)
+    embedded_chunk_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Document
         fields = [
@@ -84,6 +88,34 @@ class DocumentSerializer(serializers.ModelSerializer):
             "version",
             "deleted",
             "metadata",
+            "chunk_count",
+            "embedded_chunk_count",
             "created_at",
             "updated_at",
         ]
+
+
+class ChunkSerializer(serializers.Serializer):
+    """What was actually indexed, as the retriever sees it.
+
+    Deliberately exposes `content_with_heading` next to `content`: they
+    differ for every chunk split off the middle of a section, and that
+    difference is the whole reason the property exists. Seeing the two
+    side by side is what makes the chunking legible instead of a black
+    box.
+    """
+
+    id = serializers.UUIDField(read_only=True)
+    index = serializers.IntegerField(read_only=True)
+    heading_path = serializers.CharField(read_only=True)
+    start_line = serializers.IntegerField(read_only=True)
+    end_line = serializers.IntegerField(read_only=True)
+    token_count = serializers.IntegerField(read_only=True)
+    content = serializers.CharField(read_only=True)
+    content_with_heading = serializers.CharField(read_only=True)
+    # The vector itself is 1024 floats and useless to a reader; whether
+    # it exists is the part that decides if this chunk is findable.
+    embedded = serializers.SerializerMethodField()
+
+    def get_embedded(self, chunk) -> bool:
+        return chunk.embedding is not None
