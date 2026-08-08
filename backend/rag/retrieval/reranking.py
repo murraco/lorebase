@@ -1,7 +1,11 @@
+import logging
 from uuid import UUID
 
+from rag.reranking.base import RerankerUnavailableError
 from rag.reranking.factory import get_reranker
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
+
+logger = logging.getLogger(__name__)
 
 
 class RerankingRetriever(Retriever):
@@ -30,9 +34,20 @@ class RerankingRetriever(Retriever):
         if not candidates:
             return []
 
-        reranked = get_reranker().rerank(
-            query, [candidate.chunk.content for candidate in candidates], top_k=top_k
-        )
+        # A reranker outage shouldn't fail the whole chat turn — the inner
+        # retriever's own ordering (lexical/dense RRF fusion) is still a
+        # reasonable answer, just not cross-encoder-refined. Silently
+        # degraded quality beats a 500.
+        try:
+            reranked = get_reranker().rerank(
+                query, [candidate.chunk.content for candidate in candidates], top_k=top_k
+            )
+        except RerankerUnavailableError:
+            logger.warning(
+                "Reranker unavailable, falling back to unreranked results", exc_info=True
+            )
+            return candidates[:top_k]
+
         return [
             RetrievalResult(chunk=candidates[item.index].chunk, score=item.score)
             for item in reranked

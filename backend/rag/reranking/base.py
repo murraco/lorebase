@@ -8,6 +8,16 @@ class RerankedDocument:
     score: float
 
 
+class RerankerUnavailableError(Exception):
+    """The reranker's backing service is down, rate-limited, or timed out
+    — as opposed to a bug in how we're calling it. Provider implementations
+    translate their own SDK's transient-failure exceptions into this one,
+    so callers (RerankingRetriever) can catch a single, provider-agnostic
+    type and fall back to unreranked results instead of failing the whole
+    request.
+    """
+
+
 class Reranker(ABC):
     """A cross-encoder: scores query+document together in one pass,
     instead of comparing independently-computed vectors like embeddings
