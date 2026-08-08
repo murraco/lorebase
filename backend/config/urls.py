@@ -3,7 +3,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
-from core.views import csrf_view, login_view, logout_view
+from core.views import csrf_view, login_view, logout_view, me_view
 from rag.chat.views import chat_stream_view
 from rag.views import ConversationViewSet, MessageViewSet
 from sources.views import DocumentViewSet, SourceViewSet
@@ -23,6 +23,7 @@ urlpatterns = [
         name="chat-stream",
     ),
     path("api/auth/csrf/", csrf_view, name="auth-csrf"),
+    path("api/auth/me/", me_view, name="auth-me"),
     path("api/auth/login/", login_view, name="auth-login"),
     path("api/auth/logout/", logout_view, name="auth-logout"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

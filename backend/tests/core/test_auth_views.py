@@ -3,7 +3,7 @@ import json
 import pytest
 from django.test import Client
 
-from core.factories import UserFactory
+from core.factories import MembershipFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -47,6 +47,35 @@ def test_login_with_wrong_password_is_rejected() -> None:
 
     assert response.status_code == 400
     assert "_auth_user_id" not in client.session
+
+
+def test_me_returns_401_when_not_authenticated() -> None:
+    response = Client().get("/api/auth/me/")
+
+    assert response.status_code == 401
+
+
+def test_me_returns_the_current_user_when_authenticated() -> None:
+    user = UserFactory()
+    client = Client()
+    client.force_login(user)
+
+    response = client.get("/api/auth/me/")
+
+    assert response.status_code == 200
+    assert response.json() == {"id": str(user.id), "username": user.username, "workspaces": []}
+
+
+def test_me_includes_the_users_workspaces() -> None:
+    membership = MembershipFactory()
+    client = Client()
+    client.force_login(membership.user)
+
+    response = client.get("/api/auth/me/")
+
+    assert response.json()["workspaces"] == [
+        {"id": str(membership.workspace_id), "name": membership.workspace.name}
+    ]
 
 
 def test_logout_ends_the_session() -> None:
