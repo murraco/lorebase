@@ -6,6 +6,7 @@ import { ConversationsService } from '../../core/conversations/conversations.ser
 import type { Conversation, Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
+import { ThemeService } from '../../core/theme/theme.service';
 import { SystemStatusModalComponent } from './system-status-modal.component';
 
 const POLL_INTERVAL_MS = 4000;
@@ -27,6 +28,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly auth = inject(AuthService);
   protected readonly sourcesService = inject(SourcesService);
   protected readonly conversationsService = inject(ConversationsService);
+  protected readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private pollHandle?: ReturnType<typeof setInterval>;
 
@@ -171,6 +173,13 @@ export class ShellComponent implements OnInit, OnDestroy {
   /** First letter of the username, for the collapsed rail's avatar. */
   protected userInitial(): string {
     return (this.auth.currentUser()?.username ?? '?').charAt(0).toUpperCase();
+  }
+
+  protected themeLabel(): string {
+    const value = this.theme.preference();
+    if (value === 'light') return 'Light';
+    if (value === 'dark') return 'Dark';
+    return 'System';
   }
 
   protected async logout(): Promise<void> {
