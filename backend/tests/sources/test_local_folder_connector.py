@@ -34,6 +34,17 @@ def test_fetch_documents_reads_plain_markdown(tmp_path: Path) -> None:
     assert doc.metadata == {}
 
 
+def test_fetch_documents_reads_plain_text_files(tmp_path: Path) -> None:
+    (tmp_path / "log.txt").write_text("Just plain text, no markdown at all.")
+
+    connector = LocalFolderConnector({"path": str(tmp_path)})
+    (doc,) = list(connector.fetch_documents())
+
+    assert doc.external_id == "log.txt"
+    assert doc.title == "log"
+    assert doc.content == "Just plain text, no markdown at all."
+
+
 def test_fetch_documents_parses_front_matter(tmp_path: Path) -> None:
     raw_text = "---\ntitle: My Note\ntags: [rag, llm]\n---\nBody text."
     (tmp_path / "note.md").write_text(raw_text)

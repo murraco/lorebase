@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 
 from sources.models import Document, Source
@@ -26,9 +28,33 @@ class SourceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You are not a member of this workspace.")
         return workspace
 
+    def validate_config(self, config):
+        pattern = config.get("section_boundary_pattern") if isinstance(config, dict) else None
+        if pattern:
+            try:
+                re.compile(pattern)
+            except re.error as exc:
+                raise serializers.ValidationError(
+                    {"section_boundary_pattern": f"Not a valid regular expression: {exc}"}
+                ) from exc
+        return config
+
 
 class SyncQueuedSerializer(serializers.Serializer):
     status = serializers.CharField()
+
+
+class DirectoryEntrySerializer(serializers.Serializer):
+    name = serializers.CharField()
+    path = serializers.CharField()
+    absolute_path = serializers.CharField()
+
+
+class DirectoryListingSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    parent = serializers.CharField(allow_null=True)
+    absolute_path = serializers.CharField()
+    entries = DirectoryEntrySerializer(many=True)
 
 
 class DocumentSerializer(serializers.ModelSerializer):

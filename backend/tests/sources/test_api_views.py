@@ -70,6 +70,44 @@ def test_create_source_in_own_workspace_succeeds() -> None:
     assert Source.objects.filter(workspace=membership.workspace, name="Notes").exists()
 
 
+def test_create_source_accepts_a_valid_section_boundary_pattern() -> None:
+    membership = MembershipFactory()
+
+    response = _authed_client(membership.user).post(
+        "/api/sources/",
+        {
+            "workspace": str(membership.workspace.id),
+            "name": "Journal",
+            "type": Source.SourceType.LOCAL_FOLDER,
+            "config": {
+                "path": "/app/storage/journal",
+                "section_boundary_pattern": r"^\d{4}-\d{2}-\d{2}",
+            },
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+
+
+def test_create_source_rejects_an_invalid_section_boundary_pattern() -> None:
+    membership = MembershipFactory()
+
+    response = _authed_client(membership.user).post(
+        "/api/sources/",
+        {
+            "workspace": str(membership.workspace.id),
+            "name": "Journal",
+            "type": Source.SourceType.LOCAL_FOLDER,
+            "config": {"path": "/app/storage/journal", "section_boundary_pattern": "("},
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "section_boundary_pattern" in response.json()["config"]
+
+
 def test_sync_action_queues_the_celery_task(monkeypatch) -> None:
     membership = MembershipFactory()
     source = SourceFactory(workspace=membership.workspace)
@@ -92,6 +130,37 @@ def test_sync_action_on_another_workspaces_source_is_not_found(monkeypatch) -> N
     response = _authed_client(membership.user).post(f"/api/sources/{other_source.id}/sync/")
 
     assert response.status_code == 404
+
+
+def test_browse_lists_directories_under_media_root(settings, tmp_path) -> None:
+    settings.MEDIA_ROOT = str(tmp_path)
+    (tmp_path / "notes").mkdir()
+    membership = MembershipFactory()
+
+    response = _authed_client(membership.user).get("/api/sources/browse/")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["path"] == ""
+    assert [entry["name"] for entry in body["entries"]] == ["notes"]
+    assert body["entries"][0]["absolute_path"] == str(tmp_path / "notes")
+
+
+def test_browse_rejects_path_traversal(settings, tmp_path) -> None:
+    settings.MEDIA_ROOT = str(tmp_path)
+    membership = MembershipFactory()
+
+    response = _authed_client(membership.user).get("/api/sources/browse/", {"path": "../../etc"})
+
+    assert response.status_code == 400
+
+
+def test_browse_requires_authentication(settings, tmp_path) -> None:
+    settings.MEDIA_ROOT = str(tmp_path)
+
+    response = APIClient().get("/api/sources/browse/")
+
+    assert response.status_code in (401, 403)
 
 
 def test_unauthenticated_request_is_rejected() -> None:

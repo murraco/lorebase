@@ -5,8 +5,14 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from sources.filesystem import BrowsePathError, list_directory
 from sources.models import Document, Source
-from sources.serializers import DocumentSerializer, SourceSerializer, SyncQueuedSerializer
+from sources.serializers import (
+    DirectoryListingSerializer,
+    DocumentSerializer,
+    SourceSerializer,
+    SyncQueuedSerializer,
+)
 from sources.tasks import sync_source_task
 
 
@@ -29,6 +35,23 @@ class SourceViewSet(viewsets.ModelViewSet):
         source = self.get_object()
         sync_source_task.delay(str(source.id))
         return Response({"status": "queued"}, status=202)
+
+    # Powers the "add a local folder source" picker: lets the frontend
+    # navigate the backend's own filesystem instead of asking the user to
+    # type a container-internal path blind. Not workspace-scoped — this
+    # is server filesystem structure under a fixed root, not tenant data
+    # — but it does require authentication, same as every other endpoint.
+    @extend_schema(
+        parameters=[OpenApiParameter("path", OpenApiTypes.STR, required=False)],
+        responses=DirectoryListingSerializer,
+    )
+    @action(detail=False, methods=["get"])
+    def browse(self, request: Request) -> Response:
+        try:
+            listing = list_directory(request.query_params.get("path", ""))
+        except BrowsePathError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(DirectoryListingSerializer(listing).data)
 
 
 class DocumentViewSet(viewsets.ReadOnlyModelViewSet):

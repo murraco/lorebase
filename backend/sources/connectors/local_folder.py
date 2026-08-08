@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 @register_connector("local_folder")
 class LocalFolderConnector(Connector):
-    """Reads Markdown notes and PDFs from a local directory, recursively.
-    The path relative to the configured root is used as both `external_id`
-    and `path`, so identity survives even if the whole folder is later
-    moved to a different absolute location.
+    """Reads Markdown notes, plain text files, and PDFs from a local
+    directory, recursively. The path relative to the configured root is
+    used as both `external_id` and `path`, so identity survives even if
+    the whole folder is later moved to a different absolute location.
     """
 
     def validate_config(self) -> None:
@@ -37,7 +37,7 @@ class LocalFolderConnector(Connector):
 
     def fetch_documents(self) -> Iterator[RawDocument]:
         root = self._root()
-        file_paths = sorted([*root.rglob("*.md"), *root.rglob("*.pdf")])
+        file_paths = sorted([*root.rglob("*.md"), *root.rglob("*.txt"), *root.rglob("*.pdf")])
         for file_path in file_paths:
             size = file_path.stat().st_size
             if size > settings.MAX_DOCUMENT_SIZE_BYTES:
@@ -52,9 +52,14 @@ class LocalFolderConnector(Connector):
             if file_path.suffix == ".pdf":
                 yield self._read_pdf(file_path, root)
             else:
-                yield self._read_markdown(file_path, root)
+                yield self._read_text_file(file_path, root)
 
-    def _read_markdown(self, file_path: Path, root: Path) -> RawDocument:
+    def _read_text_file(self, file_path: Path, root: Path) -> RawDocument:
+        # Markdown and plain text share this path: front matter parsing is
+        # a harmless no-op on a .txt file with no `---` block (it just
+        # returns empty metadata and the text unchanged), and a .txt file
+        # with no headings chunks exactly like a headingless .md file
+        # already does — nothing downstream needs to know which one it was.
         relative_path = file_path.relative_to(root).as_posix()
         raw_bytes = file_path.read_bytes()
         content_hash = hashlib.sha256(raw_bytes).hexdigest()
