@@ -64,18 +64,26 @@
   --font-sans: 'Inter Tight', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --text-xs: 11px;
-  --text-sm: 12.5px;
-  --text-base: 14px;
-  --text-md: 15px;
-  --text-lg: 17px;
-  --text-xl: 21px;
-  --text-2xl: 27px;
+  /* Raised across the board: the old scale started at 14px for body and
+     read thin and cramped. Everything that is *data* also gets weight
+     500-600 at its call site, since tabular figures at 400 disappear
+     next to prose. */
+  --text-xs: 11.5px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 29px;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  /* Dry geometry, on purpose. An ink accent asks for square corners —
+     the previous 10-20px radii read friendly and consumer, which fought
+     the seriousness the colour was going for. Kept just off zero so
+     edges don't look accidental. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
   --radius-pill: 999px;
 
   --transition: 140ms ease;
