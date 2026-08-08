@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--color-overlay);
   border: none;
   padding: 0;
   cursor: default;
@@ -14,22 +14,22 @@
   transform: translate(-50%, -50%);
   background: var(--color-paper-card);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-lg);
   padding: 22px 24px;
   width: min(480px, calc(100vw - 40px));
   max-height: calc(100vh - 60px);
   overflow-y: auto;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-lg);
 }
 
 .dialog h2 {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: var(--text-lg);
   margin: 0 0 16px;
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-ink-soft);
@@ -47,7 +47,7 @@
   grid-template-columns: 100px 1fr;
   gap: 7px 12px;
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--text-sm);
 }
 
 .rows dt {
@@ -70,9 +70,9 @@
 }
 
 .tag {
-  font-size: 11px;
+  font-size: var(--text-xs);
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--color-paper);
   border: 1px solid var(--color-line);
   color: var(--color-ink-soft);
@@ -85,7 +85,7 @@
 }
 
 .muted {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-ink-soft);
 }
 
@@ -95,19 +95,19 @@
 }
 
 .warning {
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--color-amber-ink);
   background: var(--color-amber-soft);
   border-left: 2px solid var(--color-amber);
   padding: 9px 12px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   margin: 0 0 18px;
 }
 
 .error {
-  font-size: 14px;
-  color: #a13e3e;
+  font-size: var(--text-base);
+  color: var(--color-danger);
   margin: 0;
 }
 
@@ -119,7 +119,7 @@
 
 .dialog-actions .secondary {
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 7px 14px;
   border-radius: var(--radius-sm);
   background: none;

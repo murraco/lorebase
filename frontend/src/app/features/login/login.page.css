@@ -18,7 +18,7 @@
 
 .brand {
   font-family: var(--font-serif);
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 600;
   margin: 0 0 6px;
 }
@@ -31,7 +31,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-ink-soft);
 }
 
@@ -39,7 +39,7 @@ input {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  font-size: 14px;
+  font-size: var(--text-base);
   font-family: inherit;
   color: var(--color-ink);
   background: var(--color-paper);
@@ -51,8 +51,8 @@ input:focus {
 }
 
 .error {
-  color: #a13e3e;
-  font-size: 13px;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
   margin: 0;
 }
 
@@ -62,7 +62,7 @@ button {
   color: var(--color-paper-card);
   padding: 10px;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: var(--text-base);
   font-family: inherit;
   cursor: pointer;
 }

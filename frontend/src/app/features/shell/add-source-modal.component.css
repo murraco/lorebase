@@ -1,7 +1,7 @@
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(34, 36, 31, 0.35);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,18 +13,18 @@
   border-radius: var(--radius-xl);
   padding: 22px;
   width: 360px;
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 h3 {
   font-family: var(--font-serif);
   margin: 0 0 14px;
-  font-size: 17px;
+  font-size: var(--text-lg);
 }
 
 .breadcrumb {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-ink-soft);
   margin: 0 0 8px;
   word-break: break-all;
@@ -50,7 +50,7 @@ h3 {
   background: none;
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-family: inherit;
   color: var(--color-ink);
   cursor: pointer;
@@ -68,20 +68,20 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-ink-soft);
   margin-bottom: 4px;
 }
 
 .hint {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-ink-soft);
   margin: 0 0 12px;
 }
 
 .error {
-  color: #a13e3e;
-  font-size: 13px;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
   margin: 0 0 8px;
 }
 
@@ -89,7 +89,7 @@ input {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   color: var(--color-ink);
   background: var(--color-paper);
@@ -103,7 +103,7 @@ input {
   color: var(--color-paper-card);
   padding: 10px;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-family: inherit;
   cursor: pointer;
 }
@@ -128,13 +128,13 @@ input {
   gap: 10px;
   padding: 6px 0;
   color: var(--color-ink-soft);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .step .ring {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   border: 2px solid var(--color-line);
   flex-shrink: 0;
 }
@@ -155,7 +155,7 @@ input {
   border: none;
   background: none;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-family: inherit;
   color: var(--color-ink-soft);
   cursor: pointer;
