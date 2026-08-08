@@ -1,0 +1,77 @@
+/* A <button>, not a <div>: clicking the backdrop to dismiss has to be
+   reachable by keyboard too, and a button gets that for free. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  width: min(420px, calc(100vw - 40px));
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog h2 {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  margin: 0 0 8px;
+}
+
+.dialog p {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog-actions button {
+  font-family: inherit;
+  font-size: var(--text-base);
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.dialog-actions .secondary {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.dialog-actions .danger {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--danger-contrast);
+}
+
+.dialog-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  margin: 0 0 14px;
+}

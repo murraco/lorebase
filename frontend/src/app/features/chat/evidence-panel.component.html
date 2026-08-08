@@ -1,0 +1,36 @@
+<!-- The point of the product: you read the answer while seeing what it
+     stands on, instead of expanding one source at a time and losing your
+     place. -->
+<aside class="evidence" aria-label="Sources for this answer">
+  <p class="evidence-title">Evidence</p>
+  @for (citation of citations(); track citation.id; let i = $index) {
+    <article
+      class="evidence-card"
+      [class.focused]="focusedId() === citation.id"
+      (mouseenter)="focusChanged.emit(citation.id)"
+      (mouseleave)="focusChanged.emit(null)"
+    >
+      <header class="evidence-head">
+        <span class="evidence-marker">{{ i + 1 }}</span>
+        <span class="evidence-heading">{{ citation.heading_path || citation.path }}</span>
+      </header>
+      <p class="evidence-meta">
+        <span class="evidence-path">{{ citation.path }}</span>
+        <span>l.{{ citation.start_line }}–{{ citation.end_line }}</span>
+        @if (formatScore(citation.score); as score) {
+          <span class="evidence-score" title="Retriever score. Only comparable within one answer.">
+            {{ score }}
+          </span>
+        }
+      </p>
+      @if (expandedId() === citation.id) {
+        <pre class="evidence-full">{{ citation.content }}</pre>
+      } @else {
+        <p class="evidence-preview">{{ preview(citation) }}</p>
+      }
+      <button class="evidence-toggle" type="button" (click)="toggled.emit(citation.id)">
+        {{ expandedId() === citation.id ? 'Show less' : 'Show passage' }}
+      </button>
+    </article>
+  }
+</aside>

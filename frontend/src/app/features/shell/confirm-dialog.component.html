@@ -1,0 +1,19 @@
+<!-- A button, not a div: dismissing by clicking the backdrop has to be
+     reachable by keyboard too, and a button gets that for free. -->
+<button type="button" class="backdrop" aria-label="Cancel" (click)="cancelled.emit()"></button>
+
+<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+  <h2 id="confirm-dialog-title">{{ title() }}</h2>
+  <p>{{ message() }}</p>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  <div class="dialog-actions">
+    <button type="button" class="secondary" (click)="cancelled.emit()" [disabled]="busy()">
+      Cancel
+    </button>
+    <button type="button" class="danger" (click)="confirmed.emit()" [disabled]="busy()">
+      {{ busy() ? busyLabel() : confirmLabel() }}
+    </button>
+  </div>
+</div>
