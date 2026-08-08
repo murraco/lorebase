@@ -1,12 +1,78 @@
-<div class="thread">
-  @if (loadError()) {
-    <p class="load-error">{{ loadError() }}</p>
-  }
+<!-- One composer in the DOM, two layouts. When the thread is empty the
+     column centres itself and the composer becomes the hero; once there
+     are messages the thread takes the space and the composer docks to the
+     bottom. Doing this with a modifier class rather than two copies of the
+     markup keeps the textarea's state (and focus) across the transition. -->
+<div class="chat" [class.is-empty]="isEmpty()">
+  <div class="thread">
+    @if (loadError()) {
+      <p class="load-error">{{ loadError() }}</p>
+    }
 
-  @if (messages().length === 0 && !loading() && !loadError()) {
-    <div class="empty-state">
-      <p class="empty-title">Ask your notes anything.</p>
-      <p class="empty-hint">Answers cite the exact note and lines they came from.</p>
+    @if (isEmpty()) {
+      <div class="hero">
+        <h1 class="hero-title">What do you want to know?</h1>
+        <p class="hero-subtitle">
+          Ask anything from your notes, PDFs, and repos. Every answer cites the exact lines it
+          came from.
+        </p>
+      </div>
+    }
+
+    @for (message of messages(); track message.id) {
+      <div class="msg" [class]="message.role">
+        @if (message.pending) {
+          <span class="typing-indicator" aria-label="Thinking">
+            <span></span><span></span><span></span>
+          </span>
+        } @else if (message.role === 'assistant') {
+          <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
+        } @else {
+          {{ message.content }}
+        }
+        @if (message.citations.length > 0) {
+          <div class="cites">
+            @for (citation of message.citations; track citation.id) {
+              <button class="cite" type="button" (click)="toggleCitation(citation.id)">
+                @if (citation.heading_path) {
+                  <span class="cite-heading">{{ citation.heading_path }}</span>
+                }
+                <span class="cite-source">{{ citation.path }} · l.{{ citation.start_line }}</span>
+              </button>
+            }
+          </div>
+          @for (citation of message.citations; track citation.id) {
+            @if (expandedCitationId() === citation.id) {
+              <pre class="fragment">{{ citation.content }}</pre>
+            }
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="composer-dock">
+    <form class="composer" (ngSubmit)="send()">
+      <textarea
+        name="question"
+        rows="1"
+        [(ngModel)]="question"
+        placeholder="Ask something about your notes…"
+        [disabled]="sending()"
+        (keydown.enter)="onEnter($event)"
+      ></textarea>
+      <div class="composer-actions">
+        <span class="composer-hint">Shift + Enter for a new line</span>
+        <button type="submit" [disabled]="sending() || !question.trim()" aria-label="Send">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="12" y1="19" x2="12" y2="5" />
+            <polyline points="6 11 12 5 18 11" />
+          </svg>
+        </button>
+      </div>
+    </form>
+
+    @if (isEmpty()) {
       <div class="suggestions">
         @for (suggestion of suggestions; track suggestion) {
           <button type="button" class="suggestion" (click)="useSuggestion(suggestion)">
@@ -14,49 +80,6 @@
           </button>
         }
       </div>
-    </div>
-  }
-
-  @for (message of messages(); track message.id) {
-    <div class="msg" [class]="message.role">
-      @if (message.pending) {
-        <span class="typing-indicator" aria-label="Thinking">
-          <span></span><span></span><span></span>
-        </span>
-      } @else if (message.role === 'assistant') {
-        <div class="rendered-markdown" [innerHTML]="message.content | markdown"></div>
-      } @else {
-        {{ message.content }}
-      }
-      @if (message.citations.length > 0) {
-        <div class="cites">
-          @for (citation of message.citations; track citation.id) {
-            <button class="cite" type="button" (click)="toggleCitation(citation.id)">
-              @if (citation.heading_path) {
-                <span class="cite-heading">{{ citation.heading_path }}</span>
-              }
-              <span class="cite-source">{{ citation.path }} · l.{{ citation.start_line }}</span>
-            </button>
-          }
-        </div>
-        @for (citation of message.citations; track citation.id) {
-          @if (expandedCitationId() === citation.id) {
-            <pre class="fragment">{{ citation.content }}</pre>
-          }
-        }
-      }
-    </div>
-  }
+    }
+  </div>
 </div>
-
-<form class="composer" (ngSubmit)="send()">
-  <textarea
-    name="question"
-    rows="1"
-    [(ngModel)]="question"
-    placeholder="Ask something about your notes, PDFs, or repos (Shift+Enter for a new line)"
-    [disabled]="sending()"
-    (keydown.enter)="onEnter($event)"
-  ></textarea>
-  <button type="submit" [disabled]="sending()">Send</button>
-</form>

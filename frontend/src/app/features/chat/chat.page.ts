@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
@@ -47,6 +47,13 @@ export class ChatPage implements OnInit {
   protected readonly expandedCitationId = signal<string | null>(null);
   protected readonly suggestions = SUGGESTIONS;
   protected question = '';
+
+  /** Drives the hero-vs-docked composer layout. Also false while a
+   * conversation is still loading, so the hero doesn't flash before the
+   * existing messages arrive. */
+  protected readonly isEmpty = computed(
+    () => this.messages().length === 0 && !this.loading() && !this.loadError(),
+  );
 
   // Null until this conversation actually has a question. Creating it
   // eagerly on page load (as this used to) left an empty, untitled

@@ -1,30 +1,82 @@
+/* The page is a full-height column so the composer can dock to the
+   bottom in conversation mode and centre itself in the empty state,
+   without either layout needing its own copy of the markup. */
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .thread {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-bottom: 20px;
-  min-height: 340px;
+  gap: 22px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 0 24px;
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+/* Empty state: the thread stops claiming the leftover space and the
+   whole column centres, which is what promotes the composer from "form
+   at the bottom of a page" to the primary thing on screen. */
+.chat.is-empty {
+  justify-content: center;
+}
+
+.chat.is-empty .thread {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding-bottom: 4px;
+}
+
+.hero {
+  text-align: center;
+  padding: 0 8px;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin: 0 0 10px;
+}
+
+.hero-subtitle {
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--color-ink-soft);
+  margin: 0 auto;
+  max-width: 46ch;
 }
 
 .msg {
-  max-width: 78%;
+  max-width: 80%;
 }
 
 .msg.user {
   align-self: flex-end;
   background: var(--color-moss);
   color: var(--color-paper-card);
-  padding: 10px 14px;
-  border-radius: 10px 10px 2px 10px;
-  font-size: 14px;
+  padding: 11px 15px;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
+  font-size: var(--text-base);
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
 .msg.assistant {
   align-self: flex-start;
+  max-width: 100%;
   font-family: var(--font-serif);
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: var(--text-lg);
+  line-height: 1.7;
   color: var(--color-ink);
 }
 
@@ -72,13 +124,13 @@
 .rendered-markdown code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--color-paper);
+  background: var(--color-paper-sunken);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .rendered-markdown pre {
-  background: var(--color-paper);
+  background: var(--color-paper-sunken);
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   overflow-x: auto;
@@ -95,6 +147,197 @@
   color: var(--color-ink-soft);
 }
 
+.load-error {
+  font-size: var(--text-base);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+/* Sticky rather than merely last-in-flow: while a long thread scrolls,
+   the composer stays put instead of scrolling away with it. */
+.composer-dock {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding-bottom: 20px;
+  background: linear-gradient(to bottom, transparent, var(--color-paper) 22%);
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-paper-card);
+  border-radius: var(--radius-xl);
+  padding: 12px 12px 8px 16px;
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.composer:focus-within {
+  border-color: var(--color-moss);
+  box-shadow: var(--shadow-lg);
+}
+
+/* The composer owns the focus ring as a whole, so the textarea inside it
+   must not draw a second one. */
+.composer textarea:focus-visible {
+  outline: none;
+}
+
+.composer textarea {
+  border: none;
+  background: none;
+  padding: 2px 0;
+  font-size: var(--text-md);
+  font-family: inherit;
+  color: var(--color-ink);
+  outline: none;
+  resize: none;
+  max-height: 200px;
+  line-height: 1.5;
+}
+
+.composer textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.composer-hint {
+  font-size: var(--text-xs);
+  color: var(--color-ink-faint);
+}
+
+.composer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  background: var(--color-moss);
+  color: var(--color-paper-card);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    opacity var(--transition);
+}
+
+.composer button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer button:hover:not(:disabled) {
+  background: var(--color-moss-dark);
+}
+
+.composer button:disabled {
+  background: var(--color-line-strong);
+  cursor: default;
+}
+
+/* In the empty state the suggestions sit under the composer, the way a
+   starting point should read — after the thing you'd type into, not
+   before it. */
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.suggestion {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-ink-soft);
+  background: var(--color-paper-card);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.suggestion:hover {
+  border-color: var(--color-moss);
+  color: var(--color-moss);
+}
+
+.cites {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-family: var(--font-sans);
+}
+
+.cite {
+  font-size: var(--text-xs);
+  background: var(--color-amber-soft);
+  color: var(--color-amber-ink);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  border-left: 2px solid var(--color-amber);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+
+/* The heading breadcrumb ("2025-07-21 > Work") leads, since it says what
+   the fragment is about; the file/line stays as the verifiable anchor
+   underneath, quieter. */
+.cite-heading {
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.cite-source {
+  font-family: var(--font-mono);
+  opacity: 0.75;
+}
+
+.fragment {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: var(--color-paper-card);
+  border: 1px solid var(--color-line);
+  border-left: 2px solid var(--color-amber);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: var(--color-ink);
+}
+
 .typing-indicator {
   display: inline-flex;
   align-items: center;
@@ -105,7 +348,7 @@
 .typing-indicator span {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-moss-soft);
   animation: typing-bounce 1.1s infinite ease-in-out;
 }
@@ -131,142 +374,8 @@
   }
 }
 
-.cites {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  font-family: var(--font-sans);
-}
-
-.cite {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  background: var(--color-amber-soft);
-  color: var(--color-amber-ink);
-  padding: 3px 8px 3px 6px;
-  border-radius: 3px;
-  border: none;
-  border-left: 2px solid var(--color-amber);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  text-align: left;
-}
-
-/* The heading breadcrumb ("2025-07-21 > Work") leads, since it says what
-   the fragment is about; the file/line stays as the verifiable anchor
-   underneath, quieter. */
-.cite-heading {
-  font-family: var(--font-sans);
-  font-weight: 500;
-}
-
-.cite-source {
-  opacity: 0.75;
-}
-
-.load-error {
-  font-size: 14px;
-  color: #a13e3e;
-  margin: 0 0 12px;
-}
-
-.empty-state {
-  padding: 24px 0 8px;
-}
-
-.empty-title {
-  font-family: var(--font-serif);
-  font-size: 19px;
-  margin: 0 0 4px;
-  color: var(--color-ink);
-}
-
-.empty-hint {
-  font-size: 14px;
-  color: var(--color-ink-soft);
-  margin: 0 0 18px;
-}
-
-.suggestions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.suggestion {
-  font-family: inherit;
-  font-size: 13.5px;
-  color: var(--color-ink-soft);
-  background: none;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  padding: 7px 12px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.suggestion:hover {
-  border-color: var(--color-moss);
-  color: var(--color-moss);
-}
-
-.fragment {
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: var(--color-paper-card);
-  border: 1px solid var(--color-line);
-  border-left: 2px solid var(--color-amber);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  white-space: pre-wrap;
-  color: var(--color-ink);
-}
-
-.composer {
-  display: flex;
-  gap: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-paper-card);
-  border-radius: var(--radius-lg);
-  padding: 6px;
-}
-
-.composer textarea {
-  flex: 1;
-  border: none;
-  background: none;
-  padding: 10px 8px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--color-ink);
-  outline: none;
-  resize: none;
-  max-height: 160px;
-  line-height: 1.4;
-}
-
-.composer button {
-  border: none;
-  background: var(--color-moss);
-  color: var(--color-paper-card);
-  padding: 0 18px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.composer button:hover:not(:disabled) {
-  background: var(--color-moss-dark);
-}
-
-.composer button:disabled {
-  opacity: 0.6;
-  cursor: default;
+@media (prefers-reduced-motion: reduce) {
+  .typing-indicator span {
+    animation: none;
+  }
 }
