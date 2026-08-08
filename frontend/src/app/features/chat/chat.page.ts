@@ -1,13 +1,12 @@
-import { Location } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
-import { ChatService } from '../../core/chat/chat.service';
+import { ChatService, type ChatDoneEvent } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
 import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
-import { EvidencePanelComponent } from './evidence-panel.component';
 import type { Citation } from '../../core/models';
 
 interface ThreadMessage {
@@ -15,6 +14,11 @@ interface ThreadMessage {
   role: 'user' | 'assistant';
   content: string;
   citations: Citation[];
+  /** Retrieval provenance for the answer. Rendered as the memo's header,
+   * which is what turns a reply into a document that shows its work. */
+  latencyMs?: number | null;
+  cost?: number | null;
+  retrievedCount?: number | null;
   // True from the moment the assistant's turn starts until its first
   // delta arrives. The backend computes the whole answer (retrieval,
   // rerank, LLM call) before streaming anything, so there's a real gap —
@@ -30,7 +34,7 @@ const SUGGESTIONS = [
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule, MarkdownPipe, EvidencePanelComponent],
+  imports: [FormsModule, MarkdownPipe],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -39,15 +43,15 @@ export class ChatPage implements OnInit {
   private readonly conversationsService = inject(ConversationsService);
   private readonly chatService = inject(ChatService);
   private readonly route = inject(ActivatedRoute);
-  private readonly location = inject(Location);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly messages = signal<ThreadMessage[]>([]);
   protected readonly sending = signal(false);
   protected readonly loading = signal(false);
   protected readonly loadError = signal<string | null>(null);
   protected readonly expandedCitationId = signal<string | null>(null);
-  /** Which evidence card is highlighted, driven by hovering either the
-   * card or the marker in the answer. */
+  /** Which margin note is highlighted while hovered. */
   protected readonly focusedCitationId = signal<string | null>(null);
   protected readonly suggestions = SUGGESTIONS;
   protected question = '';
@@ -65,14 +69,39 @@ export class ChatPage implements OnInit {
   // — invisible before there was a history list, obvious noise now.
   private conversationId: string | null = null;
 
-  async ngOnInit(): Promise<void> {
-    const conversationId = this.route.snapshot.paramMap.get('conversationId');
-    if (conversationId) {
-      await this.loadConversation(conversationId);
-    }
+  ngOnInit(): void {
+    // Subscribed, not read once from `snapshot`. Angular reuses this
+    // component when navigating between two /chat/:id routes, so
+    // ngOnInit does not run again and a snapshot read leaves the
+    // previous conversation on screen forever.
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const conversationId = params.get('conversationId');
+      if (conversationId) {
+        void this.loadConversation(conversationId);
+      } else {
+        this.resetToNewConversation();
+      }
+    });
+  }
+
+  /** Navigating to /chat with a thread already on screen has to clear it,
+   * otherwise "New chat" shows the previous conversation and the next
+   * question appends to it. */
+  private resetToNewConversation(): void {
+    this.conversationId = null;
+    this.messages.set([]);
+    this.loadError.set(null);
+    this.expandedCitationId.set(null);
+    this.focusedCitationId.set(null);
   }
 
   private async loadConversation(conversationId: string): Promise<void> {
+    // Already on screen. This fires when we navigate to the id we just
+    // created for an answer that is still streaming; refetching would
+    // replace the in-flight message with the server's copy of a
+    // conversation that doesn't have it yet.
+    if (conversationId === this.conversationId) return;
+
     this.loading.set(true);
     this.loadError.set(null);
     try {
@@ -84,6 +113,9 @@ export class ChatPage implements OnInit {
           role: message.role as 'user' | 'assistant',
           content: message.content,
           citations: message.citations,
+          latencyMs: message.latency_ms,
+          cost: message.cost === null ? null : Number(message.cost),
+          retrievedCount: message.retrieved_count,
           pending: false,
         })),
       );
@@ -100,15 +132,6 @@ export class ChatPage implements OnInit {
   protected toggleCitation(citationId: string): void {
     this.expandedCitationId.update((current) => (current === citationId ? null : citationId));
   }
-
-  /** Every citation from the most recent assistant message. The panel
-   * follows the latest answer rather than accumulating the whole
-   * conversation's sources, which would grow without bound and stop
-   * meaning "what this answer stands on". */
-  protected readonly evidence = computed<Citation[]>(() => {
-    const answers = this.messages().filter((m) => m.role === 'assistant' && !m.pending);
-    return answers.length > 0 ? answers[answers.length - 1].citations : [];
-  });
 
   protected useSuggestion(suggestion: string): void {
     this.question = suggestion;
@@ -147,7 +170,7 @@ export class ChatPage implements OnInit {
         if ('delta' in event) {
           this.appendDelta(assistantId, event.delta);
         } else {
-          this.finalizeAnswer(assistantId, event.message_id, event.citations);
+          this.finalizeAnswer(assistantId, event);
         }
       }
       // The backend titles a conversation from its first question, so the
@@ -167,12 +190,13 @@ export class ChatPage implements OnInit {
     if (!workspace) return null;
 
     const conversation = await this.conversationsService.create(workspace.id);
+    // Set before navigating so loadConversation's guard sees it and skips
+    // the refetch. A real navigation (rather than Location.replaceState)
+    // is what keeps the router's own URL in sync — otherwise it still
+    // believes it is on /chat, and clicking "New chat" afterwards is a
+    // no-op that leaves this conversation on screen.
     this.conversationId = conversation.id;
-    // replaceState, not router.navigate: the URL should become
-    // shareable/reloadable immediately, but actually routing here would
-    // re-instantiate this component mid-send and drop the in-flight
-    // stream.
-    this.location.replaceState(`/chat/${conversation.id}`);
+    await this.router.navigate(['/chat', conversation.id], { replaceUrl: true });
     return conversation.id;
   }
 
@@ -186,13 +210,31 @@ export class ChatPage implements OnInit {
     );
   }
 
-  private finalizeAnswer(assistantId: string, messageId: string, citations: Citation[]): void {
+  private finalizeAnswer(assistantId: string, event: ChatDoneEvent): void {
     this.messages.update((current) =>
       current.map((message) =>
         message.id === assistantId
-          ? { ...message, id: messageId, citations, pending: false }
+          ? {
+              ...message,
+              id: event.message_id,
+              citations: event.citations,
+              latencyMs: event.latency_ms,
+              cost: event.cost,
+              retrievedCount: event.retrieved_count,
+              pending: false,
+            }
           : message,
       ),
     );
+  }
+
+  protected latencySeconds(ms: number | null | undefined): string | null {
+    return ms === null || ms === undefined ? null : (ms / 1000).toFixed(2);
+  }
+
+  /** Four decimals because a single answer costs fractions of a cent;
+   * rounding to two would print $0.00 for every turn. */
+  protected formatCost(cost: number | null | undefined): string | null {
+    return cost === null || cost === undefined ? null : `$${cost.toFixed(4)}`;
   }
 }

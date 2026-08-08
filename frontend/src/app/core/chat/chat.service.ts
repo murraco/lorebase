@@ -10,6 +10,11 @@ export interface ChatDeltaEvent {
 export interface ChatDoneEvent {
   done: true;
   message_id: string;
+  latency_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cost: number | null;
+  retrieved_count: number;
   citations: Citation[];
 }
 
