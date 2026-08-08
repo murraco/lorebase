@@ -1,6 +1,16 @@
 from abc import ABC, abstractmethod
 
 
+class EmbeddingProviderUnavailableError(Exception):
+    """The embedding provider's backing service is down, rate-limited, or
+    timed out — as opposed to a bug in how we're calling it. Same idea as
+    rag.reranking.base.RerankerUnavailableError: provider implementations
+    translate their own SDK's transient-failure exceptions into this one,
+    so callers don't need to know which provider is configured to decide
+    whether a failure is worth retrying.
+    """
+
+
 class EmbeddingProvider(ABC):
     """Text -> vector, behind an interface so the provider is a settings
     choice, not something wired into call sites. `embed_documents` and
