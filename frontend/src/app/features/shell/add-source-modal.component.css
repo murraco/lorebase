@@ -1,7 +1,7 @@
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: var(--color-overlay);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,7 +9,7 @@
 }
 
 .modal {
-  background: var(--color-paper-card);
+  background: var(--surface-raised);
   border-radius: var(--radius-xl);
   padding: 22px;
   width: 360px;
@@ -25,7 +25,7 @@ h3 {
 .breadcrumb {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin: 0 0 8px;
   word-break: break-all;
 }
@@ -36,7 +36,7 @@ h3 {
   gap: 2px;
   max-height: 220px;
   overflow-y: auto;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px;
   margin-bottom: 12px;
@@ -52,16 +52,16 @@ h3 {
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   font-family: inherit;
-  color: var(--color-ink);
+  color: var(--text);
   cursor: pointer;
 }
 
 .entry:hover {
-  background: var(--color-paper);
+  background: var(--surface);
 }
 
 .entry.up {
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
 }
 
 .advanced {
@@ -69,38 +69,38 @@ h3 {
   flex-direction: column;
   gap: 6px;
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 
 .hint {
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin: 0 0 12px;
 }
 
 .error {
-  color: var(--color-danger);
+  color: var(--danger);
   font-size: var(--text-sm);
   margin: 0 0 8px;
 }
 
 input {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   font-size: var(--text-sm);
   font-family: var(--font-mono);
-  color: var(--color-ink);
-  background: var(--color-paper);
+  color: var(--text);
+  background: var(--surface);
 }
 
 .primary {
   display: block;
   width: 100%;
   border: none;
-  background: var(--color-moss);
-  color: var(--color-paper-card);
+  background: var(--accent);
+  color: var(--accent-contrast);
   padding: 10px;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -109,7 +109,7 @@ input {
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--color-moss-dark);
+  background: var(--accent-hover);
 }
 
 .primary:disabled {
@@ -127,7 +127,7 @@ input {
   align-items: center;
   gap: 10px;
   padding: 6px 0;
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   font-size: var(--text-sm);
 }
 
@@ -135,17 +135,17 @@ input {
   width: 14px;
   height: 14px;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--color-line);
+  border: 2px solid var(--border);
   flex-shrink: 0;
 }
 
 .step.done .ring {
-  border-color: var(--color-moss);
-  background: var(--color-moss);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .step.done {
-  color: var(--color-ink);
+  color: var(--text);
 }
 
 .close {
@@ -157,7 +157,7 @@ input {
   padding: 0;
   font-size: var(--text-sm);
   font-family: inherit;
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   cursor: pointer;
   text-align: right;
 }

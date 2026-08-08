@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: var(--color-overlay);
+  background: var(--overlay);
   border: none;
   padding: 0;
   cursor: default;
@@ -12,8 +12,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--color-paper-card);
-  border: 1px solid var(--color-line);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   width: min(480px, calc(100vw - 40px));
@@ -32,7 +32,7 @@
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin: 18px 0 8px;
 }
 
@@ -51,7 +51,7 @@
 }
 
 .rows dt {
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
 }
 
 .rows dd {
@@ -65,7 +65,7 @@
 
 .value {
   font-family: var(--font-mono);
-  color: var(--color-ink);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
@@ -73,20 +73,20 @@
   font-size: var(--text-xs);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
-  color: var(--color-ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 .tag.amber {
-  background: var(--color-amber-soft);
-  border-color: var(--color-amber);
-  color: var(--color-amber-ink);
+  background: var(--evidence-soft);
+  border-color: var(--evidence);
+  color: var(--evidence-text);
 }
 
 .muted {
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
 }
 
 .note {
@@ -97,9 +97,9 @@
 .warning {
   font-size: var(--text-sm);
   line-height: 1.5;
-  color: var(--color-amber-ink);
-  background: var(--color-amber-soft);
-  border-left: 2px solid var(--color-amber);
+  color: var(--evidence-text);
+  background: var(--evidence-soft);
+  border-left: 2px solid var(--evidence);
   padding: 9px 12px;
   border-radius: var(--radius-sm);
   margin: 0 0 18px;
@@ -107,7 +107,7 @@
 
 .error {
   font-size: var(--text-base);
-  color: var(--color-danger);
+  color: var(--danger);
   margin: 0;
 }
 
@@ -123,7 +123,7 @@
   padding: 7px 14px;
   border-radius: var(--radius-sm);
   background: none;
-  border: 1px solid var(--color-line);
-  color: var(--color-ink);
+  border: 1px solid var(--border);
+  color: var(--text);
   cursor: pointer;
 }

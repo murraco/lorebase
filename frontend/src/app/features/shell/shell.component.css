@@ -51,18 +51,18 @@
   border: none;
   background: none;
   border-radius: var(--radius-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .icon-btn:hover {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--surface);
+  color: var(--text);
 }
 
 .icon-btn.active {
-  color: var(--color-moss);
+  color: var(--accent);
 }
 
 .icon-btn svg {
@@ -77,7 +77,7 @@
 
 /* Mirrors the "+ New chat" affordance from the expanded list. */
 .icon-btn.round {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
 }
 
@@ -88,8 +88,8 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-pill);
-  background: var(--color-moss);
-  color: var(--color-paper-card);
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -99,8 +99,8 @@
    grows past the fold and takes the footer ("Sign out") off-screen with
    it. The list scrolls inside instead — see .conversations. */
 .rail {
-  background: var(--color-paper-card);
-  border-right: 1px solid var(--color-line);
+  background: var(--surface-raised);
+  border-right: 1px solid var(--border);
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
@@ -113,7 +113,7 @@
 }
 
 .brand {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -122,7 +122,7 @@
 }
 
 .brand span {
-  color: var(--color-moss);
+  color: var(--accent);
 }
 
 .section-label {
@@ -130,7 +130,7 @@
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin: 0 0 8px;
 }
 
@@ -144,7 +144,7 @@
 }
 
 .source:hover {
-  background: var(--color-paper);
+  background: var(--surface);
 }
 
 .source-text {
@@ -157,7 +157,7 @@
 .source .name {
   font-size: var(--text-base);
   font-weight: 500;
-  color: var(--color-ink);
+  color: var(--text);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,7 +166,7 @@
 
 .status-label {
   font-size: var(--text-xs);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
@@ -174,24 +174,24 @@
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-moss);
+  background: var(--accent);
   margin-left: auto;
   flex-shrink: 0;
 }
 
 .dot.pending,
 .dot.syncing {
-  background: var(--color-amber);
+  background: var(--evidence);
 }
 
 .dot.error {
-  background: var(--color-danger);
+  background: var(--danger);
 }
 
 /* Anything still syncing or still embedding pulses amber — "ready" green
    is reserved for genuinely queryable. */
 .dot.working {
-  background: var(--color-amber);
+  background: var(--evidence);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -264,7 +264,7 @@
 .conversation {
   flex-shrink: 0;
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   text-decoration: none;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
@@ -274,18 +274,18 @@
 }
 
 .conversation:hover {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--surface);
+  color: var(--text);
 }
 
 .conversation.active {
-  background: var(--color-moss-tint);
-  color: var(--color-moss);
+  background: var(--accent-tint);
+  color: var(--accent);
   font-weight: 500;
 }
 
 .conversation.new {
-  color: var(--color-moss);
+  color: var(--accent);
 }
 
 /* A <button>, not a <div>: clicking the backdrop to dismiss has to be
@@ -293,7 +293,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: var(--color-overlay);
+  background: var(--overlay);
   border: none;
   padding: 0;
   cursor: default;
@@ -304,8 +304,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--color-paper-card);
-  border: 1px solid var(--color-line);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   width: min(420px, calc(100vw - 40px));
@@ -320,7 +320,7 @@
 
 .dialog p {
   font-size: var(--text-base);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   line-height: 1.5;
   margin: 0 0 16px;
 }
@@ -341,14 +341,14 @@
 
 .dialog-actions .secondary {
   background: none;
-  border: 1px solid var(--color-line);
-  color: var(--color-ink);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .dialog-actions .danger {
-  background: var(--color-danger);
-  border: 1px solid var(--color-danger);
-  color: var(--color-paper-card);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--danger-contrast);
 }
 
 .dialog-actions button:disabled {
@@ -366,15 +366,15 @@
   height: 16px;
   line-height: 1;
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
 }
 
 .sync-btn:hover:not(:disabled) {
-  color: var(--color-moss);
-  background: var(--color-paper);
+  color: var(--accent);
+  background: var(--surface);
 }
 
 .sync-btn:disabled {
@@ -390,15 +390,15 @@
   height: 16px;
   line-height: 1;
   font-size: var(--text-md);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
 }
 
 .delete-btn:hover:not(:disabled) {
-  color: var(--color-danger);
-  background: var(--color-danger-soft);
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .delete-btn:disabled {
@@ -408,13 +408,13 @@
 
 .empty {
   font-size: var(--text-base);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   margin: 0 0 6px;
 }
 
 .error {
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  color: var(--danger);
   margin: 4px 0 0;
 }
 
@@ -426,10 +426,10 @@
   padding: 7px 8px;
   border-radius: var(--radius-sm);
   font-size: var(--text-base);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   cursor: pointer;
   background: none;
-  border: 1px dashed var(--color-line);
+  border: 1px dashed var(--border);
   width: 100%;
   text-align: left;
   font-family: inherit;
@@ -437,8 +437,8 @@
 }
 
 .add-btn:hover {
-  border-color: var(--color-moss);
-  color: var(--color-moss);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .rail-footer {
@@ -448,7 +448,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: var(--text-sm);
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
 }
 
 .app.collapsed .rail-footer {
@@ -465,7 +465,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-ink-soft);
+  color: var(--text-muted);
   text-decoration: underline;
   cursor: pointer;
   font-size: var(--text-sm);
