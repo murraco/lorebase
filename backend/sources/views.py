@@ -1,10 +1,12 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from sources.models import Document, Source
-from sources.serializers import DocumentSerializer, SourceSerializer
+from sources.serializers import DocumentSerializer, SourceSerializer, SyncQueuedSerializer
 from sources.tasks import sync_source_task
 
 
@@ -18,6 +20,10 @@ class SourceViewSet(viewsets.ModelViewSet):
             "name"
         )
 
+    # Without this, drf-spectacular falls back to inferring the request
+    # body from the viewset's serializer_class (Source) — wrong, since
+    # this action takes no body at all.
+    @extend_schema(request=None, responses={202: SyncQueuedSerializer})
     @action(detail=True, methods=["post"])
     def sync(self, request: Request, pk: str | None = None) -> Response:
         source = self.get_object()
@@ -27,6 +33,16 @@ class SourceViewSet(viewsets.ModelViewSet):
 
 class DocumentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DocumentSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "source", OpenApiTypes.UUID, description="Filter documents down to a single source."
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):

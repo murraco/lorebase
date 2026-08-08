@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 
 from rag.models import Conversation, Message
@@ -28,6 +30,18 @@ class MessageViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
 
     serializer_class = MessageSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "conversation",
+                OpenApiTypes.UUID,
+                description="Filter messages down to a single conversation.",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):

@@ -48,6 +48,7 @@ def _serialize_citations(message: Message) -> list[dict[str, object]]:
             "path": citation.chunk.document.path,
             "start_line": citation.chunk.start_line,
             "end_line": citation.chunk.end_line,
+            "content": citation.chunk.content,
         }
         for citation in message.citations.select_related("chunk__document")
     ]

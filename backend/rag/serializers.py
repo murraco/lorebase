@@ -7,10 +7,14 @@ class CitationSerializer(serializers.ModelSerializer):
     path = serializers.CharField(source="chunk.document.path", read_only=True)
     start_line = serializers.IntegerField(source="chunk.start_line", read_only=True)
     end_line = serializers.IntegerField(source="chunk.end_line", read_only=True)
+    # The cited passage itself — lets a citation chip show the fragment it
+    # actually points to without a separate request or a dedicated Chunk
+    # read endpoint that nothing else needs yet.
+    content = serializers.CharField(source="chunk.content", read_only=True)
 
     class Meta:
         model = Citation
-        fields = ["id", "chunk", "path", "start_line", "end_line"]
+        fields = ["id", "chunk", "path", "start_line", "end_line", "content"]
 
 
 class MessageSerializer(serializers.ModelSerializer):

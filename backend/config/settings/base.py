@@ -184,6 +184,14 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Personal knowledge base with RAG, hybrid search, and verifiable citations.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Without this, request and response bodies share one schema (e.g.
+    # "Source") that includes read-only fields like `status`/`created_at`
+    # as required properties — technically correct for responses, but it
+    # makes every generated TS type for a POST/PATCH body demand fields
+    # the client can't and shouldn't send. This splits them into e.g.
+    # "Source" (response) and "SourceRequest" (request, read-only fields
+    # dropped).
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")

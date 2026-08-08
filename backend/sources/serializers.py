@@ -27,6 +27,10 @@ class SourceSerializer(serializers.ModelSerializer):
         return workspace
 
 
+class SyncQueuedSerializer(serializers.Serializer):
+    status = serializers.CharField()
+
+
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
