@@ -1,4 +1,8 @@
-<aside class="reader" aria-label="Cited passage">
+<!-- A button, not a div: dismissing by clicking outside has to be
+     reachable by keyboard too. -->
+<button type="button" class="scrim" aria-label="Close passage" (click)="closed.emit()"></button>
+
+<aside class="reader" role="dialog" aria-modal="true" aria-label="Cited passage">
   <header>
     <span class="reader-n">{{ index() }}</span>
     <div class="reader-id">

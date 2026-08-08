@@ -1,24 +1,63 @@
+/* Dismissing by clicking away is expected of anything that covers the
+   page; without it the only exit was the × in the corner. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  border: none;
+  padding: 0;
+  cursor: default;
+  background: var(--overlay);
+  animation: scrim-in 160ms ease;
+}
+
 /* Docked to the viewport, not inline in the thread: a passage opened
    under a long answer landed off-screen, and switching notes meant
-   scrolling back for the list. */
+   scrolling back for the list. Inset from the edges so it reads as a
+   panel resting over the page rather than something welded to it. */
 .reader {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(420px, 42vw);
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: min(420px, calc(100vw - 32px));
   z-index: 15;
   display: flex;
   flex-direction: column;
   background: var(--surface-raised);
-  border-left: 1px solid var(--border-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: reader-in 180ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Slides in from its own edge rather than appearing at full size, which
+   is what made it feel abrupt. */
+@keyframes reader-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .reader {
+    animation: none;
+  }
 }
 
 @media (max-width: 820px) {
   .reader {
-    width: 100%;
-    border-left: none;
+    left: 16px;
+    width: auto;
   }
 }
 
@@ -27,7 +66,7 @@
   align-items: flex-start;
   gap: 10px;
   flex-shrink: 0;
-  padding: 14px 14px 12px;
+  padding: 14px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -43,6 +82,7 @@
   font-weight: 500;
   background: var(--evidence-soft);
   color: var(--evidence-text);
+  border-radius: var(--radius-sm);
 }
 
 .reader-id {

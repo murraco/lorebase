@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, HostListener, input, output } from '@angular/core';
 
 import type { Citation } from '../../core/models';
 
@@ -21,4 +21,11 @@ export class PassageReaderComponent {
   readonly index = input<number | null>(null);
 
   readonly closed = output<void>();
+
+  /** Escape closes it, like every other transient surface. Bound on the
+   * document because focus may still be in the thread behind. */
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    this.closed.emit();
+  }
 }
