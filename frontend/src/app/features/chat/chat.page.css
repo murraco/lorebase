@@ -393,130 +393,60 @@
   }
 }
 
-/* Scrolls independently of the conversation: the sources for a long
-   answer shouldn't force the thread to move. */
-.evidence {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 8px 4px 20px 0;
+.skeleton {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
+  padding: 10px 0;
 }
 
-@media (max-width: 1100px) {
-  .evidence {
-    overflow-y: visible;
-    padding-bottom: 8px;
+.skeleton-line {
+  height: 13px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+  width: 42%;
+}
+
+.skeleton-line.medium {
+  width: 68%;
+}
+
+.skeleton-line:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.skeleton-line:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 
-.evidence-title {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  margin: 0 0 2px;
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line {
+    animation: none;
+  }
 }
 
-.evidence-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--evidence);
-  border-radius: var(--radius-md);
-  padding: 11px 13px;
-  transition: border-color var(--transition);
-}
-
-.evidence-card.focused {
-  border-color: var(--evidence);
-}
-
-.evidence-head {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-/* Mirrors the inline marker exactly, so the eye can pair them without
-   any highlighting having to fire. */
-.evidence-marker {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  background: var(--evidence-soft);
-  color: var(--evidence-text);
-  border-radius: var(--radius-sm);
-}
-
-.evidence-heading {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-
-/* Everything verifiable is mono: paths, line ranges, scores. That is the
-   visual rule that separates evidence from prose. */
-.evidence-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 5px 0 7px;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.evidence-path {
-  overflow-wrap: anywhere;
-}
-
-.evidence-score {
-  color: var(--evidence-text);
-  background: var(--evidence-soft);
-  padding: 0 5px;
-  border-radius: var(--radius-sm);
-}
-
-.evidence-preview {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-
-.evidence-full {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: 1.55;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-  background: var(--surface-sunken);
-  padding: 9px 10px;
-  border-radius: var(--radius-sm);
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.evidence-toggle {
-  margin-top: 7px;
-  padding: 0;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: var(--text-xs);
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.evidence-toggle:hover {
-  text-decoration: underline;
+/* Announced to screen readers, invisible on screen — the skeleton itself
+   carries no meaning without it. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

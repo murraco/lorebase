@@ -6,11 +6,16 @@ import { ConversationsService } from '../../core/conversations/conversations.ser
 import type { Conversation, Source } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
+import { ConfirmDialogComponent } from './confirm-dialog.component';
 import { ThemeService } from '../../core/theme/theme.service';
 import { SystemStatusModalComponent } from './system-status-modal.component';
 
 const POLL_INTERVAL_MS = 4000;
 const SIDEBAR_COLLAPSED_KEY = 'lorebase.sidebarCollapsed';
+// Matches the breakpoint in shell.component.css. Below it the rail stops
+// being a column of the layout and becomes an overlay drawer, because a
+// 250px sidebar on a narrow screen leaves nothing for the conversation.
+const NARROW_QUERY = '(max-width: 900px)';
 
 @Component({
   selector: 'lorebase-shell',
@@ -19,6 +24,7 @@ const SIDEBAR_COLLAPSED_KEY = 'lorebase.sidebarCollapsed';
     RouterLink,
     RouterLinkActive,
     AddSourceModalComponent,
+    ConfirmDialogComponent,
     SystemStatusModalComponent,
   ],
   templateUrl: './shell.component.html',
@@ -38,6 +44,17 @@ export class ShellComponent implements OnInit, OnDestroy {
   // not having the toggle at all.
   protected readonly collapsed = signal(this.readCollapsedPreference());
 
+  /** Narrow viewports get a drawer instead of a column. Tracked as a
+   * signal rather than read from CSS so the template can close the drawer
+   * on navigation, which only matters in that mode. */
+  protected readonly narrow = signal(false);
+  protected readonly drawerOpen = signal(false);
+  private mediaQuery?: MediaQueryList;
+  private readonly onMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
+    this.narrow.set(event.matches);
+    if (!event.matches) this.drawerOpen.set(false);
+  };
+
   protected readonly showAddSourceModal = signal(false);
   protected readonly showSystemStatus = signal(false);
   protected readonly syncingSourceId = signal<string | null>(null);
@@ -45,6 +62,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly conversationPendingDeletion = signal<Conversation | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
+  protected readonly loadingLists = signal(true);
+  protected readonly listError = signal<string | null>(null);
 
   /** A source is only genuinely done when its sync finished AND every one
    * of its chunks has an embedding. Those are two separate phases —
@@ -56,17 +75,38 @@ export class ShellComponent implements OnInit, OnDestroy {
   );
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.sourcesService.refresh(), this.conversationsService.refresh()]);
+    // Previously unguarded: if either request failed the rejection went
+    // unhandled and the sidebar simply stayed empty, which is
+    // indistinguishable from "you have nothing yet".
+    try {
+      await Promise.all([this.sourcesService.refresh(), this.conversationsService.refresh()]);
+    } catch {
+      this.listError.set("Couldn't load your sources and conversations.");
+    } finally {
+      this.loadingLists.set(false);
+    }
     // The interval runs for the component's lifetime but only issues a
     // request while something is actually in flight, so it costs nothing
     // when idle and restarts on its own once a new source is added.
     this.pollHandle = setInterval(() => {
       if (this.anyInFlight()) void this.sourcesService.refresh();
     }, POLL_INTERVAL_MS);
+
+    this.mediaQuery = window.matchMedia(NARROW_QUERY);
+    this.onMediaChange(this.mediaQuery);
+    this.mediaQuery.addEventListener('change', this.onMediaChange);
   }
 
   ngOnDestroy(): void {
     if (this.pollHandle) clearInterval(this.pollHandle);
+    this.mediaQuery?.removeEventListener('change', this.onMediaChange);
+  }
+
+  /** In drawer mode the rail covers the conversation, so following a link
+   * has to dismiss it — otherwise you navigate to something you can't
+   * see. On wide screens the rail is always visible and this is a no-op. */
+  protected closeDrawerIfNarrow(): void {
+    if (this.narrow()) this.drawerOpen.set(false);
   }
 
   /** "pending" is deliberately NOT in flight: it means the source was
@@ -180,6 +220,18 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (value === 'light') return 'Light';
     if (value === 'dark') return 'Dark';
     return 'System';
+  }
+
+  protected async retryLoad(): Promise<void> {
+    this.listError.set(null);
+    this.loadingLists.set(true);
+    try {
+      await Promise.all([this.sourcesService.refresh(), this.conversationsService.refresh()]);
+    } catch {
+      this.listError.set("Couldn't load your sources and conversations.");
+    } finally {
+      this.loadingLists.set(false);
+    }
   }
 
   protected async logout(): Promise<void> {

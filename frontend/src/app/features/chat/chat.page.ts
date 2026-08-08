@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ChatService } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
 import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
+import { EvidencePanelComponent } from './evidence-panel.component';
 import type { Citation } from '../../core/models';
 
 interface ThreadMessage {
@@ -29,7 +30,7 @@ const SUGGESTIONS = [
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule, MarkdownPipe],
+  imports: [FormsModule, MarkdownPipe, EvidencePanelComponent],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -108,19 +109,6 @@ export class ChatPage implements OnInit {
     const answers = this.messages().filter((m) => m.role === 'assistant' && !m.pending);
     return answers.length > 0 ? answers[answers.length - 1].citations : [];
   });
-
-  /** Trimmed to a few lines: the panel is for scanning, and the full
-   * passage is one click away in the expanded view. */
-  protected preview(citation: Citation): string {
-    const text = citation.content.trim().replace(/\s+/g, ' ');
-    return text.length > 180 ? text.slice(0, 179) + '…' : text;
-  }
-
-  /** Scores are not comparable across retrieval strategies, so this is
-   * shown as provenance and never as a quality bar or a percentage. */
-  protected formatScore(score: number | null | undefined): string | null {
-    return score === null || score === undefined ? null : score.toFixed(3);
-  }
 
   protected useSuggestion(suggestion: string): void {
     this.question = suggestion;

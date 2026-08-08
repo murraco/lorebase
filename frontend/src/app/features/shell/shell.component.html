@@ -1,4 +1,32 @@
-<div class="app" [class.collapsed]="collapsed()">
+<div
+  class="app"
+  [class.collapsed]="collapsed()"
+  [class.narrow]="narrow()"
+  [class.drawer-open]="drawerOpen()"
+>
+  @if (narrow()) {
+    <button
+      type="button"
+      class="drawer-trigger"
+      aria-label="Open sidebar"
+      [attr.aria-expanded]="drawerOpen()"
+      (click)="drawerOpen.set(true)"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </svg>
+    </button>
+  }
+  @if (narrow() && drawerOpen()) {
+    <button
+      type="button"
+      class="drawer-scrim"
+      aria-label="Close sidebar"
+      (click)="drawerOpen.set(false)"
+    ></button>
+  }
   <div class="rail">
     <div class="rail-header">
       @if (!collapsed()) {
@@ -79,6 +107,13 @@
         <span class="avatar" [title]="auth.currentUser()?.username ?? ''">{{ userInitial() }}</span>
       </div>
     } @else {
+      @if (listError()) {
+        <div class="list-error" role="alert">
+          <p>{{ listError() }}</p>
+          <button type="button" class="link-btn" (click)="retryLoad()">Try again</button>
+        </div>
+      }
+
       <div class="sources">
         <p class="section-label">Sources</p>
         @for (source of sourcesService.sources(); track source.id) {
@@ -112,7 +147,11 @@
             </button>
           </div>
         } @empty {
-          <p class="empty">No sources yet.</p>
+          @if (loadingLists()) {
+            <p class="empty">Loading…</p>
+          } @else if (!listError()) {
+            <p class="empty">No sources yet. Add a folder to start.</p>
+          }
         }
         <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
       </div>
@@ -124,6 +163,7 @@
           routerLink="/chat"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeDrawerIfNarrow()"
           >+ New chat</a
         >
         @for (conversation of conversationsService.conversations(); track conversation.id) {
@@ -133,6 +173,7 @@
               [routerLink]="['/chat', conversation.id]"
               routerLinkActive="active"
               [title]="conversation.title"
+              (click)="closeDrawerIfNarrow()"
             >
               {{ conversation.title || 'Untitled' }}
             </a>
@@ -146,6 +187,10 @@
               ×
             </button>
           </div>
+        } @empty {
+          @if (!loadingLists() && !listError()) {
+            <p class="empty">Your past chats will appear here.</p>
+          }
         }
       </div>
 
@@ -174,46 +219,23 @@
 }
 
 @if (sourcePendingDeletion(); as source) {
-  <button type="button" class="backdrop" aria-label="Cancel" (click)="cancelDelete()"></button>
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
-    <h2 id="delete-title">Delete “{{ source.name }}”?</h2>
-    <p>
-      This removes the source and everything indexed from it. Your original files are not touched.
-    </p>
-    @if (deleteError()) {
-      <p class="error">{{ deleteError() }}</p>
-    }
-    <div class="dialog-actions">
-      <button type="button" class="secondary" (click)="cancelDelete()" [disabled]="deleting()">
-        Cancel
-      </button>
-      <button type="button" class="danger" (click)="confirmDelete()" [disabled]="deleting()">
-        {{ deleting() ? 'Deleting…' : 'Delete' }}
-      </button>
-    </div>
-  </div>
+  <lorebase-confirm-dialog
+    [title]="'Delete “' + source.name + '”?'"
+    message="This removes the source and everything indexed from it. Your original files are not touched."
+    [busy]="deleting()"
+    [error]="deleteError()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
 }
 
 @if (conversationPendingDeletion(); as conversation) {
-  <button type="button" class="backdrop" aria-label="Cancel" (click)="cancelDelete()"></button>
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-conversation-title">
-    <h2 id="delete-conversation-title">Delete “{{ conversation.title || 'Untitled' }}”?</h2>
-    <p>This removes the conversation and its messages. Your indexed notes are not touched.</p>
-    @if (deleteError()) {
-      <p class="error">{{ deleteError() }}</p>
-    }
-    <div class="dialog-actions">
-      <button type="button" class="secondary" (click)="cancelDelete()" [disabled]="deleting()">
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="danger"
-        (click)="confirmDeleteConversation()"
-        [disabled]="deleting()"
-      >
-        {{ deleting() ? 'Deleting…' : 'Delete' }}
-      </button>
-    </div>
-  </div>
+  <lorebase-confirm-dialog
+    [title]="'Delete “' + (conversation.title || 'Untitled') + '”?'"
+    message="This removes the conversation and its messages. Your indexed notes are not touched."
+    [busy]="deleting()"
+    [error]="deleteError()"
+    (confirmed)="confirmDeleteConversation()"
+    (cancelled)="cancelDelete()"
+  />
 }
