@@ -16,7 +16,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ChatService, type ChatDoneEvent } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
 import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
-import type { Citation } from '../../core/models';
+import type { Citation, FeedbackRating } from '../../core/models';
+import { AnswerActionsComponent } from './answer-actions.component';
 
 interface ThreadMessage {
   id: string;
@@ -33,6 +34,11 @@ interface ThreadMessage {
   // rerank, LLM call) before streaming anything, so there's a real gap —
   // often a second or more — with nothing to show yet.
   pending: boolean;
+  // undefined while a freshly-streamed answer hasn't been rated yet in
+  // this session; null/'up'/'down' once loaded from a saved conversation,
+  // where the server has an actual answer (including "never rated").
+  feedbackRating?: FeedbackRating | null;
+  feedbackComment?: string;
 }
 
 const SUGGESTIONS = [
@@ -43,7 +49,7 @@ const SUGGESTIONS = [
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule, MarkdownPipe],
+  imports: [FormsModule, MarkdownPipe, AnswerActionsComponent],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -127,6 +133,8 @@ export class ChatPage implements OnInit {
           cost: message.cost === null ? null : Number(message.cost),
           retrievedCount: message.retrieved_count,
           pending: false,
+          feedbackRating: message.feedback?.rating ?? null,
+          feedbackComment: message.feedback?.comment ?? '',
         })),
       );
       // Jump, not smooth: this is the initial position of a conversation
@@ -140,6 +148,40 @@ export class ChatPage implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Optimistic: the button reflects the click immediately rather than
+   * waiting on the request, and reverts only if it actually failed —
+   * rating an answer is low-stakes enough that a request in flight
+   * shouldn't make a button feel unresponsive. */
+  protected async rate(message: ThreadMessage, rating: FeedbackRating): Promise<void> {
+    const previous = message.feedbackRating;
+    this.setFeedback(message.id, rating, message.feedbackComment ?? '');
+    try {
+      await this.conversationsService.giveFeedback(message.id, rating, message.feedbackComment);
+    } catch {
+      this.setFeedback(message.id, previous ?? null, message.feedbackComment ?? '');
+    }
+  }
+
+  protected async saveComment(message: ThreadMessage, comment: string): Promise<void> {
+    const rating = message.feedbackRating;
+    if (!rating) return; // the editor only ever shows for a rated message
+    const previous = message.feedbackComment ?? '';
+    this.setFeedback(message.id, rating, comment);
+    try {
+      await this.conversationsService.giveFeedback(message.id, rating, comment);
+    } catch {
+      this.setFeedback(message.id, rating, previous);
+    }
+  }
+
+  private setFeedback(messageId: string, rating: FeedbackRating | null, comment: string): void {
+    this.messages.update((current) =>
+      current.map((m) =>
+        m.id === messageId ? { ...m, feedbackRating: rating, feedbackComment: comment } : m,
+      ),
+    );
   }
 
   protected toggleCitation(citationId: string): void {

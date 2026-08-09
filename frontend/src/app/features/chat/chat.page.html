@@ -138,6 +138,14 @@
             } @else {
               <p class="ungrounded">No source was cited for this answer. Treat it as unverified.</p>
             }
+
+            <lorebase-answer-actions
+              [rating]="message.feedbackRating"
+              [comment]="message.feedbackComment"
+              [content]="message.content"
+              (rated)="rate(message, $event)"
+              (commentSaved)="saveComment(message, $event)"
+            />
           </article>
         }
       }

@@ -1,0 +1,70 @@
+<div class="actions">
+  <button
+    type="button"
+    class="action-btn"
+    title="Copy as Markdown"
+    aria-label="Copy as Markdown"
+    (click)="copy()"
+  >
+    @if (copied()) {
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    } @else {
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    }
+  </button>
+
+  <span class="divider"></span>
+
+  <button
+    type="button"
+    class="action-btn rating up"
+    [class.active]="rating() === 'up'"
+    title="Good answer"
+    aria-label="Good answer"
+    (click)="rated.emit('up')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+      />
+    </svg>
+  </button>
+  <button
+    type="button"
+    class="action-btn rating down"
+    [class.active]="rating() === 'down'"
+    title="Bad answer"
+    aria-label="Bad answer"
+    (click)="rated.emit('down')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"
+      />
+    </svg>
+  </button>
+  @if (rating()) {
+    <button type="button" class="note-btn" (click)="openEditor()">
+      {{ comment() ? 'Edit note' : 'Add a note' }}
+    </button>
+  }
+</div>
+
+@if (editing()) {
+  <div class="editor">
+    <textarea
+      [(ngModel)]="draft"
+      placeholder="What made this answer good or bad? (optional)"
+      rows="2"
+    ></textarea>
+    <div class="editor-actions">
+      <button type="button" class="editor-cancel" (click)="editing.set(false)">Cancel</button>
+      <button type="button" class="editor-save" (click)="save()">Save</button>
+    </div>
+  </div>
+}
