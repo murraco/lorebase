@@ -1,8 +1,11 @@
+import base64
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+import responses
 from django.db import connection
+from responses import matchers
 
 from sources.connectors.registry import get_connector_class
 from sources.factories import SourceFactory
@@ -209,6 +212,54 @@ def test_pdf_sync_caches_the_original_and_tags_chunks_with_page(
     assert len(chunks) == 2
     assert chunks[0].metadata == {"page": 1}
     assert chunks[1].metadata == {"page": 2}
+
+
+@responses.activate
+def test_sync_source_works_unmodified_with_the_github_connector() -> None:
+    """sync_source() only ever imports LocalFolderConnector's sibling
+    through the registry, by `source.type` — this is the actual proof that
+    the plugin-first design holds: onboarding a second, network-backed
+    connector took zero changes to sync.py or ingestion/pipeline.py.
+    """
+    repo = "octo/notes"
+    source = SourceFactory(
+        type=Source.SourceType.GITHUB, config={"repos": [repo], "branch": "main"}
+    )
+    responses.add(  # test_connection()'s reachability check
+        responses.GET, f"https://api.github.com/repos/{repo}", json={"default_branch": "main"}
+    )
+    responses.add(
+        responses.GET,
+        f"https://api.github.com/repos/{repo}/git/trees/main",
+        json={
+            "truncated": False,
+            "tree": [{"path": "guide.md", "type": "blob", "sha": "blob-sha", "size": 30}],
+        },
+        match=[matchers.query_param_matcher({"recursive": "1"})],
+    )
+    responses.add(
+        responses.GET,
+        f"https://api.github.com/repos/{repo}/git/blobs/blob-sha",
+        json={
+            "sha": "blob-sha",
+            "content": base64.b64encode(b"# Guide\n\nHow this works.").decode(),
+        },
+    )
+    responses.add(
+        responses.GET,
+        f"https://api.github.com/repos/{repo}/commits",
+        json=[{"sha": "c1", "commit": {"author": {"name": "Ada", "date": "2026-01-01T00:00:00Z"}}}],
+        match=[matchers.query_param_matcher({"path": "guide.md", "sha": "main", "per_page": "1"})],
+    )
+
+    stats = sync_source(source)
+
+    assert (stats.added, stats.updated, stats.deleted) == (1, 0, 0)
+    document = source.documents.get(external_id=f"{repo}@guide.md")
+    assert document.content_hash == "blob-sha"
+    assert document.metadata["commit_author"] == "Ada"
+    chunk = document.chunks.get()
+    assert chunk.heading_path == "Guide"
 
 
 def _forbid_writes(execute, sql, params, many, context):  # type: ignore[no-untyped-def]
