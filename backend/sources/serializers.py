@@ -28,6 +28,7 @@ class SourceSerializer(serializers.ModelSerializer):
             "type",
             "config",
             "status",
+            "enabled",
             "chunk_count",
             "embedded_chunk_count",
             "last_synced_at",

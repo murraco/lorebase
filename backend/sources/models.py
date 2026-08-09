@@ -25,6 +25,11 @@ class Source(BaseModel):
     type = models.CharField(max_length=20, choices=SourceType.choices)
     config = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    # Off means "stays indexed, stops being searched". Not a soft delete:
+    # chunks and embeddings are untouched, so re-enabling is instant and
+    # costs no re-indexing, and citations in past answers keep resolving
+    # because the chunks they point at still exist.
+    enabled = models.BooleanField(default=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True, default="")
 
