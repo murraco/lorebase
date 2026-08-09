@@ -55,7 +55,7 @@ class MessageViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             return Message.objects.none()
         queryset = (
             Message.objects.filter(conversation__workspace__memberships__user=self.request.user)
-            .select_related("conversation")
+            .select_related("conversation", "feedback")
             .prefetch_related("citations__chunk__document")
         )
         conversation_id = self.request.query_params.get("conversation")

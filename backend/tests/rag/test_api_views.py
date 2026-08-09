@@ -106,6 +106,30 @@ def test_messages_are_scoped_to_the_users_workspace_and_read_only() -> None:
     assert response.status_code == 405
 
 
+def test_message_feedback_is_null_before_any_is_given() -> None:
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    Message.objects.create(conversation=conversation, role=Message.Role.ASSISTANT, content="hi")
+
+    response = _authed_client(membership.user).get("/api/messages/")
+
+    assert response.json()["results"][0]["feedback"] is None
+
+
+def test_message_feedback_appears_once_given() -> None:
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    message = Message.objects.create(
+        conversation=conversation, role=Message.Role.ASSISTANT, content="hi"
+    )
+    client = _authed_client(membership.user)
+    client.post(f"/api/messages/{message.id}/feedback/", {"rating": "up"}, format="json")
+
+    response = client.get("/api/messages/")
+
+    assert response.json()["results"][0]["feedback"] == {"rating": "up", "comment": ""}
+
+
 def test_chat_stream_persists_and_returns_a_validated_citation() -> None:
     membership = MembershipFactory()
     conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)

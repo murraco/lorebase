@@ -1,6 +1,20 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from rag.models import Citation, Conversation, Message
+
+
+class MessageFeedbackSerializer(serializers.Serializer):
+    """Describes the *shape* of MessageSerializer.feedback for the OpenAPI
+    schema only — never instantiated to validate or save anything (that's
+    analytics.serializers.FeedbackSerializer's job). Defined here, not
+    imported from there, so the generated TS type is `{ rating; comment }
+    | null` instead of a generic string-keyed object, without giving `rag`
+    an import from `analytics`.
+    """
+
+    rating = serializers.ChoiceField(choices=["up", "down"])
+    comment = serializers.CharField()
 
 
 class CitationSerializer(serializers.ModelSerializer):
@@ -37,6 +51,14 @@ class CitationSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     citations = CitationSerializer(many=True, read_only=True)
+    # Read via the reverse accessor Django installs from analytics.Feedback's
+    # OneToOneField (message.feedback), not analytics.serializers — importing
+    # that here would make `rag` depend on `analytics`, backwards from every
+    # other dependency between them (analytics observes rag's messages, not
+    # the other way around). hasattr() is the standard way to probe a
+    # reverse one-to-one: unlike a plain FK, accessing a missing one raises
+    # rather than returning None.
+    feedback = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -51,8 +73,16 @@ class MessageSerializer(serializers.ModelSerializer):
             "cost",
             "retrieved_count",
             "citations",
+            "feedback",
             "created_at",
         ]
+
+    @extend_schema_field(MessageFeedbackSerializer(allow_null=True))
+    def get_feedback(self, message: Message) -> dict[str, str] | None:
+        if not hasattr(message, "feedback"):
+            return None
+        feedback = message.feedback  # type: ignore[attr-defined]
+        return {"rating": feedback.rating, "comment": feedback.comment}
 
 
 class ConversationSerializer(serializers.ModelSerializer):
