@@ -1,5 +1,16 @@
+/* .main (shell.component.css) is a fixed-height flex column with
+   overflow: hidden — each routed page owns its own scrolling inside
+   whatever height that leaves it, the same contract .thread follows in
+   the chat page. Without this, content past the fold was silently
+   clipped instead of scrollable. */
 :host {
   display: block;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.panel {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 32px 24px 48px;
