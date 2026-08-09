@@ -125,13 +125,71 @@
   color: var(--accent);
 }
 
+/* A disclosure control, not a caption — same pattern as Linear's
+   sidebar groups. The count stays visible while folded so the section
+   still says something when closed. */
 .section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
   flex-shrink: 0;
+  padding: 4px 8px 4px 4px;
+  margin: 0 0 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin: 0 0 8px;
+}
+
+.section-label:hover {
+  color: var(--text);
+}
+
+.chevron {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(90deg);
+  transition: transform 130ms ease;
+}
+
+.folded .chevron {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+.section-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  letter-spacing: 0;
+}
+
+/* Folding hides the list but leaves the header, so the section keeps
+   its place in the rail instead of the layout jumping. */
+.folded > *:not(.section-label) {
+  display: none;
+}
+
+.sources.folded,
+.conversations.folded {
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .source {

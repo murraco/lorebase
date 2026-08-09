@@ -114,8 +114,19 @@
         </div>
       }
 
-      <div class="sources">
-        <p class="section-label">Sources</p>
+      <div class="sources" [class.folded]="isSectionCollapsed('sources')">
+        <button
+          type="button"
+          class="section-label"
+          [attr.aria-expanded]="!isSectionCollapsed('sources')"
+          (click)="toggleSection('sources')"
+        >
+          <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true">
+            <polyline points="4 2 8 6 4 10" />
+          </svg>
+          Sources
+          <span class="section-count">{{ sourcesService.sources().length }}</span>
+        </button>
         @for (source of sourcesService.sources(); track source.id) {
           <div class="source">
             <a
@@ -171,8 +182,19 @@
         Corpus
       </a>
 
-      <div class="conversations">
-        <p class="section-label">Conversations</p>
+      <div class="conversations" [class.folded]="isSectionCollapsed('conversations')">
+        <button
+          type="button"
+          class="section-label"
+          [attr.aria-expanded]="!isSectionCollapsed('conversations')"
+          (click)="toggleSection('conversations')"
+        >
+          <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true">
+            <polyline points="4 2 8 6 4 10" />
+          </svg>
+          Conversations
+          <span class="section-count">{{ conversationsService.conversations().length }}</span>
+        </button>
         <a
           class="conversation new"
           routerLink="/chat"

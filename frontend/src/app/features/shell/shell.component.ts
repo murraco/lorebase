@@ -17,6 +17,7 @@ const SIDEBAR_COLLAPSED_KEY = 'lorebase.sidebarCollapsed';
 // being a column of the layout and becomes an overlay drawer, because a
 // 250px sidebar on a narrow screen leaves nothing for the conversation.
 const NARROW_QUERY = '(max-width: 900px)';
+const COLLAPSED_SECTIONS_KEY = 'lorebase.collapsedSections';
 
 @Component({
   selector: 'lorebase-shell',
@@ -56,6 +57,11 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.narrow.set(event.matches);
     if (!event.matches) this.drawerOpen.set(false);
   };
+
+  /** Which sidebar sections are folded away. Persisted for the same
+   * reason the rail's own collapsed state is: a layout preference that
+   * resets on reload is worse than not offering it. */
+  protected readonly collapsedSections = signal<Set<string>>(this.readCollapsedSections());
 
   protected readonly showAddSourceModal = signal(false);
   protected readonly showSystemStatus = signal(false);
@@ -192,6 +198,37 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.sourcePendingDeletion.set(null);
     this.conversationPendingDeletion.set(null);
     this.deleteError.set(null);
+  }
+
+  protected isSectionCollapsed(name: string): boolean {
+    return this.collapsedSections().has(name);
+  }
+
+  protected toggleSection(name: string): void {
+    this.collapsedSections.update((current) => {
+      const next = new Set(current);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      try {
+        localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify([...next]));
+      } catch {
+        // Private browsing: the fold still works for this session.
+      }
+      return next;
+    });
+  }
+
+  private readCollapsedSections(): Set<string> {
+    try {
+      const stored = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
+      const parsed: unknown = stored ? JSON.parse(stored) : [];
+      return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+    } catch {
+      return new Set();
+    }
   }
 
   protected toggleCollapsed(): void {
