@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "sources",
     "ingestion",
     "rag",
+    "analytics",
 ]
 
 # Fixed at column-creation time since VectorField's dimension is baked into

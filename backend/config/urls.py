@@ -3,6 +3,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
+from analytics.views import DashboardView, MessageFeedbackView
 from core.api_views import SystemStatusView
 from core.views import csrf_view, login_view, logout_view, me_view
 from rag.chat.views import chat_stream_view
@@ -24,6 +25,12 @@ urlpatterns = [
         name="chat-stream",
     ),
     path("api/system/status/", SystemStatusView.as_view(), name="system-status"),
+    path("api/analytics/dashboard/", DashboardView.as_view(), name="analytics-dashboard"),
+    path(
+        "api/messages/<uuid:message_id>/feedback/",
+        MessageFeedbackView.as_view(),
+        name="message-feedback",
+    ),
     path("api/auth/csrf/", csrf_view, name="auth-csrf"),
     path("api/auth/me/", me_view, name="auth-me"),
     path("api/auth/login/", login_view, name="auth-login"),
