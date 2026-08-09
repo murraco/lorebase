@@ -27,7 +27,8 @@
 | 13 — Frontend Angular | ✅ Hecha |
 | — Trabajo posterior no planificado | 🔄 En curso (ver abajo) |
 | 14 — Conector de GitHub | ✅ Hecha |
-| 15 en adelante | Pendiente |
+| 15 — Feedback y dashboard | ✅ Hecha |
+| 16 en adelante | Pendiente |
 
 Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
 ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
@@ -787,7 +788,7 @@ solo en verde.
 
 ### Bloque F — Calidad, métricas y operación
 
-#### Etapa 15 — Feedback y dashboard
+#### Etapa 15 — Feedback y dashboard ✅
 
 **Objetivo:** cerrar el loop de calidad y hacer visibles costo y uso.
 
@@ -800,6 +801,15 @@ solo en verde.
 
 **Dependencias:** Etapa 13.
 **Hecho cuando:** el panel muestra números reales; el costo acumulado coincide con lo facturado por el proveedor.
+
+**Notas de la implementación real:**
+- **App nueva `analytics/`**, tal como la reservaba la estructura de repositorio original: `Feedback` con `OneToOneField` a `Message` (no `ForeignKey`) — dar el otro pulgar sobre la misma respuesta actualiza la fila existente en vez de acumular una segunda, así "% de feedback positivo" nunca puede contar dos veces el mismo mensaje ni tiene que decidir "¿cuento todos los eventos o solo el último?".
+- **`analytics` depende de `rag` (vía `Feedback.message`), nunca al revés** — mantenido a propósito en dos puntos donde hubiera sido más corto romperlo: el endpoint de feedback (`POST /api/messages/{id}/feedback/`) vive en `analytics/views.py` con la URL cableada a mano en `urls.py`, no como `@action` de `MessageViewSet` (que hubiera obligado a `rag/views.py` a importar `analytics`); y `MessageSerializer.feedback` se lee vía el atributo inverso que Django instala solo (`message.feedback`, por el `related_name` del `OneToOneField`), sin importar `analytics.models.Feedback` ni su serializer. `hasattr()` hace de guard porque un OneToOne inverso sin fila lanza excepción al acceder, a diferencia de un FK normal.
+- **Percentiles (p50/p95) calculados en Python, no en SQL**: se verificó primero que Django no expone `PercentileCont`/`PercentileDisc` como agregado ORM en ningún lado, ni siquiera en `django.contrib.postgres.aggregates` de esta versión (6.1). Traer los `latency_ms` a Python y usar `statistics.quantiles(n=100)` es correcto a la escala de esta app (uso personal) y evita SQL crudo fuera del ORM.
+- **"Notas nunca recuperadas" con datos reales, no un placeholder**: sobre el corpus real de esta sesión, **179 de 192 documentos (93%) nunca fueron citados en ninguna respuesta** — un número mucho más alto de lo esperado, y exactamente la clase de señal que la métrica estaba pensada para sacar a la luz (§3.2 del diseño: "conocimiento huérfano").
+- **`chat.page.css` pasó el límite duro de presupuesto (8kB) al agregar los botones de feedback** — no un warning, un error que rompía `ng build` en modo producción. Resuelto con el mismo patrón ya usado antes (extraer `SourceListComponent` de `ShellComponent`): los botones 👍/👎 y el editor de comentario pasaron a `AnswerFeedbackComponent`, un componente chico con su propio presupuesto de CSS desde cero.
+- **`MessageFeedback` (el campo anidado de solo lectura en `Message`) es un tipo de OpenAPI distinto de `Feedback` (el recurso real del POST)**, aunque tengan los mismos dos campos — consecuencia directa de no poder reusar el serializer de `analytics` desde `rag`. Sin `@extend_schema_field` apuntando a un serializer local (`MessageFeedbackSerializer`, solo para describir la forma, nunca instanciado para validar nada), drf-spectacular generaba `{ [key: string]: string } | null` en vez de un tipo con `rating`/`comment` reales — el cliente TS hubiera necesitado casts en vez de acceso tipado.
+- Feedback optimista en el frontend: el botón refleja el click antes de que vuelva la respuesta del servidor, y solo revierte si la request falló — dar feedback es una acción de bajo riesgo donde esperar la red antes de mostrar algo se siente más lento de lo que hace falta.
 
 ---
 
