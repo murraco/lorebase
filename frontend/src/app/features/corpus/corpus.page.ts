@@ -95,12 +95,29 @@ export class CorpusPage implements OnInit {
     this.selectedSourceId.set(sourceId);
     this.selectedDocumentId.set(null);
     this.chunks.set([]);
+    await this.loadDocuments(sourceId);
+  }
+
+  /** Fetches the document list for `sourceId` and decides what to show
+   * next: the document already open, if a sync just changed its chunks
+   * without removing it, otherwise the first one. Shared by selectSource()
+   * (which clears the current selection first, so this always falls
+   * through to "the first document") and syncSelected() (which doesn't,
+   * so re-syncing keeps whatever the reader was already looking at). */
+  private async loadDocuments(sourceId: string): Promise<void> {
+    const previousDocumentId = this.selectedDocumentId();
     this.loadingDocuments.set(true);
     this.error.set(null);
     try {
       const documents = await this.sourcesService.documents(sourceId);
       this.documents.set(documents);
-      if (documents.length > 0) await this.selectDocument(documents[0].id);
+      const next = documents.find((d) => d.id === previousDocumentId) ?? documents[0];
+      if (next) {
+        await this.selectDocument(next.id);
+      } else {
+        this.selectedDocumentId.set(null);
+        this.chunks.set([]);
+      }
     } catch {
       this.error.set("Couldn't load the documents for that source.");
     } finally {
@@ -177,6 +194,12 @@ export class CorpusPage implements OnInit {
     try {
       await this.sourcesService.sync(sourceId);
       await this.sourcesService.pollUntilDone(sourceId);
+      // pollUntilDone() only keeps the source's own aggregate counts (in
+      // the shared sources() signal) live — it says nothing about which
+      // documents exist. Without this, a sync that added or removed
+      // files left the Documents/Chunks panes showing whatever was on
+      // screen before the sync, until a full page reload re-fetched them.
+      if (this.selectedSourceId() === sourceId) await this.loadDocuments(sourceId);
     } catch {
       this.error.set("Couldn't queue a sync for that source.");
     } finally {
