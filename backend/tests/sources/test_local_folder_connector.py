@@ -129,6 +129,28 @@ def test_fetch_documents_returns_both_markdown_and_pdf(
     assert external_ids == {"note.md", "paper.pdf"}
 
 
+def test_malformed_front_matter_is_indexed_as_plain_text_and_logged(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    # `* entity` inside a --- block is invalid YAML (it's Markdown list
+    # syntax, not YAML's `- entity`): `*name` means "alias" in YAML, so this
+    # raises a ScannerError instead of parsing as a list.
+    raw_text = "---\nentities:\n\n* one\n* two\n---\nBody text."
+    (tmp_path / "bad.md").write_text(raw_text)
+    (tmp_path / "good.md").write_text("Just some content.")
+
+    connector = LocalFolderConnector({"path": str(tmp_path)})
+    with caplog.at_level(logging.WARNING):
+        docs = {doc.external_id: doc for doc in connector.fetch_documents()}
+
+    assert set(docs) == {"bad.md", "good.md"}
+    bad = docs["bad.md"]
+    assert bad.title == "bad"  # falls back to the filename stem
+    assert bad.metadata == {}
+    assert bad.content == raw_text  # nothing stripped, unlike the happy path
+    assert "bad.md" in caplog.text
+
+
 def test_oversized_file_is_skipped_and_logged(
     tmp_path: Path, settings, caplog: pytest.LogCaptureFixture
 ) -> None:
