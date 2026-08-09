@@ -655,6 +655,9 @@ flowchart LR
 - **Picker de fuentes reemplazado por un explorador de carpetas del servidor**, en vez de pedir un path a mano. Nuevo endpoint `GET /api/sources/browse/` (`sources/filesystem.py`) lista subdirectorios bajo `settings.MEDIA_ROOT`, confinado a esa raíz (un `path=../../etc` se resuelve fuera de la raíz y se rechaza). El modal de alta de fuente navega esa estructura en vez de tipear un path a ciegas contra el filesystem del contenedor.
 - **Respuestas del chat renderizadas como Markdown real** (`marked`, vía un `MarkdownPipe` puro + `[innerHTML]`) en vez de texto plano interpolado — antes, negritas/listas/etc. del LLM se veían como asteriscos y guiones literales. Sin `bypassSecurityTrustHtml`: el `[innerHTML]` de Angular sanitiza por default, y el contenido viene de un LLM, no de algo para confiar ciegamente solo porque el servidor ya validó sus citas.
 - **Composer cambiado de `<input>` a `<textarea>`** con `(keydown.enter)` manejado a mano: Enter solo (sin Shift) previene el default y envía; Shift+Enter deja que el `<textarea>` inserte el salto de línea normalmente. Un `<textarea>` no auto-envía en Enter como sí lo hace un `<input type="text">`, así que el manejo explícito es necesario, no cosmético.
+- **"Sync now" sobre un source existente no daba ningún feedback y no se veía hasta refrescar la página** (2026-08, bug reportado). La causa era una carrera, no un endpoint roto: `syncSource`/`syncSelected` encolaban la tarea de Celery y hacían un único `refreshOne()` inmediatamente después, que casi siempre llegaba **antes** de que el worker alcanzara a marcar el source como `syncing` — la UI leía el estado previo y ahí se quedaba. El spinner y el label "Syncing…" ya existían en el template de Corpus, ligados a `source.status`; nunca se activaban porque el dato que los alimentaba nunca cambiaba. Se agregó `SourcesService.pollUntilDone()`, reutilizando el mismo patrón de sondeo que ya usaba el modal de alta de fuente (`refreshOne` cada 1.5s hasta que el status deja `pending`/`syncing`), y se lo llamó desde el sidebar y desde Corpus en vez del `refreshOne()` suelto. De paso se eliminó `MIN_SYNC_FEEDBACK_MS`, un piso artificial de 1.2s que existía solo para disimular este mismo bug.
+- **Favicon reemplazado**: el archivo servido era el ícono por defecto del scaffold de Angular (nunca se había tocado). El nuevo es un monograma "L" en la serif de la marca sobre el ink de fondo, con el punto en el ámbar reservado para evidencia — la misma paleta de `.brand` en el header, en miniatura.
+- **Escala tipográfica subida un segundo escalón** (2026-08, a pedido: "un poco más de tamaño en toda la UI"). Cada token de `--text-*` subió +1px (`--text-base` 15→16px, etc.) en vez de un porcentaje fijo, así el salto es más notorio en el texto chico (+8.7% en `--text-xs`) que en los títulos grandes (+3.4% en `--text-2xl`), que ya tenían presencia de sobra. La razón entre escalones queda prácticamente igual a la anterior, así que la jerarquía no se comprime.
 
 ---
 
@@ -733,6 +736,9 @@ Cada línea apunta a dónde está la nota técnica completa.
 | 60 | El botón de agregar se renderizaba fuera del panel | Bug propio | Etapa 13 |
 | 61 | Limpieza de código muerto | Pedido | — |
 | 62 | Los `.env` documentaban menos de la mitad de las variables | Pedido | Etapa 1 |
+| 63 | "Sync now" sin feedback ni auto-refresh (carrera con Celery) | Bug reportado | Etapa 13 |
+| 64 | Favicon de marca reemplazando el default de Angular | Pedido | Etapa 13 |
+| 65 | Escala tipográfica, segundo escalón | Pedido | Etapa 13 |
 
 **Lo que dice este listado sobre el proceso:** de 26 cambios, **9 son bugs
 encontrados usando el sistema con datos reales** (no por tests), y **4 son
