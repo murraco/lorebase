@@ -7,6 +7,7 @@ from django.utils import timezone
 from ingestion.pipeline import process_document, purge_chunks_for_documents
 from sources.connectors.base import RawDocument
 from sources.connectors.registry import get_connector_class
+from sources.locking import clear_cancel, is_cancel_requested
 from sources.models import Document, Source, SyncRun
 
 
@@ -82,12 +83,20 @@ class SyncStats:
     added: int = 0
     updated: int = 0
     deleted: int = 0
+    cancelled: bool = False
 
 
 def sync_source(source: Source) -> SyncStats:
     """Reconcile a Source's Documents against what its connector reports
     right now. Only touches rows whose content actually changed — running
     this twice in a row with nothing changed on disk performs zero writes.
+
+    Checks for a cancellation request once per document — a safe point to
+    stop, since each document is its own transaction. If cancelled, the
+    deletion pass below is skipped entirely rather than run against a
+    partial listing: `seen_external_ids` would then only cover documents
+    visited before the cancellation point, and treating everything after
+    it as "not seen" would soft-delete documents that are still there.
     """
     connector_class = get_connector_class(source.type)
     connector = connector_class(source.config)
@@ -105,6 +114,10 @@ def sync_source(source: Source) -> SyncStats:
     }
 
     for raw_document in connector.fetch_documents():
+        if is_cancel_requested(source.id):
+            stats.cancelled = True
+            break
+
         seen_external_ids.add(raw_document.external_id)
         existing = existing_by_external_id.get(raw_document.external_id)
 
@@ -133,6 +146,9 @@ def sync_source(source: Source) -> SyncStats:
             stats.updated += 0 if was_deleted else 1
         # else: content_hash matches and it wasn't deleted -> unchanged, no write.
 
+    if stats.cancelled:
+        return stats
+
     missing_external_ids = {
         external_id
         for external_id, document in existing_by_external_id.items()
@@ -159,6 +175,12 @@ def sync_source_with_tracking(source: Source) -> SyncRun:
     Celery so it's testable without any task machinery — the task in
     sources/tasks.py is a thin wrapper adding only the lock and retries.
     """
+    # Defensive: a cancel requested for a previous run of this source that
+    # somehow wasn't cleared (the flag has its own TTL, but this closes
+    # the gap without waiting on it) must not immediately cancel this new
+    # one before it does anything.
+    clear_cancel(source.id)
+
     source.status = Source.Status.SYNCING
     source.save(update_fields=["status"])
 
@@ -177,13 +199,19 @@ def sync_source_with_tracking(source: Source) -> SyncRun:
         source.save(update_fields=["status", "last_error"])
         raise
 
-    run.status = SyncRun.Status.SUCCESS
+    run.status = SyncRun.Status.CANCELLED if stats.cancelled else SyncRun.Status.SUCCESS
     run.added = stats.added
     run.updated = stats.updated
     run.deleted = stats.deleted
     run.finished_at = timezone.now()
     run.save(update_fields=["status", "added", "updated", "deleted", "finished_at"])
 
+    if stats.cancelled:
+        clear_cancel(source.id)
+
+    # A cancelled sync is not a failure: whatever it managed to ingest
+    # before the cancellation point is real and queryable, same as any
+    # other partial sync. Only the SyncRun records that it didn't finish.
     source.status = Source.Status.READY
     source.last_synced_at = timezone.now()
     source.last_error = ""

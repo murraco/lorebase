@@ -7,6 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from sources.filesystem import BrowsePathError, list_directory
+from sources.locking import request_cancel
 from sources.models import Document, Source
 from sources.serializers import (
     ChunkSerializer,
@@ -48,6 +49,20 @@ class SourceViewSet(viewsets.ModelViewSet):
         source = self.get_object()
         sync_source_task.delay(str(source.id))
         return Response({"status": "queued"}, status=202)
+
+    # Cooperative: flags the running task, which stops between documents
+    # rather than being killed outright — see sources/locking.py. Gated on
+    # the source actually being mid-sync so a click that lands just after
+    # a sync already finished can't set a flag that lingers and cancels
+    # some unrelated sync started later.
+    @extend_schema(request=None, responses={202: SyncQueuedSerializer})
+    @action(detail=True, methods=["post"])
+    def cancel_sync(self, request: Request, pk: str | None = None) -> Response:
+        source = self.get_object()
+        if source.status != Source.Status.SYNCING:
+            return Response({"detail": "This source isn't syncing right now."}, status=409)
+        request_cancel(source.id)
+        return Response({"status": "cancelling"}, status=202)
 
     # Powers the "add a local folder source" picker: lets the frontend
     # navigate the backend's own filesystem instead of asking the user to

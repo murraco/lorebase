@@ -74,6 +74,7 @@ class SyncRun(BaseModel):
         RUNNING = "running", "Running"
         SUCCESS = "success", "Success"
         FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
 
     source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name="sync_runs")
     started_at = models.DateTimeField(auto_now_add=True)
