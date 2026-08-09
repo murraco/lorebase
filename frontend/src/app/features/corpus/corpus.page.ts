@@ -117,12 +117,6 @@ export class CorpusPage implements OnInit {
     return 'ready';
   }
 
-  /** Queuing a sync returns almost instantly — the work happens in a
-   * worker — so without a floor the button flickers disabled and back,
-   * which reads as "nothing happened". The delay is honesty about an
-   * action whose effect is not immediately visible, not decoration. */
-  private static readonly MIN_SYNC_FEEDBACK_MS = 1200;
-
   protected readonly pendingDeletion = signal<Source | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
@@ -180,16 +174,12 @@ export class CorpusPage implements OnInit {
     const sourceId = this.selectedSourceId();
     if (!sourceId || this.syncing()) return;
     this.syncing.set(true);
-    const startedAt = Date.now();
     try {
       await this.sourcesService.sync(sourceId);
-      await this.sourcesService.refreshOne(sourceId);
+      await this.sourcesService.pollUntilDone(sourceId);
     } catch {
       this.error.set("Couldn't queue a sync for that source.");
     } finally {
-      const elapsed = Date.now() - startedAt;
-      const remaining = CorpusPage.MIN_SYNC_FEEDBACK_MS - elapsed;
-      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
       this.syncing.set(false);
     }
   }

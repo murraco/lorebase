@@ -90,4 +90,20 @@ export class SourcesService {
     if (error) throw new Error('Failed to load source.');
     this.sources.update((current) => current.map((source) => (source.id === id ? data : source)));
   }
+
+  /** Refreshes a source repeatedly until its sync has actually left the
+   * queue — resolving right after `sync()` reads the pre-Celery state,
+   * since the 202 response races the worker picking the job up. Callers
+   * that need the row's own count to catch up further (embeddings finish
+   * after status flips to "ready") don't have to wait on this: the shared
+   * `sources` signal it updates is also what the sidebar's own background
+   * poller reads, so that keeps going on its own. */
+  async pollUntilDone(id: string, intervalMs = 1500): Promise<void> {
+    for (;;) {
+      await this.refreshOne(id);
+      const source = this.sources().find((s) => s.id === id);
+      if (!source || (source.status !== 'pending' && source.status !== 'syncing')) return;
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
 }

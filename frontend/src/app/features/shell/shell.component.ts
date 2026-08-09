@@ -135,7 +135,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.syncingSourceId.set(source.id);
     try {
       await this.sourcesService.sync(source.id);
-      await this.sourcesService.refreshOne(source.id);
+      await this.sourcesService.pollUntilDone(source.id);
     } catch {
       // The next poll reflects whatever actually happened; a failed
       // enqueue surfaces as the source's own error status.
