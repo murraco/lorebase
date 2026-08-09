@@ -107,6 +107,13 @@ LLM_COST_PER_MILLION_OUTPUT_TOKENS_USD = env.float(
 # skip (and log) anything past this size rather than trying to process it.
 MAX_DOCUMENT_SIZE_BYTES = env.int("MAX_DOCUMENT_SIZE_BYTES", default=10 * 1024 * 1024)  # 10 MB
 
+# A classic personal access token (repo scope for private repos, none
+# needed for public ones), not an OAuth app: this connector reads the
+# owner's own repos, so there's no second party to authorize on behalf
+# of. Optional — an empty token still works against public repos, just
+# at GitHub's much lower unauthenticated rate limit (60/hour vs 5000/hour).
+GITHUB_TOKEN = env("GITHUB_TOKEN", default="")
+
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [

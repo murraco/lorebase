@@ -11,4 +11,4 @@ class SourcesConfig(AppConfig):
         # process — runserver, a Celery worker, a management command —
         # instead of relying on some other module happening to import it
         # first.
-        from sources.connectors import local_folder  # noqa: F401
+        from sources.connectors import github, local_folder  # noqa: F401
