@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from ingestion.factories import ChunkFactory
-from rag.chat.service import ask
+from rag.chat.service import ask, ask_with_contexts
 from rag.factories import ConversationFactory
 from rag.llm.base import ToolCallResult
 from rag.llm.factory import get_llm_provider
@@ -55,6 +55,27 @@ def test_ask_persists_both_the_user_and_assistant_messages() -> None:
     assert user_message.content == "How does hybrid search work?"
     assert message.role == Message.Role.ASSISTANT
     assert message.content == "It combines BM25 with dense retrieval."
+
+
+def test_ask_with_contexts_returns_the_retrieval_results_alongside_the_message() -> None:
+    conversation = ConversationFactory()
+    document = DocumentFactory(source__workspace=conversation.workspace)
+    chunk = ChunkFactory(document=document, content="Hybrid search combines BM25 and embeddings.")
+    results = [RetrievalResult(chunk=chunk, score=0.9)]
+
+    fake_llm = get_llm_provider()
+    fake_llm.next_tool_result = ToolCallResult(
+        output={"answer": "It combines BM25 with dense retrieval.", "cited_chunk_ids": []},
+        input_tokens=100,
+        output_tokens=20,
+    )
+    with patch("rag.chat.service.get_retriever", return_value=_StubRetriever(results)):
+        message, retrieved = ask_with_contexts(conversation, "How does hybrid search work?")
+
+    assert message.content == "It combines BM25 with dense retrieval."
+    # Not just the cited chunks (there are none here) -- every chunk
+    # retrieval actually handed to the LLM as context.
+    assert retrieved == results
 
 
 def test_valid_citation_is_persisted() -> None:

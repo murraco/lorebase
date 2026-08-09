@@ -1,0 +1,373 @@
+{
+  "workspace": "0077d95d-37e5-428e-8884-54291648e93f",
+  "golden_set_size": 30,
+  "retrieval_hit_rate": 1.0,
+  "aggregate": {
+    "llm_context_precision_with_reference": 0.8088425925582018,
+    "context_recall": 0.9,
+    "faithfulness": 0.9063316476551772,
+    "answer_relevancy": 0.8869958309008584
+  },
+  "questions": [
+    {
+      "question": "What tech stack does the backend use?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9047592852734446
+    },
+    {
+      "question": "Does the frontend use Angular signals for state management?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9455119843672676
+    },
+    {
+      "question": "Why doesn't the frontend use Angular signals?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9505443520863212
+    },
+    {
+      "question": "What database indexing technique sped up the sync_stripe_payments command without locking the donations table?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999998,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8533609349904104
+    },
+    {
+      "question": "What went wrong with the idx_donation_sync_payments index and how was it fixed?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.9999999999666667,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9505852748086397
+    },
+    {
+      "question": "Why is editing an already-applied Django migration considered a bad idea in this codebase?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.8874999999778125,
+      "context_recall": 1.0,
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9579571270592351
+    },
+    {
+      "question": "How did the ACH payment migration get rolled out safely?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999998,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9400570513254566
+    },
+    {
+      "question": "Why was the ACH payment migration considered high-stakes?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9585137091972175
+    },
+    {
+      "question": "What made the multicurrency donations project difficult?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.36666666664833336,
+      "context_recall": 1.0,
+      "faithfulness": 0.9333333333333333,
+      "answer_relevancy": 0.9432423591143081
+    },
+    {
+      "question": "How is currency modeled in the multicurrency donations feature?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.499999999975,
+      "context_recall": 0.5,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9293463763583792
+    },
+    {
+      "question": "What was the concurrency bug found in the cycle automation scheduled jobs?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.8041666666465626,
+      "context_recall": 1.0,
+      "faithfulness": 0.9230769230769231,
+      "answer_relevancy": 0.8374549455892112
+    },
+    {
+      "question": "What caused the H18 errors on Heroku and how was it fixed?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999998,
+      "context_recall": 1.0,
+      "faithfulness": 0.7058823529411765,
+      "answer_relevancy": 0.950881743531741
+    },
+    {
+      "question": "What was moved out of the request path to fix a performance problem?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.999999999975,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8422617415586148
+    },
+    {
+      "question": "What structured fields does the location data model include?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.8333333332916666,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9412765371238246
+    },
+    {
+      "question": "Why was the geocoding call moved outside the profile update transaction?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 0.625,
+      "answer_relevancy": 0.9463342644814611
+    },
+    {
+      "question": "How did Grapevine avoid downtime when migrating from Heroku to AWS ECS?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.8055555555287036,
+      "context_recall": 1.0,
+      "faithfulness": 0.9444444444444444,
+      "answer_relevancy": 0.9497580554504363
+    },
+    {
+      "question": "What third-party services does the payments system integrate with?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.699999999965,
+      "context_recall": 1.0,
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.9477702122755772
+    },
+    {
+      "question": "How does the platform keep sequential integer primary keys from being exposed in the API?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.699999999965,
+      "context_recall": 1.0,
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.8754457524948509
+    },
+    {
+      "question": "What was restored from a CSV backup in early 2024, and how many records?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999998,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8132897864506244
+    },
+    {
+      "question": "What major framework upgrade happened in July 2025?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.19999999998,
+      "context_recall": 0.0,
+      "faithfulness": 0.8571428571428571,
+      "answer_relevancy": 0.0
+    },
+    {
+      "question": "How much has the platform processed in donations over its lifetime, and which year was the peak?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.999999999975,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.92558795044655
+    },
+    {
+      "question": "How many giving circles and registered users does the platform have?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.9166666666361111,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8905525924479235
+    },
+    {
+      "question": "What was the root cause of the Stripe fees bug, and what was the fix?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.5888888888692593,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9495274174737253
+    },
+    {
+      "question": "What lesson does the Stripe webhook fixes series illustrate?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.94999999997625,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.936234021476326
+    },
+    {
+      "question": "What is a Stripe webhook and why does it matter if the handler fails?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.99999999995,
+      "context_recall": 1.0,
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.9092828469477249
+    },
+    {
+      "question": "What are the three real weaknesses called out in the career notes summary?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.9999999999,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9460061177364653
+    },
+    {
+      "question": "What was Mauricio's role on the donations platform, and roughly how much did it process?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.6791666666496875,
+      "context_recall": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9322467229446131
+    },
+    {
+      "question": "What was the first major feature shipped, and how soon after joining?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.0,
+      "context_recall": 0.0,
+      "faithfulness": 0.6363636363636364,
+      "answer_relevancy": 0.8647093355132384
+    },
+    {
+      "question": "What kind of scheduled work does the cycle automation feature create, and who dispatches it?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.3333333333,
+      "context_recall": 1.0,
+      "faithfulness": 0.7647058823529411,
+      "answer_relevancy": 0.896715820784091
+    },
+    {
+      "question": "What is missing from the performance work documented in the repository?",
+      "expected_document": [
+        "career_notes",
+        "career_notes_es"
+      ],
+      "retrieval_hit": true,
+      "llm_context_precision_with_reference": 0.9999999999,
+      "context_recall": 0.5,
+      "faithfulness": 0.95,
+      "answer_relevancy": 0.9206606077180729
+    }
+  ]
+}

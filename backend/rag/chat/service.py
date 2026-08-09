@@ -10,17 +10,43 @@ from rag.chat.prompting import ANSWER_TOOL, SYSTEM_PROMPT, build_context
 from rag.chat.rewriting import rewrite_query
 from rag.llm.factory import get_llm_provider
 from rag.models import Citation, Conversation, Message
+from rag.retrieval.base import RetrievalResult
 from rag.retrieval.factory import get_retriever
 
 _tracer = trace.get_tracer("lorebase.chat")
 
 
 def ask(conversation: Conversation, question: str) -> Message:
-    """The end-to-end RAG turn: rewrite (if there's history) -> retrieve
-    -> build a prompt out of the *actually retrieved* chunks -> force a
-    structured answer -> keep only citations that were genuinely part of
-    that context -> persist. Nothing before "force a structured answer"
-    touches the LLM except the optional rewrite step.
+    """The end-to-end RAG turn -- see _ask() for what it actually does.
+    Public callers only ever need the persisted Message; ask_with_contexts()
+    exists alongside this for the one caller (the evaluation harness) that
+    also needs to know what was retrieved.
+    """
+    message, _results = _ask(conversation, question)
+    return message
+
+
+def ask_with_contexts(
+    conversation: Conversation, question: str
+) -> tuple[Message, list[RetrievalResult]]:
+    """Like ask(), but also returns the retrieval results actually fed to
+    the LLM as context -- RAGAS calls the chunk text retrieved_contexts,
+    and it's also how the evaluation harness checks a golden-set
+    question's expected_document/expected_heading were really among them.
+    Returning RetrievalResult (chunk + score) rather than plain strings
+    keeps both uses possible from one call: the harness needs
+    result.chunk.content for RAGAS and result.chunk.document.title /
+    result.chunk.heading_path for the hit check.
+    """
+    return _ask(conversation, question)
+
+
+def _ask(conversation: Conversation, question: str) -> tuple[Message, list[RetrievalResult]]:
+    """rewrite (if there's history) -> retrieve -> build a prompt out of
+    the *actually retrieved* chunks -> force a structured answer -> keep
+    only citations that were genuinely part of that context -> persist.
+    Nothing before "force a structured answer" touches the LLM except the
+    optional rewrite step.
 
     Worth being explicit about what this does NOT do: the answer call
     below is given only the retrieved context and the current question —
@@ -119,7 +145,7 @@ def ask(conversation: Conversation, question: str) -> Message:
             )
         turn_span.set_attribute("lorebase.retrieved_count", len(results))
         turn_span.set_attribute("lorebase.citations_count", len(validated_chunk_ids))
-        return message
+        return message, results
 
 
 TITLE_MAX_LENGTH = 60
