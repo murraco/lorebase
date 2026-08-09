@@ -434,13 +434,15 @@
   stroke-linecap: round;
 }
 
-/* A button, not a div, for the same keyboard reason as the dialog
-   backdrop. */
+/* Transparent: it exists only to catch a tap outside the drawer. The
+   drawer is a navigation panel, not a modal — dimming the page implied
+   the content behind it was blocked, which it never was. A button, not a
+   div, for the same keyboard reason as the dialog backdrop. */
 .drawer-scrim {
   position: fixed;
   inset: 0;
   z-index: var(--z-scrim);
-  background: var(--overlay);
+  background: transparent;
   border: none;
   padding: 0;
   cursor: default;

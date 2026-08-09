@@ -372,12 +372,6 @@
   font-weight: 500;
 }
 
-.source-actions .sync {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
 .spinner {
   width: 11px;
   height: 11px;
@@ -399,26 +393,6 @@
   }
 }
 
-.source-actions button {
-  font-family: inherit;
-  font-size: var(--text-sm);
-  padding: 5px 12px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  color: var(--text);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.source-actions button:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-.source-actions button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 /* A disabled source stays visible and stays browsable — it is still
    indexed, it just isn't searched. Dimmed rather than hidden, so the
    corpus keeps telling the truth about what exists. */
@@ -435,34 +409,36 @@
   background: var(--border-strong);
 }
 
-.source-actions .toggle {
+/* One button, three uses. They sit side by side doing comparable things,
+   so nothing here earns a different weight; delete only differs on
+   hover, where the consequence is about to happen. */
+.source-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-family: inherit;
   font-size: var(--text-sm);
   padding: 5px 12px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  color: var(--text-muted);
   border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.source-actions .toggle:hover {
-  border-color: var(--accent);
+  background: var(--surface-raised);
   color: var(--text);
-}
-
-.source-actions .danger-btn {
-  font-family: inherit;
-  font-size: var(--text-sm);
-  padding: 5px 12px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  color: var(--text-muted);
-  border-radius: var(--radius-md);
   cursor: pointer;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
 }
 
-.source-actions .danger-btn:hover {
+.source-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.source-actions .danger-btn:hover:not(:disabled) {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+.source-actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
