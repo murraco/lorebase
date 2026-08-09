@@ -99,7 +99,9 @@ class DocumentViewSet(viewsets.ReadOnlyModelViewSet):
         if getattr(self, "swagger_fake_view", False):
             return Document.objects.none()
         queryset = (
-            Document.objects.filter(source__workspace__memberships__user=self.request.user)
+            Document.objects.filter(
+                source__workspace__memberships__user=self.request.user, deleted=False
+            )
             .annotate(
                 chunk_count=Count("chunks", distinct=True),
                 embedded_chunk_count=Count(

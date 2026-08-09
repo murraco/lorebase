@@ -243,6 +243,18 @@ def test_documents_are_scoped_to_the_users_workspace() -> None:
     assert ids == [str(own_document.id)]
 
 
+def test_deleted_documents_are_excluded() -> None:
+    membership = MembershipFactory()
+    live_document = DocumentFactory(source__workspace=membership.workspace)
+    DocumentFactory(source__workspace=membership.workspace, deleted=True)
+
+    response = _authed_client(membership.user).get("/api/documents/")
+
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()["results"]]
+    assert ids == [str(live_document.id)]
+
+
 def test_documents_endpoint_is_read_only() -> None:
     membership = MembershipFactory()
 
