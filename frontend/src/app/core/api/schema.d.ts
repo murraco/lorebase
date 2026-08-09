@@ -4,6 +4,27 @@
  */
 
 export interface paths {
+    "/api/analytics/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read-only, same shape as core.api_views.SystemStatusView: a pure
+         *     function computes the data, this just scopes it to the caller's
+         *     workspaces and serializes it.
+         */
+        get: operations["analytics_dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conversations/": {
         parameters: {
             query?: never;
@@ -130,6 +151,28 @@ export interface paths {
         get: operations["messages_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/messages/{message_id}/feedback/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST is idempotent here by construction, not just by convention:
+         *     the same rating sent twice, or a changed one, always ends with exactly
+         *     one Feedback row for this message — see Feedback.message being a
+         *     OneToOneField, not a ForeignKey.
+         */
+        post: operations["messages_feedback_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -293,6 +336,24 @@ export interface components {
             workspace: string;
             title?: string;
         };
+        DailyQueryCount: {
+            /** Format: date */
+            date: string;
+            count: number;
+        };
+        DashboardMetrics: {
+            documents: number;
+            queries_today: number;
+            queries_by_day: components["schemas"]["DailyQueryCount"][];
+            /** Format: double */
+            cost_this_month_usd: number | null;
+            latency_p50_ms: number | null;
+            latency_p95_ms: number | null;
+            /** Format: double */
+            positive_feedback_percent: number | null;
+            total_feedback: number;
+            never_retrieved_documents: number;
+        };
         DirectoryEntry: {
             name: string;
             path: string;
@@ -322,6 +383,26 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        Feedback: {
+            /** Format: uuid */
+            readonly id: string;
+            rating: components["schemas"]["FeedbackRatingEnum"];
+            comment?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `up` - Up
+         *     * `down` - Down
+         * @enum {string}
+         */
+        FeedbackRatingEnum: "up" | "down";
+        FeedbackRequest: {
+            rating: components["schemas"]["FeedbackRatingEnum"];
+            comment?: string;
+        };
         Message: {
             /** Format: uuid */
             readonly id: string;
@@ -336,9 +417,28 @@ export interface components {
             cost?: string | null;
             retrieved_count?: number;
             readonly citations: components["schemas"]["Citation"][];
+            readonly feedback: components["schemas"]["MessageFeedback"] | null;
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description Describes the *shape* of MessageSerializer.feedback for the OpenAPI
+         *     schema only — never instantiated to validate or save anything (that's
+         *     analytics.serializers.FeedbackSerializer's job). Defined here, not
+         *     imported from there, so the generated TS type is `{ rating; comment }
+         *     | null` instead of a generic string-keyed object, without giving `rag`
+         *     an import from `analytics`.
+         */
+        MessageFeedback: {
+            rating: components["schemas"]["MessageFeedbackRatingEnum"];
+            comment: string;
+        };
+        /**
+         * @description * `up` - up
+         *     * `down` - down
+         * @enum {string}
+         */
+        MessageFeedbackRatingEnum: "up" | "down";
         PaginatedChunkList: {
             /** @example 123 */
             count: number;
@@ -503,6 +603,25 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    analytics_dashboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardMetrics"];
+                };
+            };
+        };
+    };
     conversations_list: {
         parameters: {
             query?: {
@@ -684,6 +803,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedMessageList"];
+                };
+            };
+        };
+    };
+    messages_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["FeedbackRequest"];
+                "multipart/form-data": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feedback"];
                 };
             };
         };

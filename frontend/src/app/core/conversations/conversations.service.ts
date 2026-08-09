@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 import { apiClient } from '../api/client';
-import type { Conversation, Message } from '../models';
+import type { Conversation, Feedback, FeedbackRating, Message } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class ConversationsService {
@@ -36,5 +36,21 @@ export class ConversationsService {
     });
     if (error) throw new Error('Failed to load messages.');
     return data.results;
+  }
+
+  /** Sending the same rating twice, or a changed one, always replaces
+   * the message's single Feedback row rather than adding another —
+   * mirrors the backend's OneToOneField, not something enforced here. */
+  async giveFeedback(
+    messageId: string,
+    rating: FeedbackRating,
+    comment?: string,
+  ): Promise<Feedback> {
+    const { data, error } = await apiClient.POST('/api/messages/{message_id}/feedback/', {
+      params: { path: { message_id: messageId } },
+      body: { rating, comment },
+    });
+    if (error) throw new Error('Failed to save feedback.');
+    return data;
   }
 }
