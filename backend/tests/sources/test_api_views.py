@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from core.factories import MembershipFactory, WorkspaceFactory
 from ingestion.factories import ChunkFactory
 from sources.factories import DocumentFactory, SourceFactory
+from sources.locking import is_cancel_requested
 from sources.models import Source
 
 pytestmark = pytest.mark.django_db
@@ -160,6 +161,35 @@ def test_sync_action_on_another_workspaces_source_is_not_found(monkeypatch) -> N
     monkeypatch.setattr("sources.views.sync_source_task.delay", lambda source_id: None)
 
     response = _authed_client(membership.user).post(f"/api/sources/{other_source.id}/sync/")
+
+    assert response.status_code == 404
+
+
+def test_cancel_sync_flags_a_source_that_is_syncing() -> None:
+    membership = MembershipFactory()
+    source = SourceFactory(workspace=membership.workspace, status=Source.Status.SYNCING)
+
+    response = _authed_client(membership.user).post(f"/api/sources/{source.id}/cancel_sync/")
+
+    assert response.status_code == 202
+    assert is_cancel_requested(source.id) is True
+
+
+def test_cancel_sync_on_a_source_that_is_not_syncing_is_rejected() -> None:
+    membership = MembershipFactory()
+    source = SourceFactory(workspace=membership.workspace, status=Source.Status.READY)
+
+    response = _authed_client(membership.user).post(f"/api/sources/{source.id}/cancel_sync/")
+
+    assert response.status_code == 409
+    assert is_cancel_requested(source.id) is False
+
+
+def test_cancel_sync_on_another_workspaces_source_is_not_found() -> None:
+    membership = MembershipFactory()
+    other_source = SourceFactory(status=Source.Status.SYNCING)
+
+    response = _authed_client(membership.user).post(f"/api/sources/{other_source.id}/cancel_sync/")
 
     assert response.status_code == 404
 

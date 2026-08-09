@@ -1,6 +1,6 @@
 from django.core.cache import cache
 
-from sources.locking import sync_lock
+from sources.locking import clear_cancel, is_cancel_requested, request_cancel, sync_lock
 
 
 def test_lock_is_acquired_when_free() -> None:
@@ -37,3 +37,26 @@ def test_different_sources_do_not_contend() -> None:
     with sync_lock("source-e") as first, sync_lock("source-f") as second:
         assert first is True
         assert second is True
+
+
+def test_cancel_is_not_requested_by_default() -> None:
+    assert is_cancel_requested("source-g") is False
+
+
+def test_cancel_flag_is_visible_once_requested() -> None:
+    request_cancel("source-h")
+
+    assert is_cancel_requested("source-h") is True
+
+
+def test_clear_cancel_removes_the_flag() -> None:
+    request_cancel("source-i")
+    clear_cancel("source-i")
+
+    assert is_cancel_requested("source-i") is False
+
+
+def test_cancel_flag_is_scoped_per_source() -> None:
+    request_cancel("source-j")
+
+    assert is_cancel_requested("source-k") is False

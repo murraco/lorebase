@@ -1,6 +1,7 @@
 import base64
 from collections.abc import Callable
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import responses
@@ -33,6 +34,40 @@ def test_first_sync_creates_documents(tmp_path: Path) -> None:
     chunk = document_a.chunks.get()
     assert chunk.heading_path == "Title"
     assert (chunk.start_line, chunk.end_line) == (1, 3)
+
+
+def test_cancelled_sync_stops_before_the_next_document(tmp_path: Path) -> None:
+    (tmp_path / "a.md").write_text("a")
+    (tmp_path / "b.md").write_text("b")
+    (tmp_path / "c.md").write_text("c")
+    source = make_local_source(tmp_path)
+
+    # False on the first check (document "a" proceeds), True from then on —
+    # the point of checking once per document rather than once overall.
+    checks = iter([False, True, True])
+    with patch("sources.sync.is_cancel_requested", side_effect=lambda _id: next(checks)):
+        stats = sync_source(source)
+
+    assert stats.cancelled is True
+    assert stats.added == 1
+    assert source.documents.count() == 1
+
+
+def test_cancelled_sync_does_not_delete_documents_it_never_saw(tmp_path: Path) -> None:
+    """A partial listing must not be mistaken for a complete one: treating
+    every document the cancelled pass didn't reach as "gone" would soft-
+    delete real, untouched documents."""
+    (tmp_path / "a.md").write_text("a")
+    (tmp_path / "b.md").write_text("b")
+    source = make_local_source(tmp_path)
+    sync_source(source)
+
+    with patch("sources.sync.is_cancel_requested", return_value=True):
+        stats = sync_source(source)
+
+    assert stats.cancelled is True
+    assert stats.deleted == 0
+    assert Document.objects.filter(source=source, deleted=False).count() == 2
 
 
 def test_second_sync_with_no_changes_writes_nothing(tmp_path: Path) -> None:
