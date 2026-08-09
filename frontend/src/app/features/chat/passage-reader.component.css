@@ -3,7 +3,7 @@
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 14;
+  z-index: var(--z-scrim);
   border: none;
   padding: 0;
   cursor: default;
@@ -21,7 +21,7 @@
   right: 16px;
   bottom: 16px;
   width: min(420px, calc(100vw - 32px));
-  z-index: 15;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   background: var(--surface-raised);

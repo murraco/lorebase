@@ -1,6 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
+  z-index: var(--z-scrim);
   background: var(--overlay);
   border: none;
   padding: 0;
@@ -9,6 +10,7 @@
 
 .dialog {
   position: fixed;
+  z-index: var(--z-modal);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -76,6 +78,16 @@
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-muted);
+}
+
+.value.bad {
+  color: var(--danger);
+}
+
+.tag.red {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .tag.amber {

@@ -95,6 +95,15 @@
 
   --transition: 140ms ease;
 
+  /* A stacking scale, because the alternative is what happened: the two
+     dialogs had no z-index at all while a sticky table header had one,
+     so the header painted over the modal. Anything that layers picks a
+     step here rather than inventing a number. */
+  --z-sticky: 10;
+  --z-drawer: 40;
+  --z-scrim: 60;
+  --z-modal: 70;
+
   /* One source of truth for the reading column, so the chat, its composer
      and any future page line up instead of each picking a max-width. */
   --content-width: 720px;
@@ -193,6 +202,48 @@ body {
   font-size: var(--text-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Overlay scrollbars, thin and only visible while scrolling where the
+   browser supports it. The default macOS/Windows bar is opaque, sits
+   inside the padding box and clipped the right edge of message text.
+   `scrollbar-gutter: stable` keeps the layout from shifting when one
+   appears, and the WebKit rules make the thumb float over the content
+   instead of reserving a channel beside it. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: var(--radius-pill);
+  /* Transparent border + background-clip is what makes the visible
+     thumb narrower than its hit area, so it stays easy to grab. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*:hover::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-faint);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Visible, consistent focus everywhere. The composer removes its own

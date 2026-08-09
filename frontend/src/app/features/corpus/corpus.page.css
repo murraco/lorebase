@@ -60,6 +60,7 @@
 }
 
 .pane {
+  scrollbar-gutter: stable;
   min-height: 0;
   overflow-y: auto;
   padding: 12px 14px 24px 0;
@@ -149,7 +150,7 @@
   padding: 12px 0 10px;
   margin-bottom: 4px;
   border-bottom: 1px solid var(--border);
-  z-index: 2;
+  z-index: var(--z-sticky);
 }
 
 .chunks-stats {
@@ -364,6 +365,33 @@
 .source-stat b {
   color: var(--text);
   font-weight: 500;
+}
+
+.source-actions .sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.spinner {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--border-strong);
+  border-top-color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
 }
 
 .source-actions button {
