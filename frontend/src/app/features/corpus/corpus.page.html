@@ -22,8 +22,16 @@
         <span class="source-stat">
           <b>{{ source.embedded_chunk_count }}</b> / {{ source.chunk_count }} embedded
         </span>
-        <button type="button" [disabled]="syncing()" (click)="syncSelected()">
-          {{ syncing() ? 'Queuing…' : 'Sync now' }}
+        <button
+          type="button"
+          class="sync"
+          [disabled]="syncing() || source.status === 'syncing'"
+          (click)="syncSelected()"
+        >
+          @if (syncing() || source.status === 'syncing') {
+            <span class="spinner" aria-hidden="true"></span>
+          }
+          {{ syncing() || source.status === 'syncing' ? 'Syncing…' : 'Sync now' }}
         </button>
       </div>
     </div>
