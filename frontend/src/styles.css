@@ -77,17 +77,19 @@
   --font-sans: 'Inter Tight', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Raised across the board: the old scale started at 14px for body and
-     read thin and cramped. Everything that is *data* also gets weight
-     500-600 at its call site, since tabular figures at 400 disappear
-     next to prose. */
-  --text-xs: 11.5px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-md: 16px;
-  --text-lg: 18px;
-  --text-xl: 22px;
-  --text-2xl: 29px;
+  /* Raised across the board, twice now: the old scale started at 14px
+     for body and read thin and cramped, and this second pass raises it
+     again by roughly the same +1px at every step, which keeps the ratio
+     between adjacent steps close to what it was rather than compressing
+     the hierarchy. Everything that is *data* also gets weight 500-600 at
+     its call site, since tabular figures at 400 disappear next to prose. */
+  --text-xs: 12.5px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-md: 17px;
+  --text-lg: 19px;
+  --text-xl: 23px;
+  --text-2xl: 30px;
 
   /* Dry geometry, on purpose. An ink accent asks for square corners —
      the previous 10-20px radii read friendly and consumer, which fought
