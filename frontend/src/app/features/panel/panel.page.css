@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.head {
+  margin-bottom: 24px;
+}
+
+.head h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.head p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.state {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.state.error {
+  color: var(--danger);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.card {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+
+/* Same "this needs attention" signal --danger already carries elsewhere
+   (ungrounded answers, failed syncs) — never-retrieved notes are exactly
+   that kind of thing, a quiet problem worth a visual nudge. */
+.card.warn {
+  border-color: var(--danger);
+}
+
+.card .label {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.card .num {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.card.warn .num {
+  color: var(--danger);
+}
+
+.card .sub {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.chart-title {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+
+.bar-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.bar-track {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  width: 100%;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--evidence);
+  transition: height var(--transition);
+}
+
+.bar-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+}

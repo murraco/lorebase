@@ -155,6 +155,15 @@
         Corpus
       </a>
 
+      <a
+        class="panel-link"
+        routerLink="/panel"
+        routerLinkActive="active"
+        (click)="closeDrawerIfNarrow()"
+      >
+        Panel
+      </a>
+
       <div class="conversations" [class.folded]="isSectionCollapsed('conversations')">
         <button
           type="button"
@@ -276,7 +285,6 @@
 @if (showSystemStatus()) {
   <lorebase-system-status-modal (closed)="showSystemStatus.set(false)" />
 }
-
 
 @if (conversationPendingDeletion(); as conversation) {
   <lorebase-confirm-dialog

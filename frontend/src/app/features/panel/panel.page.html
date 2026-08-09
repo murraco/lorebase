@@ -1,0 +1,60 @@
+<div class="panel">
+  <header class="head">
+    <h1>Panel</h1>
+    <p>Usage, cost, and answer quality — not configuration, that's System Status.</p>
+  </header>
+
+  @if (loading()) {
+    <p class="state">Loading…</p>
+  } @else if (error()) {
+    <p class="state error">{{ error() }}</p>
+  } @else if (metrics(); as m) {
+    <div class="cards">
+      <div class="card">
+        <p class="label">Documents</p>
+        <p class="num">{{ m.documents }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Queries today</p>
+        <p class="num">{{ m.queries_today }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Cost this month</p>
+        <p class="num">{{ formatCost(m.cost_this_month_usd) }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Feedback positive</p>
+        <p class="num">{{ formatPercent(m.positive_feedback_percent) }}</p>
+        @if (m.total_feedback > 0) {
+          <p class="sub">{{ m.total_feedback }} rated</p>
+        }
+      </div>
+      <div class="card">
+        <p class="label">Latency p50 / p95</p>
+        <p class="num">{{ formatMs(m.latency_p50_ms) }} / {{ formatMs(m.latency_p95_ms) }}</p>
+      </div>
+      <div
+        class="card"
+        [class.warn]="m.never_retrieved_documents > 0"
+        title="Documents with no chunk ever cited in an answer"
+      >
+        <p class="label">Never retrieved</p>
+        <p class="num">{{ m.never_retrieved_documents }}</p>
+      </div>
+    </div>
+
+    <section class="chart-section">
+      <p class="chart-title">Queries, last 14 days</p>
+      <div class="chart">
+        @for (day of m.queries_by_day; track day.date) {
+          <div class="bar-col" [title]="day.date + ': ' + day.count">
+            <div class="bar-track">
+              <span class="bar" [style.height.%]="barPercent(day.count)"></span>
+            </div>
+            <span class="bar-label">{{ dayLabel(day.date) }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

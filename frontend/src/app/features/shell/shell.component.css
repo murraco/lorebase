@@ -450,7 +450,8 @@
 
 /* Corpus reads as a destination in the same list as the conversations,
    not as a button floating between two groups. */
-.corpus-link {
+.corpus-link,
+.panel-link {
   display: block;
   flex-shrink: 0;
   font-family: var(--font-display);
@@ -463,12 +464,14 @@
   border-radius: var(--radius-sm);
 }
 
-.corpus-link:hover {
+.corpus-link:hover,
+.panel-link:hover {
   background: var(--surface);
   color: var(--text);
 }
 
-.corpus-link.active {
+.corpus-link.active,
+.panel-link.active {
   background: var(--surface-sunken);
   color: var(--text);
   font-weight: 500;

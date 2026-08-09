@@ -22,6 +22,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/corpus/corpus.page').then((m) => m.CorpusPage),
       },
       {
+        path: 'panel',
+        loadComponent: () => import('./features/panel/panel.page').then((m) => m.PanelPage),
+      },
+      {
         path: 'chat/:conversationId',
         loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),
       },
