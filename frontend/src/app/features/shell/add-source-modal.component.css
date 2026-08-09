@@ -132,21 +132,129 @@ input {
   font-size: var(--text-sm);
 }
 
+/* Steps connected by a rail, so the sequence reads as one process
+   rather than three unrelated bullets. */
+.steps {
+  position: relative;
+}
+
+.steps::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: var(--border);
+}
+
 .step .ring {
-  width: 14px;
-  height: 14px;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--border);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-raised);
   flex-shrink: 0;
 }
 
+.step .ring svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: var(--success-soft);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+/* Green, not ink: this is a semantic "went fine", and the previous
+   filled-black dot said nothing about whether it succeeded. */
 .step.done .ring {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.step.done .ring svg {
+  opacity: 1;
 }
 
 .step.done {
   color: var(--text);
+}
+
+/* The step in flight pulses so there is always one thing clearly
+   happening, instead of a static list you have to interpret. */
+.step.running .ring {
+  border-color: var(--success);
+  animation: step-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes step-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--success-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--success-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step.running .ring {
+    animation: none;
+  }
+}
+
+.step.failed .ring {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.step.failed {
+  color: var(--danger);
+}
+
+.progress {
+  margin-top: 14px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+  transition: width 300ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar > span {
+    transition: none;
+  }
+}
+
+.progress-text {
+  margin: 7px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-text b {
+  color: var(--text);
+  font-weight: 500;
 }
 
 .close {

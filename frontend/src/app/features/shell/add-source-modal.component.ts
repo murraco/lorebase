@@ -48,6 +48,13 @@ export class AddSourceModalComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** How much of the new source is searchable yet. Chunks exist before
+   * their embeddings do, so this climbs after parsing finishes. */
+  protected embeddedPercent(source: Source): number {
+    if (!source.chunk_count) return 0;
+    return Math.floor((source.embedded_chunk_count / source.chunk_count) * 100);
+  }
+
   protected async useCurrentFolder(): Promise<void> {
     const workspace = this.auth.primaryWorkspace();
     const listing = this.listing();

@@ -65,7 +65,10 @@
     @if (step() === 'progress') {
       <div class="steps">
         <div class="step done">
-          <span class="ring"></span>
+          <span class="ring"
+            ><svg viewBox="0 0 12 12" aria-hidden="true">
+              <polyline points="2.5 6.4 5 8.8 9.5 3.6" /></svg
+          ></span>
           Source created
         </div>
         <div
@@ -75,24 +78,48 @@
             source()?.status === 'ready' ||
             source()?.status === 'error'
           "
+          [class.running]="source()?.status === 'pending'"
         >
-          <span class="ring"></span>
+          <span class="ring"
+            ><svg viewBox="0 0 12 12" aria-hidden="true">
+              <polyline points="2.5 6.4 5 8.8 9.5 3.6" /></svg
+          ></span>
           Sync queued
         </div>
         <div
           class="step"
-          [class.done]="source()?.status === 'ready' || source()?.status === 'error'"
+          [class.done]="source()?.status === 'ready'"
+          [class.failed]="source()?.status === 'error'"
+          [class.running]="source()?.status === 'syncing'"
         >
-          <span class="ring"></span>
+          <span class="ring"
+            ><svg viewBox="0 0 12 12" aria-hidden="true">
+              <polyline points="2.5 6.4 5 8.8 9.5 3.6" /></svg
+          ></span>
           @if (source()?.status === 'error') {
             Failed: {{ source()?.last_error }}
           } @else if (source()?.status === 'ready') {
-            Ready
+            Read, split and indexed
           } @else {
             Parsing → chunking → embeddings
           }
         </div>
       </div>
+
+      <!-- Real numbers as soon as there are any: a spinner alone says
+           "wait", these say how far along it actually is. -->
+      @if (source(); as s) {
+        @if (s.chunk_count > 0) {
+          <div class="progress">
+            <div class="progress-bar">
+              <span [style.width.%]="embeddedPercent(s)"></span>
+            </div>
+            <p class="progress-text">
+              <b>{{ s.embedded_chunk_count }}</b> of <b>{{ s.chunk_count }}</b> chunks embedded
+            </p>
+          </div>
+        }
+      }
     }
 
     <button type="button" class="close" (click)="close()">close</button>
