@@ -8,7 +8,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding-top: 14px;
+  padding-top: 18px;
 }
 
 .head {
@@ -78,6 +78,7 @@
 
 .chunks {
   padding-left: 18px;
+  padding-right: 4px;
   padding-top: 0;
 }
 
@@ -329,7 +330,11 @@
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--accent);
+  /* Green, not the accent. This said var(--accent) since the palette's
+     accent WAS green; when it became ink the dots silently turned black
+     and stopped meaning "healthy" — the state was still correct, the
+     colour just stopped saying it. */
+  background: var(--success);
   flex-shrink: 0;
 }
 

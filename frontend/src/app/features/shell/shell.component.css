@@ -101,10 +101,10 @@
 .rail {
   background: var(--surface-raised);
   border-right: 1px solid var(--border);
-  padding: 16px 10px;
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -333,7 +333,7 @@
 }
 
 .main {
-  padding: 14px 32px 0;
+  padding: 14px 28px 0;
   min-width: 0;
   height: 100vh;
   overflow: hidden;
@@ -451,10 +451,13 @@
 .corpus-link {
   display: block;
   flex-shrink: 0;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
   text-decoration: none;
-  padding: 5px 8px;
+  padding: 7px 8px;
   border-radius: var(--radius-sm);
 }
 
@@ -479,8 +482,9 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

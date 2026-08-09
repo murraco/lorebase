@@ -39,7 +39,7 @@
 
 .source .name {
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text);
   line-height: 1.4;
   overflow: hidden;
@@ -57,7 +57,11 @@
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--accent);
+  /* Green, not the accent. This said var(--accent) since the palette's
+     accent WAS green; when it became ink the dots silently turned black
+     and stopped meaning "healthy" — the state was still correct, the
+     colour just stopped saying it. */
+  background: var(--success);
   margin-left: auto;
   flex-shrink: 0;
 }
