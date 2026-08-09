@@ -121,6 +121,16 @@ export class CorpusPage implements OnInit {
    * action whose effect is not immediately visible, not decoration. */
   private static readonly MIN_SYNC_FEEDBACK_MS = 1200;
 
+  protected async toggleEnabled(): Promise<void> {
+    const source = this.selectedSource();
+    if (!source) return;
+    try {
+      await this.sourcesService.setEnabled(source.id, !source.enabled);
+    } catch {
+      this.error.set("Couldn't change whether that source is used.");
+    }
+  }
+
   protected async syncSelected(): Promise<void> {
     const sourceId = this.selectedSourceId();
     if (!sourceId || this.syncing()) return;

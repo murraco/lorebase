@@ -25,6 +25,19 @@ export class SourcesService {
     return data;
   }
 
+  /** Turns a source on or off for retrieval. Nothing is re-indexed
+   * either way — the chunks stay, so flipping it back is instant. */
+  async setEnabled(id: string, enabled: boolean): Promise<void> {
+    const { error } = await apiClient.PATCH('/api/sources/{id}/', {
+      params: { path: { id } },
+      body: { enabled },
+    });
+    if (error) throw new Error('Failed to update the source.');
+    this.sources.update((current) =>
+      current.map((source) => (source.id === id ? { ...source, enabled } : source)),
+    );
+  }
+
   async sync(id: string): Promise<void> {
     const { error } = await apiClient.POST('/api/sources/{id}/sync/', {
       params: { path: { id } },

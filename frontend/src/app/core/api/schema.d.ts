@@ -404,6 +404,7 @@ export interface components {
       name?: string;
       type?: components['schemas']['TypeEnum'];
       config?: unknown;
+      enabled?: boolean;
     };
     ProviderStatus: {
       provider: string;
@@ -424,6 +425,7 @@ export interface components {
       type: components['schemas']['TypeEnum'];
       config?: unknown;
       readonly status: components['schemas']['StatusEnum'];
+      enabled?: boolean;
       readonly chunk_count: number;
       readonly embedded_chunk_count: number;
       /** Format: date-time */
@@ -440,6 +442,7 @@ export interface components {
       name: string;
       type: components['schemas']['TypeEnum'];
       config?: unknown;
+      enabled?: boolean;
     };
     /**
      * @description * `pending` - Pending

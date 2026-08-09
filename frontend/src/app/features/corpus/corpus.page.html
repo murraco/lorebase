@@ -12,16 +12,24 @@
     <!-- The controls belong where the source is being inspected, not
          only in the sidebar: this is the screen where you decide whether
          it needs re-syncing. -->
-    <div class="source-bar">
+    <div class="source-bar" [class.disabled]="!source.enabled">
       <div class="source-id">
         <span class="source-name">{{ source.name }}</span>
-        <span class="dot" [class]="source.status"></span>
-        <span class="source-state">{{ sourceStateLabel(source) }}</span>
+        <span class="dot" [class]="source.status" [class.off]="!source.enabled"></span>
+        <span class="source-state">
+          {{ source.enabled ? sourceStateLabel(source) : 'not used for answers' }}
+        </span>
       </div>
       <div class="source-actions">
         <span class="source-stat">
           <b>{{ source.embedded_chunk_count }}</b> / {{ source.chunk_count }} embedded
         </span>
+        <!-- Off means indexed but not searched. Phrased as what it does
+             rather than as a state name, since "enabled" alone leaves
+             open whether the notes are still there. -->
+        <button type="button" class="toggle" (click)="toggleEnabled()">
+          {{ source.enabled ? 'Stop using' : 'Use for answers' }}
+        </button>
         <button
           type="button"
           class="sync"
@@ -45,10 +53,16 @@
           type="button"
           class="row"
           [class.selected]="selectedSourceId() === source.id"
+          [class.off]="!source.enabled"
           (click)="openSource(source.id)"
         >
           <span class="row-name">{{ source.name }}</span>
-          <span class="row-meta">{{ source.chunk_count }} chunks</span>
+          <span class="row-meta">
+            {{ source.chunk_count }} chunks
+            @if (!source.enabled) {
+              · off
+            }
+          </span>
         </button>
       } @empty {
         <p class="pane-empty">No sources yet.</p>

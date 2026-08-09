@@ -418,3 +418,35 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/* A disabled source stays visible and stays browsable — it is still
+   indexed, it just isn't searched. Dimmed rather than hidden, so the
+   corpus keeps telling the truth about what exists. */
+.row.off .row-name,
+.row.off .row-meta {
+  opacity: 0.55;
+}
+
+.source-bar.disabled .source-name {
+  opacity: 0.6;
+}
+
+.dot.off {
+  background: var(--border-strong);
+}
+
+.source-actions .toggle {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.source-actions .toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
