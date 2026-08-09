@@ -1,0 +1,182 @@
+[
+  {
+    "question": "What tech stack does the backend use?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Backend",
+    "reference_answer": "Python 3.12.13, Django 5.2.14, Django REST Framework 3.17.1, Wagtail as the CMS, PostgreSQL 17, Redis (via django-redis and django-rq), and Gunicorn."
+  },
+  {
+    "question": "Does the frontend use Angular signals for state management?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Frontend",
+    "reference_answer": "No. State lives in service classes exposing BehaviorSubjects (e.g. InboxService exposing conversations$, unreadCount$, hasMoreConversations$, liveMessage$), not NgRx and not signals."
+  },
+  {
+    "question": "Why doesn't the frontend use Angular signals?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Frontend",
+    "reference_answer": "The design doc records it as a deliberate constraint: signals would require Angular 17, and the app was pinned to Angular 15 at the time (which also ruled out chat SDKs like GetStream). The app has since been upgraded to Angular 17, but signals still aren't used, so the original reason no longer holds."
+  },
+  {
+    "question": "What database indexing technique sped up the sync_stripe_payments command without locking the donations table?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Database",
+    "reference_answer": "A partial covering index (idx_donation_sync_payments) created with AddIndexConcurrently and atomic=False, so building the index doesn't lock the donations table during deploy."
+  },
+  {
+    "question": "What went wrong with the idx_donation_sync_payments index and how was it fixed?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "The index saga",
+    "reference_answer": "It originally included stripe_charge_json in its INCLUDE columns, but that's a JSON blob of unbounded size, and Postgres btree entries are capped at roughly 2,704 bytes, so a large charge JSON could make inserts fail. It was removed in a hotfix, but that hotfix edited an already-applied migration, which the project's own conventions explicitly forbid, since it makes Django's migration state disagree with the actual database. The real fix was a new migration that dropped and recreated the index correctly, both concurrently."
+  },
+  {
+    "question": "Why is editing an already-applied Django migration considered a bad idea in this codebase?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "The index saga",
+    "reference_answer": "Because it makes Django's recorded migration state disagree with the actual database. The project's own CLAUDE.md explicitly forbids editing existing migrations that were already applied in production; the fix has to be a new migration instead."
+  },
+  {
+    "question": "How did the ACH payment migration get rolled out safely?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "ACH payment migration",
+    "reference_answer": "In three phases over 14 days: first the new ACH flow was built alongside the old one, with both paths live simultaneously; then it was enabled per-user for a specific cohort so real money moved through the new path in a controlled way; and finally the old ACH code was deleted once the migration had succeeded."
+  },
+  {
+    "question": "Why was the ACH payment migration considered high-stakes?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Payment mix",
+    "reference_answer": "Because although bank/ACH donations were only about 7% of donations by count, they made up about 16% of total dollars, since the average ACH donation (about $246) was roughly 2.5x larger than the average card donation (about $98). A small fraction of transactions carried a disproportionate share of the money."
+  },
+  {
+    "question": "What made the multicurrency donations project difficult?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Multicurrency donations",
+    "reference_answer": "Currency is a cross-cutting concern that touches every model holding an amount, every aggregation that sums amounts, every template that renders one, and every analytics event reporting one, so missing one place risks silently mixing currencies. This was confirmed by two follow-up fixes needed after the first pass: one for cycle admin donation stats and one for currency in Amplitude/Customer.io event tracking."
+  },
+  {
+    "question": "How is currency modeled in the multicurrency donations feature?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Multicurrency donations",
+    "reference_answer": "Currency was added across the money model: Grantor gained a currency field, and Fund, Pool, Credit, GrantSummary, OrgThankYouGrant, and MatchingCampaign all gained currency-aware amount fields via django-money, about 65 files and 1,600 insertions across roughly 10 migrations. A circle's currency is determined by which legal entity (grantor) disburses its money, not set per donation."
+  },
+  {
+    "question": "What was the concurrency bug found in the cycle automation scheduled jobs?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Cycle automation",
+    "reference_answer": "The scheduled jobs are sequentially idempotent but not concurrency-safe: there are no unique constraints on Notification, Reminder, or Pool, so two schedulers firing at the same time can double-send. This actually happened on 2026-06-10, when create_org_thank_you_grants_for_org threw 824 duplicate-key violations in four minutes as RQ workers running with --with-scheduler raced to create the same thank-you grant. It only failed loudly because OrgThankYouGrant has a unique constraint; tables without one wouldn't be so lucky."
+  },
+  {
+    "question": "What caused the H18 errors on Heroku and how was it fixed?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "The H18 investigation",
+    "reference_answer": "H18 means the server closed a connection mid-response. The cause was Gunicorn's --max-requests worker recycling: workers recycle after a set number of requests to bound memory leaks, but without enough jitter they can recycle in sync, and a worker killed mid-request drops the connection. The fix was tuning the max-requests jitter value, a three-line change in docker/entrypoint.sh, even though finding it required correlating an intermittent production error with worker lifecycle behavior."
+  },
+  {
+    "question": "What was moved out of the request path to fix a performance problem?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Non-database performance",
+    "reference_answer": "The HubSpot sync was moved out of the request path into a management command, so third-party API latency no longer blocks user requests."
+  },
+  {
+    "question": "What structured fields does the location data model include?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Structured location data",
+    "reference_answer": "City, state, county, country, postal code, and latitude/longitude, derived from the postal code via geocoding, with ISO 3166-2 normalization for state values. It replaced what had been a freeform text field."
+  },
+  {
+    "question": "Why was the geocoding call moved outside the profile update transaction?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Structured location data",
+    "reference_answer": "Because geocoding is a third-party network call, and holding a database transaction open across it means a slow geocoding provider would turn into database lock contention."
+  },
+  {
+    "question": "How did Grapevine avoid downtime when migrating from Heroku to AWS ECS?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Infrastructure",
+    "reference_answer": "One container image was built that could run either role: the entrypoint script dispatches on either a container role or a Heroku dyno prefix, so the same build worked on both platforms during the transition and there was no hard cutover. A heroku.yml was kept alongside the new Dockerfile/ECS setup."
+  },
+  {
+    "question": "What third-party services does the payments system integrate with?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Integrations",
+    "reference_answer": "Stripe, for cards, ACH, PaymentIntents, SetupIntents, 3DS, destination charges, and webhooks; and Plaid, for bank account linking."
+  },
+  {
+    "question": "How does the platform keep sequential integer primary keys from being exposed in the API?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Backend",
+    "reference_answer": "Hashid-obfuscated IDs are used on the wire, so sequential integer primary keys are never directly exposed."
+  },
+  {
+    "question": "What was restored from a CSV backup in early 2024, and how many records?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Era 2",
+    "reference_answer": "12,853 circle memberships were restored from a CSV, part of a cluster of soft-delete-related fixes in January-February 2024 (soft-delete for batch membership deletion, restoring membership on application approval, and reactivating deleted memberships)."
+  },
+  {
+    "question": "What major framework upgrade happened in July 2025?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Era 3",
+    "reference_answer": "Django was upgraded from 3.2.20 to 4.2.23, spanning two LTS versions across roughly 2,790 lines, alongside DRF (3.11 to 3.14) and Wagtail (4.2 to 5.0) major version bumps."
+  },
+  {
+    "question": "How much has the platform processed in donations over its lifetime, and which year was the peak?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Donation volume",
+    "reference_answer": "Roughly $47.2M lifetime across about 434,537 donations. 2024 was the peak year at $12.74M."
+  },
+  {
+    "question": "How many giving circles and registered users does the platform have?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Platform scale",
+    "reference_answer": "8,554 giving circles (6,108 launched, 5,307 active) and 142,625 registered users (140,643 active)."
+  },
+  {
+    "question": "What was the root cause of the Stripe fees bug, and what was the fix?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Money-correctness bugs",
+    "reference_answer": "The processing fee was being spread across both the donation and the platform tip, when it should have come out of the donation only. The fix required a recompute command to repair existing rows, a guard against a negative net_amount when the fee exceeds the donation, and recalculation."
+  },
+  {
+    "question": "What lesson does the Stripe webhook fixes series illustrate?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "The Stripe webhook series",
+    "reference_answer": "Add observability before guessing: logging was added first, then the problem was diagnosed, and only then fixed, rather than guessing at the cause of the webhook payload issues directly."
+  },
+  {
+    "question": "What is a Stripe webhook and why does it matter if the handler fails?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "The Stripe webhook series",
+    "reference_answer": "A Stripe webhook is a call Stripe makes to the server when something changes on their side, such as a payment settling, a card declining, or a dispute opening. It's the only way to learn about things that happen after checkout, so if the handler fails, the database drifts out of sync with what actually happened to the money."
+  },
+  {
+    "question": "What are the three real weaknesses called out in the career notes summary?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "If you only read one page",
+    "reference_answer": "Almost no performance numbers (timeouts were fixed but percentiles weren't tracked); the inbox shipped without instrumentation, so its adoption can't be measured; and no production ML, where the applied-ML value is the engineering half (pipelines, idempotency, rollout) rather than a shipped model."
+  },
+  {
+    "question": "What was Mauricio's role on the donations platform, and roughly how much did it process?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "If you only read one page",
+    "reference_answer": "A senior engineer who owned systems end to end, and the largest backend contributor over six years on a giving platform that processed around $47M in donations."
+  },
+  {
+    "question": "What was the first major feature shipped, and how soon after joining?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Era 1",
+    "reference_answer": "Stripe destination charges plus ACH payments (about 1,470 lines), shipped on 2020-12-02, about four months after the first commits on 2020-08-04 -- a fast ramp to owning the payments integration on a mature codebase."
+  },
+  {
+    "question": "What kind of scheduled work does the cycle automation feature create, and who dispatches it?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "Cycle automation",
+    "reference_answer": "53 scheduled management commands (like send_poll_start_reminder and send_circle_rollup_emails_every_friday), dispatching through notifications/managers/ classes, 20 of the 33 of which were created as part of this work."
+  },
+  {
+    "question": "What is missing from the performance work documented in the repository?",
+    "expected_document": ["career_notes", "career_notes_es"],
+    "expected_heading": "What is missing",
+    "reference_answer": "No load testing, no benchmark results, and no before/after latency numbers anywhere in the repo. Optimizations are justified by fixing a timeout rather than by measurement."
+  }
+]
