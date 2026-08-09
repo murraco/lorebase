@@ -44,6 +44,13 @@ services:
     volumes:
       - ../backend:/app
       - backend_venv:/app/.venv
+      # Anything you want to index has to be reachable from inside the
+      # container: the folder picker browses the server's filesystem, and
+      # no browser API can hand a host path to a server. Point
+      # LOREBASE_NOTES_DIR at a real folder on your machine and it shows
+      # up in the picker under "external". Read-only — Lorebase indexes
+      # notes, it never writes to them.
+      - ${LOREBASE_NOTES_DIR:-./placeholder-notes}:/app/storage/external:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -71,6 +78,13 @@ services:
     volumes:
       - ../backend:/app
       - backend_venv:/app/.venv
+      # Anything you want to index has to be reachable from inside the
+      # container: the folder picker browses the server's filesystem, and
+      # no browser API can hand a host path to a server. Point
+      # LOREBASE_NOTES_DIR at a real folder on your machine and it shows
+      # up in the picker under "external". Read-only — Lorebase indexes
+      # notes, it never writes to them.
+      - ${LOREBASE_NOTES_DIR:-./placeholder-notes}:/app/storage/external:ro
     depends_on:
       db:
         condition: service_healthy
