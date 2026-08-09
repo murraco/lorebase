@@ -41,6 +41,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-lorebase}:${POSTGRES_PASSWORD:-lorebase}@db:5432/${POSTGRES_DB:-lorebase}
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-backend
     volumes:
       - ../backend:/app
       - backend_venv:/app/.venv
@@ -75,6 +76,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-lorebase}:${POSTGRES_PASSWORD:-lorebase}@db:5432/${POSTGRES_DB:-lorebase}
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-worker
     volumes:
       - ../backend:/app
       - backend_venv:/app/.venv
