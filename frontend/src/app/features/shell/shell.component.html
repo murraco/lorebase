@@ -134,64 +134,18 @@
         </div>
       }
 
-      <div class="sources" [class.folded]="isSectionCollapsed('sources')">
-        <button
-          type="button"
-          class="section-label"
-          [attr.aria-expanded]="!isSectionCollapsed('sources')"
-          (click)="toggleSection('sources')"
-        >
-          <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true">
-            <polyline points="4 2 8 6 4 10" />
-          </svg>
-          Sources
-          <span class="section-count">{{ sourcesService.sources().length }}</span>
-        </button>
-        @for (source of sourcesService.sources(); track source.id) {
-          <div class="source">
-            <a
-              class="source-text"
-              [routerLink]="['/corpus']"
-              [queryParams]="{ source: source.id }"
-              (click)="closeDrawerIfNarrow()"
-              [title]="'Browse what was indexed from ' + source.name"
-            >
-              <span class="name">{{ source.name }}</span>
-              @if (statusLabel(source); as label) {
-                <span class="status-label">{{ label }}</span>
-              }
-            </a>
-            <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
-            @if (source.status === 'pending' || source.status === 'error') {
-              <button
-                type="button"
-                class="sync-btn"
-                title="Sync now"
-                aria-label="Sync now"
-                [disabled]="syncingSourceId() === source.id"
-                (click)="syncSource(source)"
-              >
-                ⟳
-              </button>
-            }
-            <button
-              type="button"
-              class="delete-btn"
-              title="Delete source"
-              (click)="sourcePendingDeletion.set(source)"
-            >
-              ×
-            </button>
-          </div>
-        } @empty {
-          @if (loadingLists()) {
-            <p class="empty">Loading…</p>
-          } @else if (!listError()) {
-            <p class="empty">No sources yet. Add a folder to start.</p>
-          }
-        }
-        <button class="add-btn" (click)="showAddSourceModal.set(true)">+ Add source</button>
-      </div>
+      <lorebase-source-list
+        [sources]="sourcesService.sources()"
+        [collapsed]="isSectionCollapsed('sources')"
+        [loading]="loadingLists()"
+        [hasError]="!!listError()"
+        [syncingId]="syncingSourceId()"
+        (toggled)="toggleSection('sources')"
+        (add)="showAddSourceModal.set(true)"
+        (sync)="syncSource($event)"
+        (remove)="sourcePendingDeletion.set($event)"
+        (navigated)="closeDrawerIfNarrow()"
+      />
 
       <a
         class="corpus-link"
@@ -201,11 +155,6 @@
       >
         Corpus
       </a>
-      <!-- Was buried among the footer links. It reports on the whole
-           system, so it belongs with the primary destinations. -->
-      <button type="button" class="corpus-link as-button" (click)="showSystemStatus.set(true)">
-        System status
-      </button>
 
       <div class="conversations" [class.folded]="isSectionCollapsed('conversations')">
         <button
@@ -257,11 +206,26 @@
       </div>
 
       <div class="rail-footer">
-        <p class="username">{{ auth.currentUser()?.username }}</p>
-        <div class="footer-actions">
+        <div class="footer-row">
+          <p class="username">{{ auth.currentUser()?.username }}</p>
           <button
-            class="link-btn theme-btn"
+            type="button"
+            class="icon-btn small"
+            title="System status"
+            aria-label="System status"
+            (click)="showSystemStatus.set(true)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+              <line x1="12" y1="8" x2="12" y2="8" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="icon-btn small"
             [title]="'Theme: ' + themeLabel()"
+            [attr.aria-label]="'Theme: ' + themeLabel()"
             (click)="theme.next()"
           >
             @switch (theme.preference()) {
@@ -290,9 +254,20 @@
                 </svg>
               }
             }
-            {{ themeLabel() }}
           </button>
-          <button class="link-btn" (click)="logout()">Sign out</button>
+          <button
+            type="button"
+            class="icon-btn small"
+            title="Sign out"
+            aria-label="Sign out"
+            (click)="logout()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 4H6a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 6 20h8" />
+              <polyline points="16.5 8.5 20 12 16.5 15.5" />
+              <line x1="20" y1="12" x2="10" y2="12" />
+            </svg>
+          </button>
         </div>
       </div>
     }

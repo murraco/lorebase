@@ -8,6 +8,7 @@ import { SourcesService } from '../../core/sources/sources.service';
 import { AddSourceModalComponent } from './add-source-modal.component';
 import { ConfirmDialogComponent } from './confirm-dialog.component';
 import { MetricsBarComponent } from './metrics-bar.component';
+import { SourceListComponent } from './source-list.component';
 import { ThemeService } from '../../core/theme/theme.service';
 import { SystemStatusModalComponent } from './system-status-modal.component';
 
@@ -28,6 +29,7 @@ const COLLAPSED_SECTIONS_KEY = 'lorebase.collapsedSections';
     AddSourceModalComponent,
     ConfirmDialogComponent,
     MetricsBarComponent,
+    SourceListComponent,
     SystemStatusModalComponent,
   ],
   templateUrl: './shell.component.html',
@@ -122,26 +124,12 @@ export class ShellComponent implements OnInit, OnDestroy {
    * unless someone starts it. Treating it as in-flight showed a permanent
    * "Syncing…" on a source that had never run, and kept the poll below
    * firing every few seconds forever. */
-  protected isInFlight(source: Source): boolean {
+  private isInFlight(source: Source): boolean {
     if (source.status === 'syncing') return true;
     return source.chunk_count > 0 && source.embedded_chunk_count < source.chunk_count;
   }
 
-  /** Percentage of this source's chunks that are embedded, or null when
-   * there's nothing meaningful to report (no chunks yet, or all done). */
-  protected embeddingProgress(source: Source): number | null {
-    if (source.chunk_count === 0) return null;
-    if (source.embedded_chunk_count >= source.chunk_count) return null;
-    return Math.floor((source.embedded_chunk_count / source.chunk_count) * 100);
-  }
 
-  protected statusLabel(source: Source): string | null {
-    if (source.status === 'error') return 'Failed';
-    if (source.status === 'pending') return 'Not synced yet';
-    if (source.status === 'syncing') return 'Syncing…';
-    const progress = this.embeddingProgress(source);
-    return progress === null ? null : `Indexing ${progress}%`;
-  }
 
   /** A "pending" source has no way forward from the UI otherwise — the
    * sync endpoint existed from the start but nothing ever called it

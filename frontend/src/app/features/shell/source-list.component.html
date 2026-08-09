@@ -1,0 +1,77 @@
+<div class="sources" [class.folded]="collapsed()">
+  <div class="section-head">
+    <button
+      type="button"
+      class="section-label"
+      [attr.aria-expanded]="!collapsed()"
+      (click)="toggled.emit()"
+    >
+      <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true">
+        <polyline points="4 2 8 6 4 10" />
+      </svg>
+      Sources
+      <span class="section-count">{{ sources().length }}</span>
+    </button>
+    <!-- On the header, not below the list: the list scrolls, so a button
+         under it scrolled out of view and read as missing. -->
+    <button
+      type="button"
+      class="section-add"
+      title="Add source"
+      aria-label="Add source"
+      (click)="add.emit()"
+    >
+      <svg viewBox="0 0 14 14" aria-hidden="true">
+        <line x1="7" y1="2.5" x2="7" y2="11.5" />
+        <line x1="2.5" y1="7" x2="11.5" y2="7" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="rows">
+    @for (source of sources(); track source.id) {
+      <div class="source">
+        <a
+          class="source-text"
+          [routerLink]="['/corpus']"
+          [queryParams]="{ source: source.id }"
+          [title]="'Browse what was indexed from ' + source.name"
+          (click)="navigated.emit()"
+        >
+          <span class="name">{{ source.name }}</span>
+          @if (statusLabel(source); as label) {
+            <span class="status-label">{{ label }}</span>
+          }
+        </a>
+        <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
+        @if (source.status === 'pending' || source.status === 'error') {
+          <button
+            type="button"
+            class="row-btn"
+            title="Sync now"
+            aria-label="Sync now"
+            [disabled]="syncingId() === source.id"
+            (click)="sync.emit(source)"
+          >
+            ⟳
+          </button>
+        }
+        <button
+          type="button"
+          class="row-btn danger"
+          title="Delete source"
+          aria-label="Delete source"
+          (click)="remove.emit(source)"
+        >
+          ×
+        </button>
+      </div>
+    } @empty {
+      @if (loading()) {
+        <p class="empty">Loading…</p>
+      } @else if (!hasError()) {
+        <p class="empty">No sources yet. Add a folder to start.</p>
+      }
+    }
+  </div>
+</div>

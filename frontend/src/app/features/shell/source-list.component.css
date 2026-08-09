@@ -1,0 +1,274 @@
+/* Capped so a long source list can't squeeze the conversations out;
+   past that it scrolls on its own. */
+.sources {
+  scrollbar-gutter: stable;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 45%;
+  overflow-y: auto;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.source:hover {
+  background: var(--surface);
+}
+
+/* The source name is a link into the corpus browser: seeing what a
+   source actually became when indexed is the useful thing to do with
+   it, and it was previously inert text. */
+.source-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+  text-decoration: none;
+}
+
+.source-text:hover .name {
+  color: var(--accent);
+}
+
+.source .name {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dot.pending,
+.dot.syncing {
+  background: var(--evidence);
+}
+
+.dot.error {
+  background: var(--danger);
+}
+
+/* Anything still syncing or still embedding pulses amber — "ready" green
+   is reserved for genuinely queryable. */
+.dot.working {
+  background: var(--evidence);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+/* Only rendered for sources that are "pending" or "error" — the states
+   where nothing is happening and nothing will unless it's started. */
+.sync-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+.sync-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.sync-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Linear keeps the group header and its action on one row, with the
+   action revealed on hover. Tight rows, hairline separations, no boxes. */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.section-head .section-label {
+  margin-bottom: 0;
+}
+
+.section-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.section-head:hover .section-add,
+.section-add:focus-visible {
+  opacity: 1;
+}
+
+.section-add:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.section-add svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+:host {
+  display: contents;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.empty {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  padding: 0 8px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 4px 8px 4px 4px;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.section-label:hover {
+  color: var(--text);
+}
+
+.chevron {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(90deg);
+  transition: transform 130ms ease;
+}
+
+.folded .chevron {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+.section-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  letter-spacing: 0;
+}
+
+.folded .rows {
+  display: none;
+}
+
+/* Row actions appear on hover, the way Linear reveals them, so a list at
+   rest is just names. */
+.row-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+}
+
+.source:hover .row-btn,
+.row-btn:focus-visible {
+  opacity: 1;
+}
+
+.row-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+
+.row-btn.danger:hover {
+  color: var(--danger);
+}
+
+.row-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
