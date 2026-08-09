@@ -64,56 +64,37 @@
               }
             </div>
 
-            <div class="memo-body">
-              <div
-                class="memo-prose rendered-markdown"
-                [innerHTML]="message.content | markdown"
-              ></div>
+            <div
+              class="memo-prose rendered-markdown"
+              [innerHTML]="message.content | markdown"
+            ></div>
 
-              @if (message.citations.length > 0) {
-                <!-- Margin notes, aligned with the prose they support. This
-                   is the whole idea: the citation sits beside the claim,
-                   the way a footnote does in a printed document. -->
-                <aside class="memo-notes" aria-label="Sources">
-                  @for (citation of message.citations; track citation.id; let i = $index) {
-                    <button
-                      type="button"
-                      class="note"
-                      [class.focused]="focusedCitationId() === citation.id"
-                      [attr.aria-expanded]="expandedCitationId() === citation.id"
-                      (click)="toggleCitation(citation.id)"
-                      (mouseenter)="focusedCitationId.set(citation.id)"
-                      (mouseleave)="focusedCitationId.set(null)"
-                    >
-                      <span class="note-n">{{ i + 1 }}</span>
-                      <span class="note-h">{{ citation.heading_path || citation.path }}</span>
-                      <span class="note-m">{{ citation.path }}</span>
-                      <span class="note-m"
-                        >l.{{ citation.start_line }}–{{ citation.end_line }}</span
-                      >
-                      @if (relativeMatch(message, citation); as match) {
-                        <!-- Scores compare only inside one answer, so this
-                             is drawn against that answer's best match and
-                             labelled as such — never as a global
-                             confidence percentage. -->
-                        <span class="note-match" [title]="'Retriever score ' + match.score">
-                          <span class="note-bar"
-                            ><span [style.width.%]="match.percent"></span
-                          ></span>
-                          <span class="note-m">{{ match.score }}</span>
-                        </span>
-                      }
-                    </button>
-                  }
-                </aside>
-              } @else {
-                <aside class="memo-notes" aria-label="Sources">
-                  <p class="note-empty">
-                    No source was cited for this answer. Treat it as unverified.
-                  </p>
-                </aside>
-              }
-            </div>
+            <!-- A row under the answer, not a column beside it. The margin
+               column was marginalia for content that is paths and
+               numbers, and it left a mostly-empty 190px gutter that made
+               the answer narrower for no gain. This is the pattern people
+               already read as "here is what this is based on". -->
+            @if (message.citations.length > 0) {
+              <div class="sources">
+                <span class="sources-label">Sources</span>
+                @for (citation of message.citations; track citation.id; let i = $index) {
+                  <button
+                    type="button"
+                    class="source-chip"
+                    [class.open]="expandedCitationId() === citation.id"
+                    [title]="
+                      citation.path + ' · lines ' + citation.start_line + '–' + citation.end_line
+                    "
+                    (click)="toggleCitation(citation.id)"
+                  >
+                    <span class="chip-n">{{ i + 1 }}</span>
+                    <span class="chip-name">{{ citation.heading_path || citation.path }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <p class="ungrounded">No source was cited for this answer. Treat it as unverified.</p>
+            }
           </article>
         }
       }
