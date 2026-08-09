@@ -58,6 +58,12 @@
   --danger-soft: #f5e0dc;
   --danger-contrast: #fdfcfa;
 
+  /* Semantic, and separate from the accent on purpose: the accent is
+     ink, so "this step finished" had nothing to say it with. Only used
+     for completed state and healthy readings, never for a control. */
+  --success: #2f6b46;
+  --success-soft: #dcebe1;
+
   --overlay: rgba(26, 24, 20, 0.36);
 
   --shadow-md: 0 2px 8px rgba(26, 24, 20, 0.07);
@@ -141,6 +147,9 @@
     --danger-soft: #3a201d;
     --danger-contrast: #171613;
 
+    --success: #6cbb8b;
+    --success-soft: #1e3025;
+
     --overlay: rgba(0, 0, 0, 0.62);
 
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -176,6 +185,9 @@
   --danger: #dd7d74;
   --danger-soft: #3a201d;
   --danger-contrast: #171613;
+
+  --success: #6cbb8b;
+  --success-soft: #1e3025;
 
   --overlay: rgba(0, 0, 0, 0.62);
 
