@@ -26,7 +26,8 @@
 | 12 — Capa de API | ✅ Hecha |
 | 13 — Frontend Angular | ✅ Hecha |
 | — Trabajo posterior no planificado | 🔄 En curso (ver abajo) |
-| 14 en adelante | Pendiente |
+| 14 — Conector de GitHub | ✅ Hecha |
+| 15 en adelante | Pendiente |
 
 Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
 ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
@@ -753,7 +754,7 @@ solo en verde.
 
 ### Bloque E — Conectores adicionales
 
-#### Etapa 14 — Conector de GitHub
+#### Etapa 14 — Conector de GitHub ✅
 
 **Objetivo:** demostrar que la abstracción plugin-first se sostiene con una fuente remota.
 
@@ -766,6 +767,17 @@ solo en verde.
 
 **Dependencias:** Etapa 13.
 **Hecho cuando:** un repo propio sincroniza y sus documentos son consultables desde el chat; **no hizo falta tocar el pipeline ni el retrieval** (esa es la prueba real de la arquitectura).
+
+**Notas de la implementación real:**
+- **`sources/connectors/github.py`, registrado con `@register_connector("github")` e importado desde `SourcesConfig.ready()` junto a `local_folder`** — el mismo mecanismo de plugin de la Etapa 5, sin tocarlo. `Source.SourceType.GITHUB` ya existía en el modelo desde antes (quedó del diseño original de la Etapa 4), pero no tenía connector detrás; `get_connector_class("github")` hubiera fallado con `ValueError` hasta este cambio.
+- **Confirmado el punto central del objetivo: cero cambios en `sync.py`, `ingestion/pipeline.py` o cualquier cosa de retrieval.** `sync_source()` solo conoce el `Connector` ABC — nunca un connector concreto — así que un segundo connector, esta vez de red en vez de filesystem, se conecta por completo desde afuera. Hay un test explícito para esto (`test_sync_source_works_unmodified_with_the_github_connector`, en `tests/sources/test_sync.py`) que corre `sync_source()` de punta a punta contra un `Source` de tipo `github` con HTTP mockeado, verificando que la reconciliación, el chunking y el `heading_path` funcionan igual que con `local_folder`.
+- **`content_hash` es el SHA de blob de git, no un hash calculado acá** — tal como pedía el objetivo. Git ya fingerprintea cada blob por contenido; recalcularlo hubiera sido más lento sin poder nunca discrepar de git si lo intentara. Esto también significa que un mismo archivo movido sin modificar mantiene el mismo `content_hash` pero cambia de `external_id` (`repo@path` incluye el path) — se trata como archivo borrado + archivo nuevo, igual que un rename en `local_folder`, no como una actualización.
+- **Metadata de commit cuesta una request HTTP por archivo** (`GET /repos/{repo}/commits?path=...&sha=...&per_page=1`), porque el listado del árbol (`git/trees`) no trae información de commit — no existe una forma bulk en la API de GitHub. Documentado en el código como trade-off consciente: razonable a la escala de un repo de notas personal, no pensado para sincronizar un monorepo grande sin cachear o directamente descartar ese dato.
+- **Rate limit distinguido de un error genérico**: un 403/429 con `X-RateLimit-Remaining: 0` levanta un mensaje específico ("resets at `<hora>`"), no un `requests.HTTPError` críptico — así `Source.last_error` le dice al usuario qué pasó y cuándo reintentar en vez de un status code pelado. `sync_source_task` ya traía reintento con backoff (`autoretry_for`/`retry_backoff`, Etapa 7), así que un rate limit real simplemente se reintenta solo más tarde, sin lógica nueva de retry en el connector.
+- **`requests` pasó a dependencia directa** (antes solo transitiva, vía `anthropic`→`httpx` y `voyageai`→`requests`) — una librería que se importa directo en el código del proyecto no debería depender de que otra la siga trayendo. `responses` (mock de HTTP) y `types-requests` se agregaron como dependencias de dev.
+- **Verificado en vivo contra la API real de GitHub, sin mocks**, además de los tests: `GitHubConnector({"repos": ["octocat/Spoon-Knife"]}).fetch_documents()` trajo el `README.md` real de ese repo con `content_hash` = SHA de blob real, autor `"The Octocat"` y fecha de commit reales — confirma que los headers, la decodificación de base64 y el shape de la respuesta de la API vigente (`X-GitHub-Api-Version: 2022-11-28`) coinciden con lo asumido en los tests mockeados, no solo con el mock.
+- **Sin UI nueva para agregar un source de GitHub** — a propósito, no un olvido. El objetivo de esta etapa es la arquitectura del connector, no una segunda experiencia de alta en el frontend (que hoy solo sabe pedir una carpeta local); un source de tipo `github` se crea vía la API (`POST /api/sources/` con `type="github"` y `config={"repos": [...]}`) o el admin de Django, ambos ya genéricos por tipo desde la Etapa 4.
+- `GITHUB_TOKEN` sumado a `config/settings/base.py` e `infra/.env.example`, opcional (vacío funciona contra repos públicos al rate limit sin autenticar de GitHub, 60/hora en vez de 5000/hora).
 
 ---
 
