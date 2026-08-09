@@ -309,13 +309,14 @@
   white-space: nowrap;
 }
 
-/* The question opens a turn. Without the label and the rule above it,
-   a thread of several exchanges reads as one continuous article — every
-   question looks like just another section heading. */
+/* One rule per turn, above the question. There used to be a second one
+   under the metadata row as well, which meant every exchange arrived
+   boxed in between two lines — the metadata is already in mono against
+   serif prose, so the register change does that job on its own. */
 .query {
   display: block;
-  margin: 34px 0 0;
-  padding-top: 26px;
+  margin: 40px 0 0;
+  padding-top: 28px;
   border-top: 1px solid var(--border);
 }
 
@@ -333,7 +334,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 7px;
+  margin-bottom: 9px;
 }
 
 .query h2 {
@@ -362,10 +363,8 @@
 .memo-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 20px;
-  margin-bottom: 18px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 0 18px;
+  margin-bottom: 20px;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
@@ -539,4 +538,15 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--text);
+}
+
+/* Lives here, not in the global sheet: it belongs to this component's
+   own markup, unlike the markdown rules which style injected HTML. */
+.load-error {
+  font-size: var(--text-base);
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin: 0;
 }
