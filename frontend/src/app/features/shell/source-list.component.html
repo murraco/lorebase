@@ -67,7 +67,9 @@
       @if (loading()) {
         <p class="empty">Loading…</p>
       } @else if (!hasError()) {
-        <p class="empty">No sources yet. Add a folder to start.</p>
+        <button type="button" class="empty-action" (click)="add.emit()">
+          + Add a folder to start
+        </button>
       }
     }
   </div>

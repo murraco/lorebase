@@ -82,32 +82,6 @@
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-/* Only rendered for sources that are "pending" or "error" — the states
-   where nothing is happening and nothing will unless it's started. */
-.sync-btn {
-  border: none;
-  background: none;
-  padding: 0;
-  width: 16px;
-  height: 16px;
-  line-height: 1;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  border-radius: var(--radius-sm);
-}
-
-.sync-btn:hover:not(:disabled) {
-  color: var(--accent);
-  background: var(--surface);
-}
-
-.sync-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 /* Linear keeps the group header and its action on one row, with the
    action revealed on hover. Tight rows, hairline separations, no boxes. */
 .section-head {
@@ -121,6 +95,12 @@
   margin-bottom: 0;
 }
 
+/* Always visible, deliberately not the reveal-on-hover pattern it had.
+   Linear can hide row actions because they are secondary affordances on
+   rows you already understand; adding a source is one of the two things
+   this app is for, and the first thing someone with an empty sidebar
+   needs. An invisible primary action reads as a missing one — it was
+   reported as missing twice. */
 .section-add {
   display: inline-flex;
   align-items: center;
@@ -129,22 +109,18 @@
   height: 20px;
   flex-shrink: 0;
   padding: 0;
-  border: none;
+  border: 1px solid var(--border);
   background: none;
   border-radius: var(--radius-sm);
-  color: var(--text-faint);
+  color: var(--text-muted);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.section-head:hover .section-add,
-.section-add:focus-visible {
-  opacity: 1;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
 }
 
 .section-add:hover {
-  background: var(--surface-sunken);
+  border-color: var(--accent);
   color: var(--text);
 }
 
@@ -185,12 +161,17 @@
   padding: 0 8px;
 }
 
+/* flex: 1, not width: 100%. With a full width and flex-shrink: 0 this
+   label took the whole row and refused to give any of it back, so the
+   "+" beside it was pushed outside .section-head and clipped by the
+   rail's overflow: hidden. That is why the add button was reported
+   missing a third time — it was rendering, off the edge of the panel. */
 .section-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   padding: 4px 8px 4px 4px;
   margin: 0;
   border: none;
@@ -241,8 +222,10 @@
   display: none;
 }
 
-/* Row actions appear on hover, the way Linear reveals them, so a list at
-   rest is just names. */
+/* Not hidden until hover: this button only renders for sources that are
+   pending or failed, which is exactly when something needs doing.
+   Hiding the remedy for a state that wants attention defeats the point
+   of showing the state. */
 .row-btn {
   border: none;
   background: none;
@@ -251,16 +234,10 @@
   height: 16px;
   line-height: 1;
   font-size: var(--text-sm);
-  color: var(--text-faint);
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
-  opacity: 0;
-}
-
-.source:hover .row-btn,
-.row-btn:focus-visible {
-  opacity: 1;
 }
 
 .row-btn:hover:not(:disabled) {
@@ -287,4 +264,27 @@
 
 .dot.off {
   background: var(--border-strong);
+}
+
+/* With no sources at all, the empty state is the call to action rather
+   than a sentence describing one. */
+.empty-action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 2px 0 6px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.empty-action:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
