@@ -81,7 +81,7 @@
           class="icon-btn"
           [title]="'Theme: ' + themeLabel()"
           [attr.aria-label]="'Theme: ' + themeLabel()"
-          (click)="theme.next()"
+          (click)="theme.toggle()"
         >
           @switch (theme.preference()) {
             @case ('light') {
@@ -224,35 +224,26 @@
           <button
             type="button"
             class="icon-btn small"
-            [title]="'Theme: ' + themeLabel()"
-            [attr.aria-label]="'Theme: ' + themeLabel()"
-            (click)="theme.next()"
+            [title]="themeLabel()"
+            [attr.aria-label]="themeLabel()"
+            (click)="theme.toggle()"
           >
-            @switch (theme.preference()) {
-              @case ('light') {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="4.2" />
-                  <line x1="12" y1="2.5" x2="12" y2="5" />
-                  <line x1="12" y1="19" x2="12" y2="21.5" />
-                  <line x1="2.5" y1="12" x2="5" y2="12" />
-                  <line x1="19" y1="12" x2="21.5" y2="12" />
-                  <line x1="5.4" y1="5.4" x2="7.1" y2="7.1" />
-                  <line x1="16.9" y1="16.9" x2="18.6" y2="18.6" />
-                  <line x1="5.4" y1="18.6" x2="7.1" y2="16.9" />
-                  <line x1="16.9" y1="7.1" x2="18.6" y2="5.4" />
-                </svg>
-              }
-              @case ('dark') {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
-                </svg>
-              }
-              @default {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="3" y="4.5" width="18" height="12.5" rx="1.5" />
-                  <line x1="9" y1="20" x2="15" y2="20" />
-                </svg>
-              }
+            @if (theme.preference() === 'light') {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2" />
+                <line x1="12" y1="2.5" x2="12" y2="5" />
+                <line x1="12" y1="19" x2="12" y2="21.5" />
+                <line x1="2.5" y1="12" x2="5" y2="12" />
+                <line x1="19" y1="12" x2="21.5" y2="12" />
+                <line x1="5.4" y1="5.4" x2="7.1" y2="7.1" />
+                <line x1="16.9" y1="16.9" x2="18.6" y2="18.6" />
+                <line x1="5.4" y1="18.6" x2="7.1" y2="16.9" />
+                <line x1="16.9" y1="7.1" x2="18.6" y2="5.4" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+              </svg>
             }
           </button>
           <button

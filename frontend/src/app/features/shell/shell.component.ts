@@ -129,8 +129,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     return source.chunk_count > 0 && source.embedded_chunk_count < source.chunk_count;
   }
 
-
-
   /** A "pending" source has no way forward from the UI otherwise — the
    * sync endpoint existed from the start but nothing ever called it
    * outside the add-source flow. */
@@ -242,11 +240,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     return (this.auth.currentUser()?.username ?? '?').charAt(0).toUpperCase();
   }
 
+  /** Names the destination, not the current state: a control should say
+   * what it will do. */
   protected themeLabel(): string {
-    const value = this.theme.preference();
-    if (value === 'light') return 'Light';
-    if (value === 'dark') return 'Dark';
-    return 'System';
+    return this.theme.preference() === 'dark' ? 'Switch to light' : 'Switch to dark';
   }
 
   protected async retryLoad(): Promise<void> {
