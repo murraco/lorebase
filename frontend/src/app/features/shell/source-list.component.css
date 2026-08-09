@@ -276,3 +276,15 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* Off sources stay listed — they are still indexed and still browsable —
+   but dimmed, so the list keeps telling the truth about what exists
+   without implying it is all being searched. */
+.source.off .name,
+.source.off .status-label {
+  opacity: 0.5;
+}
+
+.dot.off {
+  background: var(--border-strong);
+}

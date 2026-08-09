@@ -30,7 +30,7 @@
 
   <div class="rows">
     @for (source of sources(); track source.id) {
-      <div class="source">
+      <div class="source" [class.off]="!source.enabled">
         <a
           class="source-text"
           [routerLink]="['/corpus']"
@@ -43,7 +43,13 @@
             <span class="status-label">{{ label }}</span>
           }
         </a>
-        <span class="dot" [class]="source.status" [class.working]="isInFlight(source)"></span>
+        <span
+          class="dot"
+          [class]="source.status"
+          [class.working]="isInFlight(source)"
+          [class.off]="!source.enabled"
+          [title]="source.enabled ? sourceTitle(source) : 'Not used for answers'"
+        ></span>
         @if (source.status === 'pending' || source.status === 'error') {
           <button
             type="button"
@@ -56,15 +62,6 @@
             ⟳
           </button>
         }
-        <button
-          type="button"
-          class="row-btn danger"
-          title="Delete source"
-          aria-label="Delete source"
-          (click)="remove.emit(source)"
-        >
-          ×
-        </button>
       </div>
     } @empty {
       @if (loading()) {

@@ -23,7 +23,6 @@ export class SourceListComponent {
   readonly toggled = output<void>();
   readonly add = output<void>();
   readonly sync = output<Source>();
-  readonly remove = output<Source>();
   readonly navigated = output<void>();
 
   /** "pending" is deliberately not in flight: it means the source was
@@ -40,11 +39,19 @@ export class SourceListComponent {
     return Math.floor((source.embedded_chunk_count / source.chunk_count) * 100);
   }
 
+  /** Off is the state worth saying in words: it is a choice someone
+   * made, unlike the transient ones, and nothing else on the row
+   * explains why a source is greyed out. */
   protected statusLabel(source: Source): string | null {
+    if (!source.enabled) return 'Not used for answers';
     if (source.status === 'error') return 'Failed';
     if (source.status === 'pending') return 'Not synced yet';
     if (source.status === 'syncing') return 'Syncing…';
     const progress = this.embeddingProgress(source);
     return progress === null ? null : `Indexing ${progress}%`;
+  }
+
+  protected sourceTitle(source: Source): string {
+    return `${source.embedded_chunk_count} of ${source.chunk_count} chunks indexed`;
   }
 }

@@ -68,7 +68,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly showAddSourceModal = signal(false);
   protected readonly showSystemStatus = signal(false);
   protected readonly syncingSourceId = signal<string | null>(null);
-  protected readonly sourcePendingDeletion = signal<Source | null>(null);
   protected readonly conversationPendingDeletion = signal<Conversation | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
@@ -145,20 +144,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected async confirmDelete(): Promise<void> {
-    const source = this.sourcePendingDeletion();
-    if (!source) return;
-    this.deleteError.set(null);
-    this.deleting.set(true);
-    try {
-      await this.sourcesService.delete(source.id);
-      this.sourcePendingDeletion.set(null);
-    } catch (err) {
-      this.deleteError.set(err instanceof Error ? err.message : 'Failed to delete source.');
-    } finally {
-      this.deleting.set(false);
-    }
-  }
 
   protected async confirmDeleteConversation(): Promise<void> {
     const conversation = this.conversationPendingDeletion();
@@ -181,7 +166,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   protected cancelDelete(): void {
-    this.sourcePendingDeletion.set(null);
     this.conversationPendingDeletion.set(null);
     this.deleteError.set(null);
   }

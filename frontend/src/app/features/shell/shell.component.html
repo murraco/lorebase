@@ -143,7 +143,6 @@
         (toggled)="toggleSection('sources')"
         (add)="showAddSourceModal.set(true)"
         (sync)="syncSource($event)"
-        (remove)="sourcePendingDeletion.set($event)"
         (navigated)="closeDrawerIfNarrow()"
       />
 
@@ -278,16 +277,6 @@
   <lorebase-system-status-modal (closed)="showSystemStatus.set(false)" />
 }
 
-@if (sourcePendingDeletion(); as source) {
-  <lorebase-confirm-dialog
-    [title]="'Delete “' + source.name + '”?'"
-    message="This removes the source and everything indexed from it. Your original files are not touched."
-    [busy]="deleting()"
-    [error]="deleteError()"
-    (confirmed)="confirmDelete()"
-    (cancelled)="cancelDelete()"
-  />
-}
 
 @if (conversationPendingDeletion(); as conversation) {
   <lorebase-confirm-dialog
