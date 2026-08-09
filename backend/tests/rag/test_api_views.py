@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 from core.factories import MembershipFactory, WorkspaceFactory
 from ingestion.factories import ChunkFactory
 from rag.factories import ConversationFactory
-from rag.llm.base import ToolCallResult
+from rag.llm.base import LLMProviderUnavailableError, ToolCallResult
 from rag.llm.factory import get_llm_provider
 from rag.models import Citation, Conversation, Message
 from rag.retrieval.base import RetrievalResult
@@ -216,3 +216,42 @@ def test_deleting_a_conversation_leaves_the_cited_chunks_alone() -> None:
 
     chunk.refresh_from_db()
     assert chunk.pk is not None
+
+
+def test_chat_returns_503_when_the_model_is_unavailable() -> None:
+    """503, not 500: the request was fine, the dependency was not — and
+    that distinction is what tells the client retrying is worthwhile.
+    """
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+
+    with patch(
+        "rag.chat.views.stream_chat_response",
+        side_effect=LLMProviderUnavailableError("rate limited"),
+    ):
+        response = _authed_client(membership.user).post(
+            f"/api/conversations/{conversation.id}/chat/",
+            json.dumps({"question": "hello"}),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 503
+    assert "try again" in response.json()["detail"].lower()
+
+
+def test_chat_returns_500_for_an_unexpected_failure() -> None:
+    """An unexpected error is a bug, and telling the user to retry would
+    send them round a loop that cannot succeed.
+    """
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+
+    with patch("rag.chat.views.stream_chat_response", side_effect=ValueError("boom")):
+        response = _authed_client(membership.user).post(
+            f"/api/conversations/{conversation.id}/chat/",
+            json.dumps({"question": "hello"}),
+            content_type="application/json",
+        )
+
+    assert response.status_code == 500
+    assert "try again" not in response.json()["detail"].lower()

@@ -1,7 +1,24 @@
 import anthropic
 from django.conf import settings
 
-from rag.llm.base import ChatResult, LLMProvider, ToolCallResult, ToolSpec
+from rag.llm.base import (
+    ChatResult,
+    LLMProvider,
+    LLMProviderUnavailableError,
+    ToolCallResult,
+    ToolSpec,
+)
+
+# Rate limits, timeouts and upstream failures — everything that is worth
+# retrying rather than fixing. InvalidRequestError is deliberately absent:
+# a malformed request is a bug here, and hiding it behind "try again"
+# would waste the user's time on something that will never succeed.
+_UNAVAILABLE = (
+    anthropic.RateLimitError,
+    anthropic.APITimeoutError,
+    anthropic.APIConnectionError,
+    anthropic.InternalServerError,
+)
 
 _CHAT_MAX_TOKENS = 1024
 _TOOL_CALL_MAX_TOKENS = 2048
@@ -13,12 +30,15 @@ class AnthropicProvider(LLMProvider):
         self._model = settings.LLM_MODEL
 
     def chat(self, *, system: str, messages: list[dict[str, str]]) -> ChatResult:
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=_CHAT_MAX_TOKENS,
-            system=system,
-            messages=messages,  # type: ignore[arg-type]
-        )
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=_CHAT_MAX_TOKENS,
+                system=system,
+                messages=messages,  # type: ignore[arg-type]
+            )
+        except _UNAVAILABLE as exc:
+            raise LLMProviderUnavailableError(str(exc)) from exc
         text = "".join(block.text for block in response.content if block.type == "text")
         return ChatResult(
             text=text,
@@ -29,23 +49,34 @@ class AnthropicProvider(LLMProvider):
     def stream_tool(
         self, *, system: str, messages: list[dict[str, str]], tool: ToolSpec
     ) -> ToolCallResult:
-        with self._client.messages.stream(
-            model=self._model,
-            max_tokens=_TOOL_CALL_MAX_TOKENS,
-            system=system,
-            messages=messages,  # type: ignore[arg-type]
-            tools=[
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "input_schema": tool.input_schema,
-                }
-            ],
-            tool_choice={"type": "tool", "name": tool.name},
-        ) as stream:
-            final_message = stream.get_final_message()
+        try:
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=_TOOL_CALL_MAX_TOKENS,
+                system=system,
+                messages=messages,  # type: ignore[arg-type]
+                tools=[
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "input_schema": tool.input_schema,
+                    }
+                ],
+                tool_choice={"type": "tool", "name": tool.name},
+            ) as stream:
+                final_message = stream.get_final_message()
+        except _UNAVAILABLE as exc:
+            raise LLMProviderUnavailableError(str(exc)) from exc
 
-        tool_use_block = next(block for block in final_message.content if block.type == "tool_use")
+        # tool_choice forces the tool, so a response without a tool_use
+        # block means the model returned something the contract does not
+        # allow. Surfaced as unavailable rather than crashing on
+        # StopIteration, which told the user nothing.
+        tool_use_block = next(
+            (block for block in final_message.content if block.type == "tool_use"), None
+        )
+        if tool_use_block is None:
+            raise LLMProviderUnavailableError("The model returned no answer in the expected form.")
         return ToolCallResult(
             output=tool_use_block.input,
             input_tokens=final_message.usage.input_tokens,

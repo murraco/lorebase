@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import cast
 
 from django.contrib.auth.decorators import login_required
@@ -12,7 +13,11 @@ from django.views.decorators.http import require_POST
 
 from core.models import User
 from rag.chat.streaming import stream_chat_response
+from rag.embeddings.base import EmbeddingProviderUnavailableError
+from rag.llm.base import LLMProviderUnavailableError
 from rag.models import Conversation
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -38,4 +43,24 @@ def chat_stream_view(request: HttpRequest, conversation_id: str) -> HttpResponse
     except (json.JSONDecodeError, KeyError):
         return HttpResponseBadRequest("Expected a JSON body with a 'question' field.")
 
-    return stream_chat_response(conversation, question)
+    # ask() runs to completion before the first byte is streamed, so a
+    # provider failure surfaces here rather than mid-response. That is
+    # what makes a clean status code possible at all: once bytes are on
+    # the wire the status is already sent and an error can only be an
+    # abrupt truncation.
+    try:
+        return stream_chat_response(conversation, question)
+    except (LLMProviderUnavailableError, EmbeddingProviderUnavailableError) as exc:
+        # 503, not 500: the request was fine, the dependency was not, and
+        # the distinction is what tells the client retrying is worthwhile.
+        logger.warning("Chat turn failed, provider unavailable: %s", exc)
+        return JsonResponse(
+            {"detail": "The model is unavailable right now. Try again in a moment."},
+            status=503,
+        )
+    except Exception:
+        logger.exception("Chat turn failed unexpectedly")
+        return JsonResponse(
+            {"detail": "Something went wrong answering that."},
+            status=500,
+        )

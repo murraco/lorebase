@@ -3,6 +3,18 @@ from dataclasses import dataclass
 from typing import Any
 
 
+class LLMProviderUnavailableError(Exception):
+    """The model could not be reached or refused the request for a reason
+    that is not the caller's fault: rate limit, timeout, upstream outage.
+
+    Same shape as RerankerUnavailableError and
+    EmbeddingProviderUnavailableError — a provider-agnostic type callers
+    can catch without importing a vendor SDK. Distinguished from an
+    unexpected bug on purpose: one is worth telling the user to retry,
+    the other is worth fixing.
+    """
+
+
 @dataclass
 class ChatResult:
     text: str
