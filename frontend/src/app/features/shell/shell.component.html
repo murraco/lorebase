@@ -83,13 +83,33 @@
           [attr.aria-label]="'Theme: ' + themeLabel()"
           (click)="theme.next()"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="4.5" />
-            <line x1="12" y1="2.5" x2="12" y2="5" />
-            <line x1="12" y1="19" x2="12" y2="21.5" />
-            <line x1="2.5" y1="12" x2="5" y2="12" />
-            <line x1="19" y1="12" x2="21.5" y2="12" />
-          </svg>
+          @switch (theme.preference()) {
+            @case ('light') {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2" />
+                <line x1="12" y1="2.5" x2="12" y2="5" />
+                <line x1="12" y1="19" x2="12" y2="21.5" />
+                <line x1="2.5" y1="12" x2="5" y2="12" />
+                <line x1="19" y1="12" x2="21.5" y2="12" />
+                <line x1="5.4" y1="5.4" x2="7.1" y2="7.1" />
+                <line x1="16.9" y1="16.9" x2="18.6" y2="18.6" />
+                <line x1="5.4" y1="18.6" x2="7.1" y2="16.9" />
+                <line x1="16.9" y1="7.1" x2="18.6" y2="5.4" />
+              </svg>
+            }
+            @case ('dark') {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+              </svg>
+            }
+            @default {
+              <!-- System: a display, i.e. "whatever the machine says". -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="4.5" width="18" height="12.5" rx="1.5" />
+                <line x1="9" y1="20" x2="15" y2="20" />
+              </svg>
+            }
+          }
         </button>
         <button
           type="button"
@@ -181,6 +201,11 @@
       >
         Corpus
       </a>
+      <!-- Was buried among the footer links. It reports on the whole
+           system, so it belongs with the primary destinations. -->
+      <button type="button" class="corpus-link as-button" (click)="showSystemStatus.set(true)">
+        System status
+      </button>
 
       <div class="conversations" [class.folded]="isSectionCollapsed('conversations')">
         <button
@@ -234,8 +259,39 @@
       <div class="rail-footer">
         <p class="username">{{ auth.currentUser()?.username }}</p>
         <div class="footer-actions">
-          <button class="link-btn" (click)="theme.next()">Theme: {{ themeLabel() }}</button>
-          <button class="link-btn" (click)="showSystemStatus.set(true)">Status</button>
+          <button
+            class="link-btn theme-btn"
+            [title]="'Theme: ' + themeLabel()"
+            (click)="theme.next()"
+          >
+            @switch (theme.preference()) {
+              @case ('light') {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4.2" />
+                  <line x1="12" y1="2.5" x2="12" y2="5" />
+                  <line x1="12" y1="19" x2="12" y2="21.5" />
+                  <line x1="2.5" y1="12" x2="5" y2="12" />
+                  <line x1="19" y1="12" x2="21.5" y2="12" />
+                  <line x1="5.4" y1="5.4" x2="7.1" y2="7.1" />
+                  <line x1="16.9" y1="16.9" x2="18.6" y2="18.6" />
+                  <line x1="5.4" y1="18.6" x2="7.1" y2="16.9" />
+                  <line x1="16.9" y1="7.1" x2="18.6" y2="5.4" />
+                </svg>
+              }
+              @case ('dark') {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+                </svg>
+              }
+              @default {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4.5" width="18" height="12.5" rx="1.5" />
+                  <line x1="9" y1="20" x2="15" y2="20" />
+                </svg>
+              }
+            }
+            {{ themeLabel() }}
+          </button>
           <button class="link-btn" (click)="logout()">Sign out</button>
         </div>
       </div>

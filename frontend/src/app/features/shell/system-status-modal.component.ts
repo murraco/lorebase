@@ -27,6 +27,22 @@ export class SystemStatusModalComponent implements OnInit {
     }
   }
 
+  /** Share of answers that cited nothing. Null when nothing has been
+   * asked yet, so the panel shows a dash rather than a misleading 0%. */
+  protected ungroundedPercent(status: SystemStatus): number | null {
+    if (status.answers === 0) return null;
+    return Math.round((status.ungrounded_answers / status.answers) * 100);
+  }
+
+  protected averageChunksPerDocument(status: SystemStatus): number | null {
+    if (status.documents === 0) return null;
+    return Math.round(status.chunks / status.documents);
+  }
+
+  protected latencySeconds(ms: number | null | undefined): string | null {
+    return ms === null || ms === undefined ? null : `${(ms / 1000).toFixed(1)}s`;
+  }
+
   /** Percentage of indexed chunks that have an embedding. Anything below
    * 100 means retrieval is running on partial data. */
   protected embeddedPercent(status: SystemStatus): number {

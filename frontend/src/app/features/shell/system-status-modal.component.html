@@ -15,6 +15,37 @@
       </p>
     }
 
+    <!-- Answer quality first: it is the number that says whether the
+         system is doing its job, and nothing surfaced it before. -->
+    <p class="section-label">Answer quality</p>
+    <dl class="rows">
+      <dt>Answers</dt>
+      <dd>
+        <span class="value">{{ s.answers }}</span>
+      </dd>
+
+      <dt>Ungrounded</dt>
+      <dd>
+        <span class="value" [class.bad]="s.ungrounded_answers > 0">{{ s.ungrounded_answers }}</span>
+        @if (ungroundedPercent(s); as pct) {
+          <span class="tag" [class.red]="s.ungrounded_answers > 0">{{ pct }}%</span>
+        }
+        <span class="muted">cited no source</span>
+      </dd>
+
+      <dt>Sources cited</dt>
+      <dd>
+        <span class="value">{{ s.avg_citations_per_answer ?? '—' }}</span>
+        <span class="muted">per answer, on average</span>
+      </dd>
+
+      <dt>Latency</dt>
+      <dd>
+        <span class="value">{{ latencySeconds(s.avg_latency_ms) ?? '—' }}</span>
+        <span class="muted">mean time to answer</span>
+      </dd>
+    </dl>
+
     <p class="section-label">Models in use</p>
     <dl class="rows">
       <dt>Embeddings</dt>
@@ -65,6 +96,12 @@
         <span [class]="embeddedPercent(s) === 100 ? 'muted' : 'tag amber'">
           {{ embeddedPercent(s) }}%
         </span>
+      </dd>
+
+      <dt>Avg chunk</dt>
+      <dd>
+        <span class="value">{{ averageChunksPerDocument(s) ?? '—' }}</span>
+        <span class="muted">chunks per document</span>
       </dd>
     </dl>
 

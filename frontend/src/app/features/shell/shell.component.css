@@ -302,6 +302,7 @@
 /* Capped so a long source list can't squeeze the conversations out;
    past that it scrolls on its own. */
 .sources {
+  scrollbar-gutter: stable;
   flex: 0 1 auto;
   min-height: 0;
   max-height: 45%;
@@ -312,6 +313,7 @@
    height so "Sign out" stays visible no matter how many conversations
    exist. */
 .conversations {
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -542,7 +544,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 30;
+    z-index: var(--z-drawer);
     width: 268px;
     transform: translateX(-100%);
     transition: transform 180ms ease;
@@ -572,7 +574,7 @@
   position: fixed;
   top: 12px;
   left: 12px;
-  z-index: 20;
+  z-index: var(--z-sticky);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -601,9 +603,25 @@
 .drawer-scrim {
   position: fixed;
   inset: 0;
-  z-index: 25;
+  z-index: var(--z-scrim);
   background: var(--overlay);
   border: none;
   padding: 0;
   cursor: default;
+}
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.theme-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

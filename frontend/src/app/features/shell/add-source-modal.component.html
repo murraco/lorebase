@@ -3,6 +3,14 @@
     <h3>Add source</h3>
 
     @if (step() === 'browse') {
+      <!-- Says what is being browsed, because it is not obvious and the
+           obvious guess is wrong: this is the server's filesystem, not
+           your machine's. A web page cannot hand a server a host path,
+           so a folder only appears here once it is mounted. -->
+      <p class="scope">
+        Browsing the folders Lorebase can reach. To index somewhere else, mount it with
+        <code>LOREBASE_NOTES_DIR</code>.
+      </p>
       <p class="breadcrumb">/{{ listing()?.path }}</p>
 
       <div class="listing">
