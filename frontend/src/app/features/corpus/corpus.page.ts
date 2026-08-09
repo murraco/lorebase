@@ -2,8 +2,9 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import type { IndexedChunk, SourceDocument } from '../../core/models';
+import type { IndexedChunk, Source, SourceDocument } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
+import { ConfirmDialogComponent } from '../shell/confirm-dialog.component';
 
 /** Browse what was actually indexed: source → document → chunks.
  *
@@ -15,6 +16,7 @@ import { SourcesService } from '../../core/sources/sources.service';
  */
 @Component({
   selector: 'lorebase-corpus-page',
+  imports: [ConfirmDialogComponent],
   templateUrl: './corpus.page.html',
   styleUrl: './corpus.page.css',
 })
@@ -120,6 +122,49 @@ export class CorpusPage implements OnInit {
    * which reads as "nothing happened". The delay is honesty about an
    * action whose effect is not immediately visible, not decoration. */
   private static readonly MIN_SYNC_FEEDBACK_MS = 1200;
+
+  protected readonly pendingDeletion = signal<Source | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
+
+  /** Deletion lives here rather than in the sidebar because this is the
+   * screen that shows what it would take with it — the documents, the
+   * chunks, and the citations in past answers that point at them. */
+  protected async confirmDelete(): Promise<void> {
+    const source = this.pendingDeletion();
+    if (!source) return;
+    this.deleteError.set(null);
+    this.deleting.set(true);
+    try {
+      await this.sourcesService.delete(source.id);
+      this.pendingDeletion.set(null);
+      this.documents.set([]);
+      this.chunks.set([]);
+      const next = this.sourcesService.sources()[0];
+      if (next) {
+        await this.openSource(next.id);
+      } else {
+        this.selectedSourceId.set(null);
+      }
+    } catch (err) {
+      this.deleteError.set(err instanceof Error ? err.message : 'Failed to delete source.');
+    } finally {
+      this.deleting.set(false);
+    }
+  }
+
+  /** Says what is actually lost. The generic "your files are not
+   * touched" was true about the files and misleading about everything
+   * else: citations point at chunks, and chunks go with the source. */
+  protected deletionWarning(source: Source): string {
+    const chunks = source.chunk_count;
+    const scale = chunks > 0 ? `its ${chunks} indexed chunks` : 'anything indexed from it';
+    return (
+      `This removes the source and ${scale}. Answers that cited it keep their text ` +
+      `but lose those citations. Your original files are not touched. ` +
+      `To stop using it for answers without losing any of this, turn it off instead.`
+    );
+  }
 
   protected async toggleEnabled(): Promise<void> {
     const source = this.selectedSource();

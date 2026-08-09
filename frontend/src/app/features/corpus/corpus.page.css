@@ -450,3 +450,19 @@
   border-color: var(--accent);
   color: var(--text);
 }
+
+.source-actions .danger-btn {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.source-actions .danger-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

@@ -32,6 +32,14 @@
         </button>
         <button
           type="button"
+          class="danger-btn"
+          title="Delete source"
+          (click)="pendingDeletion.set(source)"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
           class="sync"
           [disabled]="syncing() || source.status === 'syncing'"
           (click)="syncSelected()"
@@ -173,3 +181,14 @@
     </section>
   </div>
 </div>
+
+@if (pendingDeletion(); as source) {
+  <lorebase-confirm-dialog
+    [title]="'Delete “' + source.name + '”?'"
+    [message]="deletionWarning(source)"
+    [busy]="deleting()"
+    [error]="deleteError()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="pendingDeletion.set(null)"
+  />
+}
