@@ -4,6 +4,7 @@ from uuid import UUID
 from rag.reranking.base import RerankerUnavailableError
 from rag.reranking.factory import get_reranker
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
+from rag.retrieval.tracing import traced_search
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class RerankingRetriever(Retriever):
         self._inner = inner
         self._fetch_k = fetch_k
 
+    @traced_search
     def search(
         self,
         query: str,

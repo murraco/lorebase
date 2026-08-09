@@ -6,6 +6,7 @@ from django.db.models import F
 from ingestion.models import Chunk
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
 from rag.retrieval.filtering import apply_filters
+from rag.retrieval.tracing import traced_search
 
 
 class LexicalRetriever(Retriever):
@@ -20,6 +21,7 @@ class LexicalRetriever(Retriever):
     together, not just present.
     """
 
+    @traced_search
     def search(
         self,
         query: str,

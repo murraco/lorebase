@@ -5,6 +5,7 @@ from ingestion.models import Chunk
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
 from rag.retrieval.dense import DenseRetriever
 from rag.retrieval.lexical import LexicalRetriever
+from rag.retrieval.tracing import traced_search
 
 # The constant from the original paper, now a de facto industry default.
 RRF_K = 60
@@ -25,6 +26,7 @@ class HybridRetriever(Retriever):
         self._dense = DenseRetriever()
         self._fetch_k = fetch_k
 
+    @traced_search
     def search(
         self,
         query: str,

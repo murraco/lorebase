@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from uuid import UUID
 
 from django.db import transaction
+from opentelemetry import trace
 
 from ingestion.chunking.base import ChunkData
 from ingestion.chunking.heading import HeadingChunker
@@ -11,6 +12,7 @@ from ingestion.parsers.pdf import extract_pdf_pages
 from sources.models import Document
 
 _chunker = HeadingChunker()
+_tracer = trace.get_tracer("lorebase.ingestion")
 
 
 @transaction.atomic
@@ -33,28 +35,33 @@ def process_document(
     flat journal file using bare timestamp lines, say) otherwise parses as
     one giant headingless section, chunked blindly by token budget alone.
     """
-    parser = MarkdownParser(extra_boundary_pattern=section_boundary_pattern)
-    if binary is not None:
-        chunks_data = _chunk_pdf(binary, parser)
-    else:
-        assert text is not None, "process_document needs either text or binary"
-        sections = parser.parse(text)
-        chunks_data = _chunker.chunk(text, sections)
+    with _tracer.start_as_current_span("ingestion.process_document") as span:
+        span.set_attribute("document.id", str(document.id))
+        span.set_attribute("document.format", "pdf" if binary is not None else "markdown")
 
-    document.chunks.all().delete()
-    Chunk.objects.bulk_create(
-        Chunk(
-            document=document,
-            index=i,
-            content=chunk.content,
-            heading_path=" > ".join(chunk.heading_path),
-            start_line=chunk.start_line,
-            end_line=chunk.end_line,
-            token_count=chunk.token_count,
-            metadata=chunk.metadata,
+        parser = MarkdownParser(extra_boundary_pattern=section_boundary_pattern)
+        if binary is not None:
+            chunks_data = _chunk_pdf(binary, parser)
+        else:
+            assert text is not None, "process_document needs either text or binary"
+            sections = parser.parse(text)
+            chunks_data = _chunker.chunk(text, sections)
+
+        document.chunks.all().delete()
+        Chunk.objects.bulk_create(
+            Chunk(
+                document=document,
+                index=i,
+                content=chunk.content,
+                heading_path=" > ".join(chunk.heading_path),
+                start_line=chunk.start_line,
+                end_line=chunk.end_line,
+                token_count=chunk.token_count,
+                metadata=chunk.metadata,
+            )
+            for i, chunk in enumerate(chunks_data)
         )
-        for i, chunk in enumerate(chunks_data)
-    )
+        span.set_attribute("ingestion.chunks_created", len(chunks_data))
 
 
 def _chunk_pdf(binary: bytes, parser: MarkdownParser) -> list[ChunkData]:

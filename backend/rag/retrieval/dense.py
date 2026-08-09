@@ -6,6 +6,7 @@ from ingestion.models import Chunk
 from rag.embeddings.factory import get_embedding_provider
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
 from rag.retrieval.filtering import apply_filters
+from rag.retrieval.tracing import traced_search
 
 
 class DenseRetriever(Retriever):
@@ -15,6 +16,7 @@ class DenseRetriever(Retriever):
     exact words with the query.
     """
 
+    @traced_search
     def search(
         self,
         query: str,

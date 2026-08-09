@@ -4,6 +4,7 @@ from uuid import UUID
 from ingestion.models import Chunk
 from rag.retrieval.base import RetrievalFilters, RetrievalResult, Retriever
 from rag.retrieval.filtering import apply_filters
+from rag.retrieval.tracing import traced_search
 
 _ISO_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 
@@ -35,6 +36,7 @@ class DateAwareRetriever(Retriever):
     def __init__(self, inner: Retriever) -> None:
         self._inner = inner
 
+    @traced_search
     def search(
         self,
         query: str,
