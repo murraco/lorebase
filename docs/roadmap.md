@@ -28,7 +28,8 @@
 | — Trabajo posterior no planificado | 🔄 En curso (ver abajo) |
 | 14 — Conector de GitHub | ✅ Hecha |
 | 15 — Feedback y dashboard | ✅ Hecha |
-| 16 en adelante | Pendiente |
+| 16 — Observabilidad y evaluación | ✅ Hecha |
+| 17 en adelante | Pendiente |
 
 Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
 ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
@@ -814,7 +815,7 @@ solo en verde.
 
 ---
 
-#### Etapa 16 — Observabilidad y evaluación
+#### Etapa 16 — Observabilidad y evaluación ✅
 
 **Objetivo:** poder medir si un cambio en el retrieval mejora o empeora, en vez de suponerlo.
 
@@ -829,7 +830,7 @@ solo en verde.
 **Dependencias:** Etapa 15.
 **Hecho cuando:** `manage.py evaluate` da un score reproducible; un cambio en chunking o en pesos del RRF se puede comparar objetivamente contra el baseline.
 
-**Notas de la implementación real (Tareas 1 y 2, en curso):**
+**Notas de la implementación real:**
 - **Un solo decorador (`@traced_search`, `rag/retrieval/tracing.py`) instrumenta las cinco clases `Retriever`**, no un bloque de tracing central: como `DateAwareRetriever`/`RerankingRetriever`/`HybridRetriever` envuelven retrievers internos y todos comparten la firma `search()`, decorar cada clase produce un árbol de spans anidado automáticamente, sin que ninguna clase sepa de las demás.
 - **Atributos de span para el LLM usan las convenciones semánticas oficiales de OpenTelemetry para IA generativa** (`gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`/`output_tokens`, del paquete `opentelemetry-semantic-conventions`, aún `_incubating`) en vez de nombres propios — así el backend de observabilidad es intercambiable sin tocar el código de instrumentación. `lorebase.cost_usd` es la única excepción (no existe aún en las convenciones estándar), y solo se setea cuando `_estimate_cost()` devuelve un valor real — nunca `0.0` cuando el costo no está configurado, para no disfrazar "desconocido" de "gratis".
 - **Se evaluó Langfuse v2 (self-hosted) como alternativa a Cloud y se descartó tras investigar, no a priori**: v2 solo necesita `web` + `worker` + Postgres (liviano, comparado con los 6 servicios de v3), pero (a) no soporta ingestion OTLP en absoluto — el endpoint `/api/public/otel` se agregó recién en v3.22.0, así que v2 hubiera obligado a re-integrar con el SDK propietario de Langfuse en vez del estándar OTel ya construido — y (b) dejó de recibir parches de seguridad a fines de Q1 2025. Se optó por **Langfuse Cloud (free tier, región US)**, cero infraestructura nueva y compatible con el trabajo OTel ya hecho.
@@ -845,7 +846,24 @@ solo en verde.
 - **Cada pregunta del golden set corre en su propia `Conversation`, borrada inmediatamente después**: son samples de un solo turno independientes, no un hilo — y persistirlas de verdad mezclaría tráfico sintético de evaluación con las métricas reales del dashboard (costo, latencia, volumen de queries) que arma `analytics/metrics.py`.
 - **Hit-rate determinístico + las 4 métricas de RAGAS son señales complementarias, no redundantes**: el primero es barato (sin LLM juez) y exacto (¿el documento/heading esperado apareció entre los retrieved?); las métricas de RAGAS son más caras pero más matizadas. El reporte JSON guarda ambos, por pregunta y agregados, para que dos corridas se puedan diffear directamente.
 - **Verificado en vivo con `--limit 3` contra el golden set real** (no solo con mocks): hit-rate 3/3, `context_precision≈1.0`, `context_recall=1.0`, `faithfulness=0.94`, `answer_relevancy=0.94`.
-- **La corrida completa (30/30) reveló que el chequeo de hit-rate original (`expected_document` + `expected_heading`) daba falsos negativos** (26/30 en la primera corrida): las 4 preguntas "falladas" tenían `context_recall` alto según RAGAS, o sea que el contenido correcto sí se había recuperado. Causas reales, verificadas re-consultando el retrieval directamente para cada una: (a) la misma historia contada en dos secciones del documento (`Features` técnico vs. `Stories` para entrevistas); (b) el heading esperado estaba en inglés pero el chunk recuperado venía de `career_notes_es` con su heading traducido; (c) una sección corta (`What is missing`) fusionada por el chunker con su padre (`Performance`), perdiendo el heading hijo. Las tres son limitaciones del golden set, no del pipeline — confirmado por los scores de RAGAS antes de tocar nada. Fix: el chequeo de hit-rate ahora solo valida `expected_document` (ya preparado para ser cross-lingual); `expected_heading` queda en el JSON como procedencia legible, no como gate. **Baseline real y honesto, guardado en `backend/rag/evaluation/reports/baseline.json`**: hit-rate 30/30, `context_precision=0.809`, `context_recall=0.900`, `faithfulness=0.906`, `answer_relevancy=0.887`.
+- **La corrida completa (30/30) reveló que el chequeo de hit-rate original (`expected_document` + `expected_heading`) daba falsos negativos** (26/30 en la primera corrida): las 4 preguntas "falladas" tenían `context_recall` alto según RAGAS, o sea que el contenido correcto sí se había recuperado. Causas reales, verificadas re-consultando el retrieval directamente para cada una: (a) la misma historia contada en dos secciones del documento (`Features` técnico vs. `Stories` para entrevistas); (b) el heading esperado estaba en inglés pero el chunk recuperado venía de `career_notes_es` con su heading traducido; (c) una sección corta (`What is missing`) fusionada por el chunker con su padre (`Performance`), perdiendo el heading hijo. Las tres son limitaciones del golden set, no del pipeline — confirmado por los scores de RAGAS antes de tocar nada. Fix: el chequeo de hit-rate ahora solo valida `expected_document` (ya preparado para ser cross-lingual); `expected_heading` queda en el JSON como procedencia legible, no como gate.
+- **Retrieval agéntico (Tarea 6) necesitó una capacidad nueva en `LLMProvider`**: `stream_tool()` fuerza *una* herramienta específica (`tool_choice={"type": "tool", "name": ...}`), lo cual es exactamente lo opuesto de lo que hace falta para que el modelo elija entre buscar de nuevo o responder. Se agregó `stream_tools()` (plural), con `tool_choice={"type": "any", "disable_parallel_tool_use": True}` — el modelo debe llamar alguna herramienta, pero no una específica. El loop en sí (ejecutar la búsqueda, devolver el resultado como `tool_result`, decidir cuándo parar) vive en `rag/chat/agentic.py` (`ask_agentic()`), no en `LLMProvider` — la interfaz no sabe nada de retrieval, solo de hablar con el LLM turno por turno.
+- **`ask_agentic()` comparte el mismo contrato que `ask_with_contexts()`** (`Message` + `list[RetrievalResult]`) a propósito: permite que `manage.py evaluate --strategy {direct,agentic}` elija cuál correr sin ninguna lógica condicional más allá de qué función llamar. El diccionario de despacho se arma **adentro** de `handle()`, no a nivel de módulo — un dict a nivel de módulo captura la referencia real a la función en el momento del import, y los tests que hacen `patch()` sobre el nombre del módulo dejan de tener efecto.
+- **Comparación final, con ambas corridas usando el mismo formato de reporte** (30 preguntas, mismo golden set, mismo juez):
+
+  | Métrica | Directo | Agéntico |
+  |---|---|---|
+  | Hit-rate | 30/30 | 30/30 |
+  | `context_precision` | 0.809 | 0.724 |
+  | `context_recall` | 0.900 | 0.928 |
+  | `faithfulness` | 0.950 | 0.930 |
+  | `answer_relevancy` | 0.924 | 0.928 |
+  | Latencia promedio | 3.6s | 14.4s |
+  | Tokens de entrada promedio | 2658 | 4348 |
+
+  Guardado en `backend/rag/evaluation/reports/baseline.json` y `agentic.json`. Dato honesto sobre el ruido de estas mediciones: `faithfulness` del directo salió 0.906 en una corrida anterior (antes de agregar el tracking de costo) y 0.950 acá — esa variación de ±0.05 entre dos corridas del *mismo* pipeline es ruido del juez LLM, no señal real. La única diferencia con margen consistente es `context_precision`, a favor del directo.
+
+  **Veredicto: para este corpus y este golden set, retrieval directo gana** — ninguna métrica de calidad justifica pagar 4x la latencia y ~40% más tokens del agéntico. Salvedad importante: las 30 preguntas del golden set son mayormente de un solo hecho, donde el directo ya acierta 30/30 en el primer intento — no hay ninguna pregunta genuinamente multi-hop que le dé al agéntico la chance de mostrar su ventaja teórica (recuperarse de una primera búsqueda insuficiente). El hallazgo real es "no hace falta pagar el costo del agéntico cuando el directo ya funciona bien en este corpus", no "el agéntico nunca sirve". Decisión: **se deja el código del agéntico construido y probado, sin exponerlo en la app** — disponible para retomar si aparecen preguntas multi-hop reales, o para ofrecerlo como opción avanzada más adelante.
 
 ---
 

@@ -5,11 +5,14 @@ from typing import Any
 from django.core.management.base import BaseCommand, CommandError
 
 from core.models import User, Workspace
+from rag.chat.agentic import ask_agentic
 from rag.chat.service import ask_with_contexts
 from rag.evaluation.ragas_eval import build_sample, run_evaluation
 from rag.models import Conversation
 
 GOLDEN_SET_PATH = Path(__file__).resolve().parents[2] / "evaluation" / "golden_set.json"
+
+_STRATEGIES = ("agentic", "direct")
 
 # Everything to_pandas() adds beyond the golden-set input fields is a
 # RAGAS metric column -- named this way so a future fifth metric shows up
@@ -39,12 +42,26 @@ class Command(BaseCommand):
             default=None,
             help="Also write a JSON report here, to diff against a later run.",
         )
+        parser.add_argument(
+            "--strategy",
+            choices=sorted(_STRATEGIES),
+            default="direct",
+            help="Which pipeline to evaluate: fixed retrieval before answering (direct, "
+            "default) or an LLM-controlled search tool loop (agentic).",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         workspace = self._resolve_workspace(options["workspace"])
         user = User.objects.first()
         if user is None:
             raise CommandError("No user exists yet.")
+        # Built here, not at module level: a dict keyed to these names at
+        # import time would capture direct references to the real
+        # functions, immune to tests patching
+        # rag.management.commands.evaluate.ask_with_contexts/ask_agentic
+        # afterward. Referencing the bare names inside handle() instead
+        # means each call re-reads this module's current globals.
+        ask = {"direct": ask_with_contexts, "agentic": ask_agentic}[options["strategy"]]
 
         golden_set = json.loads(GOLDEN_SET_PATH.read_text())
         if options["limit"]:
@@ -60,7 +77,7 @@ class Command(BaseCommand):
             # the dashboard's real cost/latency/query-volume metrics.
             conversation = Conversation.objects.create(workspace=workspace, user=user)
             try:
-                message, results = ask_with_contexts(conversation, item["question"])
+                message, results = ask(conversation, item["question"])
                 # Document-level only, not expected_heading: real content is
                 # legitimately covered from more than one heading in the same
                 # document (a topic described both in its own section and
@@ -84,6 +101,12 @@ class Command(BaseCommand):
                         "question": item["question"],
                         "expected_document": item["expected_document"],
                         "retrieval_hit": hit,
+                        # Not RAGAS's business, but exactly the cost signal
+                        # agentic's variability makes worth tracking: quality
+                        # gains only mean something next to what they cost.
+                        "latency_ms": message.latency_ms,
+                        "input_tokens": message.input_tokens,
+                        "output_tokens": message.output_tokens,
                     }
                 )
             finally:
@@ -102,17 +125,30 @@ class Command(BaseCommand):
         for row, (_, score_row) in zip(rows, scores.iterrows(), strict=True):
             row.update({column: float(score_row[column]) for column in metric_columns})
 
+        avg_latency_ms = sum(row["latency_ms"] for row in rows) / len(rows)
+        avg_input_tokens = sum(row["input_tokens"] for row in rows) / len(rows)
+        avg_output_tokens = sum(row["output_tokens"] for row in rows) / len(rows)
+
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS("=== Aggregate scores ==="))
+        self.stdout.write(self.style.SUCCESS(f"=== Aggregate scores ({options['strategy']}) ==="))
         for column in metric_columns:
             self.stdout.write(f"  {column}: {scores[column].mean():.3f}")
+        self.stdout.write(f"  avg_latency_ms: {avg_latency_ms:.0f}")
+        self.stdout.write(f"  avg_input_tokens: {avg_input_tokens:.0f}")
+        self.stdout.write(f"  avg_output_tokens: {avg_output_tokens:.0f}")
 
         if options["output"]:
             report = {
                 "workspace": str(workspace.id),
+                "strategy": options["strategy"],
                 "golden_set_size": len(golden_set),
                 "retrieval_hit_rate": hit_count / len(rows),
-                "aggregate": {column: float(scores[column].mean()) for column in metric_columns},
+                "aggregate": {
+                    **{column: float(scores[column].mean()) for column in metric_columns},
+                    "avg_latency_ms": avg_latency_ms,
+                    "avg_input_tokens": avg_input_tokens,
+                    "avg_output_tokens": avg_output_tokens,
+                },
                 "questions": rows,
             }
             Path(options["output"]).write_text(json.dumps(report, indent=2))

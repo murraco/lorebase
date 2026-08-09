@@ -1,7 +1,10 @@
+from typing import Any
+
 import anthropic
 from django.conf import settings
 
 from rag.llm.base import (
+    AgentStepResult,
     ChatResult,
     LLMProvider,
     LLMProviderUnavailableError,
@@ -79,6 +82,49 @@ class AnthropicProvider(LLMProvider):
             raise LLMProviderUnavailableError("The model returned no answer in the expected form.")
         return ToolCallResult(
             output=tool_use_block.input,
+            input_tokens=final_message.usage.input_tokens,
+            output_tokens=final_message.usage.output_tokens,
+        )
+
+    def stream_tools(
+        self, *, system: str, messages: list[Any], tools: list[ToolSpec]
+    ) -> AgentStepResult:
+        try:
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=_TOOL_CALL_MAX_TOKENS,
+                system=system,
+                messages=messages,
+                tools=[
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "input_schema": tool.input_schema,
+                    }
+                    for tool in tools
+                ],
+                # "any": some tool must be called, but not a specific one --
+                # unlike stream_tool's forced single tool, this is exactly
+                # the choice an agent loop needs. Parallel calls disabled:
+                # the loop handles one tool decision per turn, and a
+                # simultaneous search-and-answer call would be ambiguous
+                # to execute.
+                tool_choice={"type": "any", "disable_parallel_tool_use": True},
+            ) as stream:
+                final_message = stream.get_final_message()
+        except _UNAVAILABLE as exc:
+            raise LLMProviderUnavailableError(str(exc)) from exc
+
+        tool_use_block = next(
+            (block for block in final_message.content if block.type == "tool_use"), None
+        )
+        if tool_use_block is None:
+            raise LLMProviderUnavailableError("The model returned no answer in the expected form.")
+        return AgentStepResult(
+            tool_name=tool_use_block.name,
+            tool_input=tool_use_block.input,
+            tool_use_id=tool_use_block.id,
+            raw_assistant_content=final_message.content,
             input_tokens=final_message.usage.input_tokens,
             output_tokens=final_message.usage.output_tokens,
         )

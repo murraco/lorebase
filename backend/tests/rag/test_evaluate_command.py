@@ -58,7 +58,7 @@ def test_evaluate_reports_retrieval_hit_rate_and_writes_a_report(tmp_path) -> No
         ],
     )
 
-    fake_message = Mock(content="An answer.")
+    fake_message = Mock(content="An answer.", latency_ms=100, input_tokens=200, output_tokens=50)
     fake_results = [RetrievalResult(chunk=hit_chunk, score=0.9)]
     fake_evaluation = Mock()
     fake_evaluation.to_pandas.return_value = _fake_scores(2)
@@ -90,8 +90,14 @@ def test_evaluate_reports_retrieval_hit_rate_and_writes_a_report(tmp_path) -> No
     assert "faithfulness: 0.800" in output
 
     report = json.loads(output_path.read_text())
+    assert report["strategy"] == "direct"
     assert report["retrieval_hit_rate"] == 0.5
-    assert report["aggregate"] == {"faithfulness": 0.8}
+    assert report["aggregate"] == {
+        "faithfulness": 0.8,
+        "avg_latency_ms": 100.0,
+        "avg_input_tokens": 200.0,
+        "avg_output_tokens": 50.0,
+    }
     assert [q["retrieval_hit"] for q in report["questions"]] == [True, False]
 
     # Every golden-set question gets its own scratch conversation, deleted
@@ -117,7 +123,7 @@ def test_evaluate_respects_limit(tmp_path) -> None:
         ],
     )
 
-    fake_message = Mock(content="An answer.")
+    fake_message = Mock(content="An answer.", latency_ms=100, input_tokens=200, output_tokens=50)
     fake_results = [RetrievalResult(chunk=chunk, score=0.9)]
     fake_evaluation = Mock()
 
@@ -139,3 +145,44 @@ def test_evaluate_respects_limit(tmp_path) -> None:
     assert mock_ask.call_count == 2
     (call,) = mock_eval.call_args_list
     assert len(call.args[0]) == 2
+
+
+def test_evaluate_strategy_agentic_calls_ask_agentic_not_ask_with_contexts(tmp_path) -> None:
+    workspace = WorkspaceFactory()
+    UserFactory()
+    document = DocumentFactory(source__workspace=workspace, title="doc")
+    chunk = ChunkFactory(document=document, heading_path="doc > A")
+    golden_path = _write_golden_set(
+        tmp_path,
+        [
+            {
+                "question": "q",
+                "expected_document": ["doc"],
+                "expected_heading": "A",
+                "reference_answer": "ref",
+            }
+        ],
+    )
+
+    fake_message = Mock(content="An answer.", latency_ms=9000, input_tokens=500, output_tokens=80)
+    fake_results = [RetrievalResult(chunk=chunk, score=0.9)]
+    fake_evaluation = Mock()
+    fake_evaluation.to_pandas.return_value = _fake_scores(1)
+
+    with (
+        patch("rag.management.commands.evaluate.GOLDEN_SET_PATH", golden_path),
+        patch(
+            "rag.management.commands.evaluate.ask_agentic",
+            return_value=(fake_message, fake_results),
+        ) as mock_agentic,
+        patch("rag.management.commands.evaluate.ask_with_contexts") as mock_direct,
+        patch("rag.management.commands.evaluate.run_evaluation", return_value=fake_evaluation),
+    ):
+        out = StringIO()
+        call_command(
+            "evaluate", "--workspace", str(workspace.id), "--strategy", "agentic", stdout=out
+        )
+
+    assert mock_agentic.call_count == 1
+    mock_direct.assert_not_called()
+    assert "=== Aggregate scores (agentic) ===" in out.getvalue()
