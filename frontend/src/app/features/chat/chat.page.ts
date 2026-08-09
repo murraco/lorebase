@@ -16,7 +16,6 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ChatService, type ChatDoneEvent } from '../../core/chat/chat.service';
 import { ConversationsService } from '../../core/conversations/conversations.service';
 import { MarkdownPipe } from '../../core/markdown/markdown.pipe';
-import { PassageReaderComponent } from './passage-reader.component';
 import type { Citation } from '../../core/models';
 
 interface ThreadMessage {
@@ -44,7 +43,7 @@ const SUGGESTIONS = [
 
 @Component({
   selector: 'lorebase-chat-page',
-  imports: [FormsModule, MarkdownPipe, PassageReaderComponent],
+  imports: [FormsModule, MarkdownPipe],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -144,7 +143,18 @@ export class ChatPage implements OnInit {
   }
 
   protected toggleCitation(citationId: string): void {
-    this.expandedCitationId.update((current) => (current === citationId ? null : citationId));
+    const opening = this.expandedCitationId() !== citationId;
+    this.expandedCitationId.set(opening ? citationId : null);
+    // A passage opened at the foot of a long answer can still land below
+    // the fold; nudge it into view rather than leaving the reader to
+    // wonder whether the click did anything.
+    if (opening) {
+      requestAnimationFrame(() => {
+        this.threadRef()
+          ?.nativeElement.querySelector('.passage')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
   }
 
   protected useSuggestion(suggestion: string): void {

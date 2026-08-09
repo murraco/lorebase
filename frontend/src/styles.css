@@ -265,3 +265,77 @@ body {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* Styling for the answer's rendered Markdown.
+ *
+ * Global on purpose, and this is a fix rather than a shortcut: Angular's
+ * emulated encapsulation rewrites `.rendered-markdown p` into
+ * `.rendered-markdown[_ngcontent-x] p[_ngcontent-x]`, and HTML injected
+ * through [innerHTML] carries no such attribute. Living inside the chat
+ * component, none of these rules had ever applied — the answers were
+ * showing browser defaults. Styles for injected markup have to sit
+ * outside any component's scope.
+ */
+.rendered-markdown :first-child {
+  margin-top: 0;
+}
+.rendered-markdown :last-child {
+  margin-bottom: 0;
+}
+.rendered-markdown blockquote {
+  margin: 0 0 0.7em;
+}
+.rendered-markdown ol {
+  padding-left: 1.3em;
+}
+.rendered-markdown li {
+  margin-bottom: 0.2em;
+}
+.rendered-markdown strong {
+  font-weight: 600;
+}
+.rendered-markdown h3 {
+  font-family: var(--font-serif);
+  line-height: 1.3;
+  margin: 0.7em 0 0.4em;
+}
+.rendered-markdown a {
+  color: var(--accent);
+}
+.rendered-markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-sunken);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+.rendered-markdown pre {
+  background: var(--surface-sunken);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+.rendered-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.rendered-markdown blockquote {
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+  color: var(--text-muted);
+}
+.rendered-markdown p,
+.rendered-markdown ul,
+.rendered-markdown ol,
+.rendered-markdown pre,
+.rendered-markdown ul,
+.rendered-markdown h1,
+.rendered-markdown h2,
+.load-error {
+  font-size: var(--text-base);
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin: 0;
+}

@@ -10,6 +10,20 @@
         <p class="load-error">{{ loadError() }}</p>
       }
 
+      @if (loading()) {
+        <!-- Reserves roughly the space the conversation will take, so the
+             view does not jump when it lands. The CSS for this shipped
+             months of edits ago; the markup never did, because the edit
+             that was meant to add it silently failed to match. -->
+        <div class="skeleton" aria-live="polite" aria-busy="true">
+          <span class="visually-hidden">Loading conversation…</span>
+          <span class="skeleton-line short"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line medium"></span>
+        </div>
+      }
+
       @if (isEmpty()) {
         <div class="hero">
           <h1 class="hero-title">What do you want to know?</h1>
@@ -92,6 +106,35 @@
                   </button>
                 }
               </div>
+
+              <!-- The passage opens directly under the chip that opened it,
+                 at the foot of its own turn. The docked panel it replaces
+                 was the right answer to the previous layout, where the
+                 control sat in a margin with nowhere sensible to expand;
+                 now that the chips end the answer, adjacency is available
+                 and a separate surface is no longer worth its cost. -->
+              @for (citation of message.citations; track citation.id; let i = $index) {
+                @if (expandedCitationId() === citation.id) {
+                  <figure class="passage">
+                    <figcaption>
+                      <span class="passage-n">{{ i + 1 }}</span>
+                      <span class="passage-path">{{ citation.path }}</span>
+                      <span class="passage-lines"
+                        >lines {{ citation.start_line }}–{{ citation.end_line }}</span
+                      >
+                      <button
+                        type="button"
+                        class="passage-close"
+                        aria-label="Close passage"
+                        (click)="toggleCitation(citation.id)"
+                      >
+                        ×
+                      </button>
+                    </figcaption>
+                    <pre>{{ citation.content }}</pre>
+                  </figure>
+                }
+              }
             } @else {
               <p class="ungrounded">No source was cited for this answer. Treat it as unverified.</p>
             }
@@ -137,12 +180,4 @@
       }
     </div>
   </div>
-
-  @if (expandedCitation(); as citation) {
-    <lorebase-passage-reader
-      [citation]="citation"
-      [index]="expandedIndex()"
-      (closed)="toggleCitation(citation.id)"
-    />
-  }
 </div>
