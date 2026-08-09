@@ -184,6 +184,26 @@ export class CorpusPage implements OnInit {
     }
   }
 
+  protected readonly cancelling = signal(false);
+
+  /** Only sends the request — pollUntilDone(), already running from
+   * syncSelected(), is what notices the source leaving "syncing" and
+   * clears `syncing()`. The worker stops between documents, not
+   * instantly, so there's a real gap between clicking this and the
+   * button actually reverting to "Sync now". */
+  protected async cancelSyncSelected(): Promise<void> {
+    const sourceId = this.selectedSourceId();
+    if (!sourceId || this.cancelling()) return;
+    this.cancelling.set(true);
+    try {
+      await this.sourcesService.cancelSync(sourceId);
+    } catch {
+      this.error.set("Couldn't cancel the sync.");
+    } finally {
+      this.cancelling.set(false);
+    }
+  }
+
   protected toggleChunk(chunkId: string): void {
     this.expandedChunkId.update((current) => (current === chunkId ? null : chunkId));
   }

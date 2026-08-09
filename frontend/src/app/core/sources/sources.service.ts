@@ -45,6 +45,18 @@ export class SourcesService {
     if (error) throw new Error('Failed to queue sync.');
   }
 
+  /** Cooperative: the worker stops between documents rather than being
+   * killed outright, so this resolves once the request is accepted, not
+   * once the sync has actually stopped — pollUntilDone() (already in
+   * progress for any caller that started the sync) picks up the moment
+   * it does. */
+  async cancelSync(id: string): Promise<void> {
+    const { error } = await apiClient.POST('/api/sources/{id}/cancel_sync/', {
+      params: { path: { id } },
+    });
+    if (error) throw new Error('Failed to cancel sync.');
+  }
+
   async delete(id: string): Promise<void> {
     const { error } = await apiClient.DELETE('/api/sources/{id}/', {
       params: { path: { id } },

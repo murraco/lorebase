@@ -38,17 +38,19 @@
         >
           Delete
         </button>
-        <button
-          type="button"
-          class="sync"
-          [disabled]="syncing() || source.status === 'syncing'"
-          (click)="syncSelected()"
-        >
-          @if (syncing() || source.status === 'syncing') {
+        @if (syncing() || source.status === 'syncing') {
+          <button
+            type="button"
+            class="sync"
+            [disabled]="cancelling()"
+            (click)="cancelSyncSelected()"
+          >
             <span class="spinner" aria-hidden="true"></span>
-          }
-          {{ syncing() || source.status === 'syncing' ? 'Syncing…' : 'Sync now' }}
-        </button>
+            {{ cancelling() ? 'Stopping…' : 'Stop sync' }}
+          </button>
+        } @else {
+          <button type="button" class="sync" (click)="syncSelected()">Sync now</button>
+        }
       </div>
     </div>
   }
