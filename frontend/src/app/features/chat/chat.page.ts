@@ -1,4 +1,13 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -46,6 +55,7 @@ export class ChatPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly threadRef = viewChild<ElementRef<HTMLElement>>('thread');
 
   protected readonly messages = signal<ThreadMessage[]>([]);
   protected readonly sending = signal(false);
@@ -120,6 +130,9 @@ export class ChatPage implements OnInit {
           pending: false,
         })),
       );
+      // Jump, not smooth: this is the initial position of a conversation
+      // being opened, not a movement the reader should watch.
+      this.scrollToLatest('auto');
     } catch {
       // Deliberately leaves conversationId null: a conversation that
       // couldn't be loaded (deleted, or another user's, which the API
@@ -153,6 +166,20 @@ export class ChatPage implements OnInit {
     void this.send();
   }
 
+  /** Pins the thread to the newest content. Called when a question is
+   * sent and again when its answer lands, because the answer changes the
+   * height after the fact — scrolling only on send would leave the reply
+   * itself below the fold.
+   *
+   * requestAnimationFrame so the DOM has the new message in it: reading
+   * scrollHeight in the same tick returns the old height. */
+  private scrollToLatest(behavior: ScrollBehavior = 'smooth'): void {
+    requestAnimationFrame(() => {
+      const thread = this.threadRef()?.nativeElement;
+      if (thread) thread.scrollTo({ top: thread.scrollHeight, behavior });
+    });
+  }
+
   protected async send(): Promise<void> {
     const question = this.question.trim();
     if (!question || this.sending()) return;
@@ -173,6 +200,7 @@ export class ChatPage implements OnInit {
       { id: assistantId, role: 'assistant', content: '', citations: [], pending: true },
     ]);
     this.sending.set(true);
+    this.scrollToLatest();
 
     try {
       for await (const event of this.chatService.ask(conversationId, question)) {
@@ -182,6 +210,7 @@ export class ChatPage implements OnInit {
           this.finalizeAnswer(assistantId, event);
         }
       }
+      this.scrollToLatest();
       // The backend titles a conversation from its first question, so the
       // sidebar entry only becomes meaningful once that answer is done.
       await this.conversationsService.refresh();

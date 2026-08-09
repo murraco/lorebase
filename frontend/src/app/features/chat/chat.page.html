@@ -5,7 +5,7 @@
      markup keeps the textarea's state (and focus) across the transition. -->
 <div class="chat" [class.is-empty]="isEmpty()">
   <div class="conversation-column">
-    <div class="thread">
+    <div class="thread" #thread>
       @if (loadError()) {
         <p class="load-error">{{ loadError() }}</p>
       }
