@@ -1614,6 +1614,7 @@ dependencies = [
     { name = "tiktoken" },
     { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "python_full_version < '3.15' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "python_full_version >= '3.15' or sys_platform != 'darwin'" },
+    { name = "uvicorn" },
     { name = "voyageai" },
 ]
 
@@ -1652,6 +1653,7 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=5.1.2" },
     { name = "tiktoken", specifier = ">=0.13.0" },
     { name = "torch", specifier = ">=2.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "uvicorn", specifier = ">=0.52.1" },
     { name = "voyageai", specifier = ">=0.5.0" },
 ]
 

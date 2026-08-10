@@ -242,7 +242,8 @@ infra/data/
 /backend/staticfiles/
 /backend/storage/
 
-# Environment variables (keep the documented example)
+# Environment variables (keep the documented examples)
 .env
 .env.*
 !.env.example
+!.env.prod.example

@@ -1,0 +1,138 @@
+# Production shape of the stack: baked-in code (no source bind mounts --
+# the whole point of an image is that what you tested is what you run),
+# gunicorn's job done by uvicorn directly (multiple worker processes, no
+# extra process-supervision layer this project's scale doesn't need yet),
+# structured logging, and restart policies.
+#
+# Assumes a TLS-terminating reverse proxy or load balancer sits in front
+# of `frontend` (a real domain + certs is inherently environment-specific,
+# so it isn't part of this file) and forwards X-Forwarded-Proto, same as
+# frontend/nginx.conf already does for backend. Without one,
+# SECURE_SSL_REDIRECT (settings/prod.py) will redirect every plain HTTP
+# request and there is nothing on the other end to terminate TLS.
+#
+# `name:` and the _prod-suffixed volumes below are both deliberate, not
+# decoration: without an explicit project name, Compose derives one from
+# the directory, which is the same `infra/` this file and
+# docker-compose.yml (dev) both live in -- running this file bare would
+# collide with (and silently recreate) the dev stack's own containers,
+# and worse, its identically-named `pgdata`/`redisdata` volumes. Found
+# live, the hard way, verifying this file for the first time.
+name: lorebase-prod
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    # No host port published: only other containers on this network (and
+    # `docker compose exec` for backup/restore) need to reach it.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ../backend
+    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 4
+    env_file:
+      - .env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Plain urlopen() (what dev's healthcheck uses) gets a 301 here --
+      # SECURE_SSL_REDIRECT (settings/prod.py) redirects any request that
+      # doesn't look like it arrived over HTTPS, and follows to a TLS
+      # port nothing is listening on. X-Forwarded-Proto: https makes this
+      # request look like what nginx actually sends in real traffic,
+      # which is exactly the case SECURE_PROXY_SSL_HEADER exists to trust.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://localhost:8000/admin/login/', headers={'X-Forwarded-Proto': 'https'}))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    build: ../backend
+    command: celery -A config worker -l info
+    env_file:
+      - .env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-worker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "config", "inspect", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  mcp_server:
+    build: ../backend
+    command: python manage.py run_mcp_server
+    env_file:
+      - .env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-mcp-server
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata_prod:
+  redisdata_prod:
