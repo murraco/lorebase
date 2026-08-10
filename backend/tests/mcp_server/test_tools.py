@@ -57,7 +57,7 @@ def test_search_knowledge_scopes_to_the_callers_workspace() -> None:
     ):
         results = search_knowledge(query="hybrid search")
 
-    assert retriever.last_call["workspace_id"] == str(membership.workspace_id)
+    assert retriever.last_call["workspace_id"] == membership.workspace_id
     assert results == [
         {
             "chunk_id": str(chunk.id),

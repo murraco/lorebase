@@ -10,7 +10,7 @@ from rag.retrieval.factory import get_retriever
 from sources.models import Document, Source
 
 
-def _current_workspace_id() -> str:
+def _current_workspace_id() -> UUID:
     """Every tool call is scoped to the caller's workspace this way --
     same idea as DocumentViewSet.get_queryset() in the DRF API, just read
     from the AccessToken our own LorebaseTokenVerifier built (see
@@ -19,9 +19,10 @@ def _current_workspace_id() -> str:
     tool function runs, so there's no need to pass it in explicitly.
     """
     access_token = get_access_token()
-    if access_token is None or "workspace_id" not in access_token.claims:
+    claims = access_token.claims if access_token else None
+    if claims is None or "workspace_id" not in claims:
         raise ValueError("No authenticated workspace for this request.")
-    return access_token.claims["workspace_id"]
+    return UUID(claims["workspace_id"])
 
 
 @mcp.tool()

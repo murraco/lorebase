@@ -54,7 +54,7 @@ where the real decisions live.
 ```mermaid
 flowchart TB
     subgraph SRC["Sources"]
-        local["Local folder (.md + .txt + .pdf)"]
+        local["Local folder (.md/.txt/.pdf)"]
         gh["GitHub (.md)"]
     end
 
