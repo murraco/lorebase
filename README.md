@@ -1,8 +1,8 @@
 # Lorebase
 
-A personal "second brain" — ask questions across your Markdown notes, PDFs,
-and GitHub repos in plain English (or Spanish), and get answers with
-citations that point back to the exact file and line they came from.
+Self-hosted RAG for your own notes, PDFs, and GitHub repos — with citations
+you can verify. Ask a question in plain English (or Spanish) and get an
+answer that points back to the exact file and line it came from.
 
 <p align="center">
   <img src="docs/screenshots/chat-answer.png" alt="Lorebase answering a question with retrieved/cited counts, latency, cost, and clickable source chips" width="820">
