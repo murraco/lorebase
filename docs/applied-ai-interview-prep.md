@@ -21,6 +21,7 @@ retome algo de este proyecto para estudiar.
 
 ## Índice
 
+0. [Cómo son las entrevistas de Applied AI Engineer](#0-cómo-son-las-entrevistas-de-applied-ai-engineer)
 1. [RAG: la idea central y por qué las citas son el punto](#1-rag-la-idea-central-y-por-qué-las-citas-son-el-punto)
 2. [Ingestion y chunking](#2-ingestion-y-chunking)
 3. [Embeddings](#3-embeddings)
@@ -38,6 +39,82 @@ retome algo de este proyecto para estudiar.
 15. [Auth, multi-tenancy y rate limiting](#15-auth-multi-tenancy-y-rate-limiting)
 16. [Pensar en trade-offs: las ADRs como práctica](#16-pensar-en-trade-offs-las-adrs-como-práctica)
 17. [Temas que Lorebase no cubre, pero conviene saber](#17-temas-que-lorebase-no-cubre-pero-conviene-saber)
+18. [Mapa práctico del ecosistema](#18-mapa-práctico-del-ecosistema)
+
+---
+
+## 0. Cómo son las entrevistas de Applied AI Engineer
+
+Lo que sigue es un patrón general observado en la industria, no un
+proceso verificado de una empresa puntual — cada compañía arma el suyo,
+pero estas piezas se repiten lo suficiente como para prepararse por
+default. Tomalo como una guía de qué tipo de práctica priorizar, no como
+un libreto exacto.
+
+**Rondas típicas:**
+
+1. **Screening con recruiter o hiring manager.** No técnico en
+   profundidad — encaje de rol, expectativas, a veces un resumen a alto
+   nivel de proyectos. Acá conviene poder resumir Lorebase en 30 segundos
+   ("un sistema RAG self-hosted que indexa mis notas y repos, con citas
+   verificadas server-side y una evaluación medida contra un golden set")
+   antes de entrar en detalle.
+
+2. **Ronda conceptual / técnica en vivo.** Te piden explicar conceptos en
+   voz alta — a veces sobre un documento compartido, a veces solo
+   hablando: "explicame qué es hybrid search", "¿cómo evaluás la calidad
+   de un sistema RAG?", "¿qué es un embedding y por qué serviría acá?".
+   No están buscando la definición de diccionario — están viendo si
+   entendés el *por qué*, si podés dar un ejemplo concreto, y si sabés
+   nombrar el trade-off de lo que proponés. Este documento está pensado
+   sobre todo para esta ronda.
+
+3. **Coding / live-coding o take-home.** Formatos comunes: implementar
+   una pieza chica de un pipeline RAG (un chunker, una función de
+   retrieval, armar un prompt con contexto numerado), debuggear un
+   pipeline que existe y anda mal (por ejemplo "esta búsqueda no
+   encuentra lo obvio, ¿por qué?" — la sección 2/4/5 de este documento
+   son literalmente ejemplos reales de ese ejercicio), o un take-home más
+   largo armando un mini-RAG de punta a punta contra un corpus dado.
+   A veces piden escribir un harness de evaluación chico en vez de (o
+   además de) el pipeline en sí.
+
+4. **Ronda de system design.** La más específica del rol: "diseñá un
+   sistema de Q&A sobre la documentación interna de la empresa" o
+   "diseñá un asistente que responda preguntas sobre nuestro código".
+   Se espera que cubras, en algún orden: cómo se ingestan los datos y con
+   qué frecuencia, estrategia de chunking, qué embeddings usar y por qué,
+   qué base de datos vectorial (o si hace falta una dedicada), estrategia
+   de retrieval (¿denso solo? ¿híbrido? ¿reranking?), cómo se arma el
+   prompt y cómo se garantizan citas verificables, cómo evaluarías la
+   calidad, cómo lo observarías en producción, costo/latencia esperados,
+   y qué pasa si el corpus tiene datos de distinto nivel de acceso
+   (seguridad/permisos). La sección 18 de este documento está armada
+   específicamente para tener respuesta a cada una de esas piezas.
+
+5. **Deep-dive de portfolio/proyecto.** Contás un proyecto real, y te
+   empujan sobre las decisiones: "¿por qué pgvector y no Qdrant acá?",
+   "¿qué harías distinto si esto tuviera que soportar 1000 usuarios?".
+   Lorebase — y particularmente las 7 ADRs (sección 16) — es material
+   armado exactamente para esta ronda: cada decisión ya tiene su
+   justificación *y* su condición de migración explícita, que es
+   precisamente la forma de respuesta que un entrevistador senior busca.
+
+6. **Ronda de comportamiento (behavioral).** Suele incluir una variante
+   IA-específica de las preguntas clásicas: "contame de una vez que un
+   sistema de IA dio una respuesta mal y cómo lo manejaste" — la sección
+   14 (resiliencia) y los bugs reales de las secciones 2/3/9/11 son
+   material directo para esto.
+
+**Qué evalúan realmente, más allá del contenido puntual:** si podés
+razonar sobre trade-offs en vivo (no solo recitar una arquitectura de
+memoria), si distinguís una decisión bien fundada de una moda ("usé
+Pinecone porque es lo que usa todo el mundo" responde peor que "empecé
+con pgvector porque no justificaba infra nueva a esta escala, y sé
+exactamente cuándo migraría"), y si tenés vocabulario preciso del campo
+sin sonar a que estás repitiendo buzzwords sin entenderlos — la sección
+18 de acá abajo existe específicamente para cerrar esa brecha de
+vocabulario/panorama.
 
 ---
 
@@ -586,10 +663,54 @@ hace útiles.
   cara tiene razón — puede ser el chequeo barato el que está mal
   calibrado.
 
+**Cómo se lee un reporte de RAGAS en la práctica, paso a paso.** Tomá el
+reporte real de la sección 10 (retrieval directo) como ejemplo:
+`context_precision=0.809`, `context_recall=0.900`, `faithfulness=0.950`,
+`answer_relevancy=0.924`. El orden de lectura que sirve:
+
+1. **Mirá recall primero.** 0.900 es alto — el retriever, en promedio,
+   trae la mayor parte de lo necesario. Si este número fuera bajo (digamos
+   <0.6), no tendría sentido mirar nada más todavía: no importa qué tan
+   bien razone el LLM sobre contexto que ni siquiera llegó. El problema
+   estaría en chunking, en la estrategia de búsqueda, o en el corpus
+   mismo.
+2. **Después precision.** 0.809, más bajo que recall — quiere decir que
+   el retriever trae *algo* de ruido junto con lo relevante (normal:
+   recall alto casi siempre cuesta algo de precisión, es un trade-off
+   real, no un bug). Con precision muy baja (<0.5) el LLM tiene que
+   "filtrar" mucho contexto irrelevante para llegar a lo que importa, lo
+   que aumenta el riesgo de faithfulness bajo (más ruido, más
+   oportunidad de que el modelo se apoye en el chunk equivocado).
+3. **Recién ahí faithfulness y answer relevancy** — las métricas de
+   generación. 0.950 y 0.924 son ambas altas, coherente con un recall/
+   precision razonables: el LLM tiene buen material para trabajar y lo
+   está usando bien. Si faithfulness fuera bajo *con* recall/precision
+   altos, la conclusión sería específica y accionable: el problema no es
+   el retriever, es el prompt o el modelo — ajustar chunking no cambiaría
+   nada, ahí es donde vale la pena revisar el system prompt (¿le estás
+   pidiendo explícitamente que se ciña al contexto?) o considerar un
+   modelo distinto.
+
+**Qué rangos son "buenos", con honestidad:** no hay un umbral universal —
+depende del dominio y de qué tan difícil es el golden set (un golden set
+de preguntas triviales infla todos los números). Como referencia de orden
+de magnitud, en este proyecto >0.85 se leyó como "sano", 0.7-0.85 como
+"revisar pero no urgente", y <0.7 como señal real de un problema
+específico que vale la pena investigar — no son cortes de la literatura,
+son los que se usaron acá con este corpus y este juez.
+
+**El error más común leyendo RAGAS** (y el que pasó de verdad en este
+proyecto, sección 10): tratar una diferencia chica entre dos corridas
+como una mejora o una regresión real, sin considerar el ruido del propio
+juez LLM. Antes de sacar una conclusión de una diferencia de 0.02-0.05,
+hay que preguntarse si esa diferencia sobreviviría correr el mismo
+pipeline dos veces sin cambiar nada.
+
 **Preguntas tipo:**
 - ¿Por qué context recall alto y faithfulness bajo apuntan a problemas distintos?
 - ¿Qué riesgo tiene usar el mismo modelo como generador y como juez, y por qué se aceptó igual?
 - Contame de una vez que una métrica te mintió y cómo te diste cuenta.
+- Te doy un reporte de RAGAS con recall bajo y faithfulness alto — ¿por dónde empezás a debuggear?
 
 ---
 
@@ -606,6 +727,41 @@ cada paso interno) — eso es lo que permite ver, para una respuesta lenta,
 exactamente cuál de los pasos (retrieval léxico, denso, reranking, la
 llamada al LLM) fue el que tardó, en vez de solo saber que la respuesta
 completa tardó 8 segundos.
+
+**Por qué la observabilidad es específicamente más crítica en IA que en
+software tradicional** (pregunta de entrevista muy común, y merece una
+respuesta mejor que "porque sí es importante"):
+
+- **No-determinismo.** El mismo input puede dar outputs distintos entre
+  corridas (sección 17, sampling) — un log de "request → response" no
+  alcanza para entender por qué una corrida salió distinta de otra; hace
+  falta ver *el contexto exacto* que recibió el modelo, no solo que lo
+  recibió.
+- **Los tests unitarios no capturan la mayoría de los fallos reales.** Un
+  test puede verificar que el pipeline no tira una excepción, pero no
+  puede verificar "esta respuesta es correcta" de forma determinística —
+  eso requiere o un juez LLM (con su propio ruido, sección 11) o revisión
+  humana. La observabilidad en producción — ver qué se buscó, qué se
+  recuperó, qué se respondió, con qué feedback real — es, en la práctica,
+  la principal red de seguridad contra regresiones de *calidad*, no solo
+  de disponibilidad.
+- **El costo es una variable de runtime, no de código.** Un bug de
+  performance en software tradicional se ve en latencia; acá también se
+  ve directo en la factura — un prompt mal armado que manda 5x más
+  contexto del necesario cuesta 5x más por cada request, silenciosamente,
+  sin ningún error que lo señale. Sin tracking de tokens/costo por
+  llamada (sección "Notas" de esta sección), ese tipo de regresión no se
+  nota hasta la factura mensual.
+- **Un pipeline con varias etapas (retrieval → rerank → LLM) necesita
+  poder aislar cuál etapa falló**, no solo que "la respuesta estuvo mal"
+  — exactamente el argumento de la sección 1 (tres puntos de falla
+  independientes). Sin tracing estructurado por etapa, diagnosticar eso
+  es adivinar.
+- **Drift silencioso.** Un proveedor externo (embeddings, LLM) puede
+  cambiar de comportamiento sin avisar (una actualización de modelo, un
+  cambio de versión por default) — sin métricas históricas comparables,
+  una degradación gradual de calidad es indistinguible de "así fue
+  siempre".
 
 **Cómo lo implementó Lorebase:**
 - **Un solo decorador (`@traced_search`) instrumenta las cinco clases
@@ -937,3 +1093,310 @@ de todas porque viene de uso real, no de un golden set que puede quedar
 desactualizado o sesgado. La combinación madura es golden-set offline
 para no regresionar en cada cambio, más monitoreo online continuo para
 detectar lo que el golden set no anticipó.
+
+---
+
+## 18. Mapa práctico del ecosistema
+
+Esta sección responde directamente al tipo de pregunta que arma un
+entrevistador cuando quiere ver panorama, no solo profundidad en un
+proyecto puntual: cuándo se justifica cada pieza, cómo encajan entre sí,
+y qué existe en el ecosistema más allá de lo que Lorebase eligió usar.
+
+### 18.1 ¿Cuándo se justifica usar RAG?
+
+RAG no es la respuesta por defecto a "quiero que un LLM sepa sobre mis
+datos" — es la respuesta cuando se cumplen algunas de estas condiciones:
+
+- **El conocimiento cambia con el tiempo, o es demasiado grande para
+  caber en un prompt.** Si el "conocimiento" son 5 párrafos fijos, la
+  respuesta más simple es pegarlos directo en el prompt (a veces llamado
+  *prompt stuffing*) — no hace falta retrieval para eso. RAG se justifica
+  cuando el corpus es más grande de lo que entra en una ventana de
+  contexto razonable, o cambia seguido (notas nuevas cada semana, un repo
+  con commits diarios) y no tiene sentido reentrenar/reprompt-ear a mano
+  cada vez.
+- **El conocimiento es privado o específico de un dominio** que el
+  modelo base no vio en entrenamiento — documentación interna, notas
+  personales, código propio. Exactamente el caso de uso de Lorebase.
+- **Se necesita trazabilidad/verificabilidad** de dónde salió cada
+  afirmación — un requisito que fine-tuning no puede dar (un modelo
+  fine-tuneado "sabe" algo pero no puede señalar de qué documento salió
+  ese conocimiento, porque quedó mezclado en los pesos).
+- **El costo de reentrenar no se justifica frente a la frecuencia de
+  cambio del conocimiento.** Reindexar un documento nuevo es mucho más
+  barato y rápido que reentrenar un modelo.
+
+**Cuándo NO se justifica (o se justifica poco):** si el conocimiento es
+chico y estable (cabe en un prompt fijo, prompting simple alcanza); si lo
+que hace falta es cambiar el *comportamiento* del modelo, no agregarle
+hechos (fine-tuning, sección 17); si la latencia extra de una búsqueda
+antes de responder no se puede pagar en el caso de uso (algunas
+aplicaciones de tiempo real muy ajustado); o si el "conocimiento" en
+realidad ya está bien cubierto por lo que el modelo aprendió en
+entrenamiento (preguntas de cultura general no necesitan retrieval sobre
+tus propios documentos).
+
+### 18.2 Cómo se integra RAG en un sistema más grande
+
+Un sistema RAG real vive detrás de una API, no como un script aislado.
+El patrón de integración típico:
+
+```
+Cliente (web/app/CLI)
+      │  pregunta
+      ▼
+Backend / API
+      │  1) reescribe la query si hace falta (historial)
+      │  2) llama al retriever
+      │  3) arma el prompt con el contexto recuperado
+      │  4) llama al LLM
+      │  5) valida/persiste la respuesta
+      ▼
+Retriever  ◄──── índice (vector DB + índice léxico)
+      │
+      ▼
+LLM Provider (API externa o modelo self-hosted)
+```
+
+La pieza importante para una entrevista es distinguir **dos caminos de
+datos separados, con requisitos muy distintos**:
+
+- **Camino de ingestion (offline/batch):** documentos → parseo → chunking
+  → embeddings → escritura al índice. Corre en background (en Lorebase,
+  Celery), no bloquea a ningún usuario, y puede tardar minutos sin que
+  nadie lo note. Es donde vive la mayor parte del *trabajo* computacional
+  (embeder miles de chunks), pero fuera del camino crítico de latencia.
+- **Camino de consulta (online/síncrono):** pregunta del usuario →
+  retrieval → generación → respuesta. Tiene que ser rápido (segundos, no
+  minutos) porque hay una persona esperando en vivo — acá es donde
+  importan reranking eficiente, timeouts, fallback ante fallas (sección
+  14), y caching.
+
+**¿Qué partes son dinámicas y cuáles estáticas?** Pregunta muy práctica y
+poco hecha explícita en la mayoría de las explicaciones de RAG — vale la
+pena tener el mapa claro:
+
+**Estático (se calcula una vez, en ingestion, y se reusa):**
+- El chunking de un documento (a menos que el documento cambie).
+- El embedding de cada chunk — se calcula una sola vez al indexar, se
+  guarda, se reusa en cada búsqueda futura sin recalcularlo.
+- El índice de búsqueda (HNSW, el índice invertido de FTS) — se
+  construye/actualiza en ingestion, no en cada query.
+- La elección de modelo de embedding, de LLM, de estrategia de retrieval
+  — configuración de sistema, no algo que varíe por request.
+
+**Dinámico (se recalcula en cada consulta):**
+- El embedding de la *pregunta* — se calcula fresco en cada request (no
+  se puede precalcular porque no se sabe qué van a preguntar).
+- El resultado del retrieval — qué chunks salen top-k varía con cada
+  pregunta.
+- El prompt final armado con el contexto recuperado — literalmente
+  distinto en cada llamada, porque el contexto es distinto.
+- La respuesta generada — no determinística incluso con el mismo prompt
+  (sección "sampling", más abajo), salvo temperature=0.
+
+Entender esta división es lo que permite razonar sobre dónde optimizar:
+cachear o precalcular tiene sentido en la parte estática (por eso
+importa tanto que el embedding de un chunk se calcule una sola vez);
+en la parte dinámica, la optimización pasa por reducir trabajo por
+request (modelos más chicos/rápidos, menos llamadas, prompt caching de
+la parte que sí es estable como el system prompt — sección 17), no por
+evitar recalcular algo que genuinamente cambia cada vez.
+
+### 18.3 Estrategias de retrieval: panorama completo
+
+Lorebase implementa hybrid + reranking (secciones 4-7). El panorama es
+más amplio — vale la pena poder nombrar estas variantes aunque no estén
+implementadas acá:
+
+- **Dense retrieval puro** — solo embeddings. El punto de partida más
+  simple; falla en coincidencias literales (sección 4).
+- **Sparse/lexical retrieval (BM25)** — el otro extremo; falla en
+  paráfrasis.
+- **Hybrid retrieval** — lo que hace Lorebase: combina ambos.
+- **Multi-query retrieval** — el LLM genera varias reformulaciones de la
+  misma pregunta (ángulos distintos) y se buscan todas, fusionando
+  resultados — mejora recall para preguntas ambiguas, a costo de más
+  búsquedas.
+- **HyDE (Hypothetical Document Embeddings)** — en vez de embeder la
+  pregunta directamente, se le pide al LLM que *genere una respuesta
+  hipotética* a la pregunta, y se embede esa respuesta hipotética para
+  buscar — la intuición es que una respuesta hipotética se parece más,
+  en el espacio de embeddings, a un documento real que a una pregunta
+  corta. Funciona bien cuando pregunta y respuesta tienen formas muy
+  distintas.
+- **Parent-document / sentence-window retrieval** — se indexan chunks
+  chicos (para embeddings precisos) pero al recuperar se devuelve un
+  contexto más grande alrededor (el chunk padre, o una ventana de
+  oraciones vecinas) — resuelve la tensión chunk-chico-vs-contexto de la
+  sección 2 sin comprometer ninguno de los dos lados.
+- **Contextual retrieval** (técnica publicada por Anthropic, 2024) — antes
+  de embeder un chunk, se le pide a un LLM que genere una o dos oraciones
+  de contexto explicando dónde encaja ese chunk dentro del documento
+  completo, y se prepende ese contexto al chunk antes de embederlo y
+  indexarlo léxicamente — mismo problema que resolvió `heading_path` en
+  Lorebase (sección 2), pero generalizado con un LLM en vez de estructura
+  Markdown.
+- **Self-query / query construction** — el LLM traduce la pregunta en
+  lenguaje natural a una query estructurada con filtros (ej. "notas de
+  julio sobre X" → filtro de fecha + búsqueda semántica) — el mismo
+  problema que resolvió `rewrite_query()` + `DateAwareRetriever` en
+  Lorebase (sección 10 del roadmap), pero como patrón con nombre propio
+  en la literatura.
+- **GraphRAG** — en vez de (o adicionalmente a) chunks independientes, se
+  construye un grafo de entidades y relaciones extraídas de los
+  documentos, y el retrieval puede recorrer relaciones explícitas
+  ("¿qué servicios dependen de X?") en vez de solo similitud de texto —
+  mucho más caro de construir y mantener, se justifica cuando las
+  preguntas reales son sobre relaciones entre entidades, no solo "¿qué
+  dice el documento sobre X?".
+
+### 18.4 Dónde entran los LLMs: mapa de roles
+
+Un error común es pensar que el LLM solo "genera la respuesta final".
+En un pipeline real (y en Lorebase específicamente) aparece en varios
+puntos, cada uno con un rol distinto:
+
+| Rol | Dónde en Lorebase | Propósito |
+|---|---|---|
+| **Generación de la respuesta** | `rag/chat/service.py` | La tarea obvia: responder con el contexto recuperado. |
+| **Reescritura de query** | `rag/chat/rewriting.py` | Resolver pronombres/referencias e inyectar fechas ISO antes de buscar (sección 10). |
+| **Juez de evaluación** | `rag/evaluation/ragas_eval.py` | Puntuar context precision/recall/faithfulness/relevancy — el LLM evalúa, no solo genera (sección 11). |
+| **Decisor en un loop agéntico** | `rag/chat/agentic.py` (no expuesto) | Decide si buscar de nuevo o responder — el LLM controla el flujo, no solo el contenido (sección 10). |
+| **Agente externo vía MCP** | Consumidor de `mcp_server` | Un LLM *fuera* de Lorebase (Claude Code/Desktop) decide cuándo y qué buscar (sección 13). |
+
+Roles que existen en el ecosistema más amplio y no aparecen en Lorebase:
+**extracción estructurada** (convertir texto libre en JSON/campos —
+técnicamente lo mismo que usa la validación de citas de la sección 8,
+tool-use, aplicado a otro objetivo), **clasificación/routing** (decidir a
+qué sistema o prompt mandar un pedido según su contenido), y
+**sumarización** (condensar documentos largos antes o después del
+retrieval).
+
+### 18.5 Temperature: qué es, cómo se usa, cómo se "mide"
+
+Ya definida conceptualmente en la sección 17 — acá el ángulo práctico,
+porque "¿cómo se mide?" es una pregunta legítima con una respuesta que
+no es obvia: **temperature no es algo que se mida, es un parámetro que
+se fija** al llamar a la API (`temperature=0.0` a `1.0` o `2.0` según el
+proveedor) — no hay un "termómetro" que la calcule después de generar
+texto. Lo que sí se puede medir, *a partir* del efecto de la temperature,
+es la **consistencia**: generar la misma pregunta varias veces con la
+misma temperature y medir cuánto varían las respuestas (similitud entre
+ellas, o si convergen en el mismo hecho central) — eso es una proxy
+observable de cuán determinística está siendo la generación en la
+práctica, útil para decidir si una temperature está bien calibrada para
+el caso de uso. Lorebase usa el default del proveedor (no fuerza
+`temperature=0`, aunque para un caso de uso de QA factual como este sería
+una elección razonable a considerar) — un ejemplo concreto de una
+perilla que existe pero que este proyecto no tuneó explícitamente, buena
+para nombrar como mejora pendiente en una entrevista.
+
+### 18.6 Bases de datos vectoriales: panorama y rol real
+
+**Qué proveen, exactamente:** un índice eficiente para *nearest neighbor
+search* (HNSW u otros algoritmos ANN, sección 5) sobre vectores de alta
+dimensión, generalmente con la capacidad de filtrar por metadata además
+de la búsqueda por similitud (ej. "los k vectores más cercanos, pero
+solo entre los que pertenecen al workspace X").
+
+**El panorama, con el trade-off de cada categoría:**
+
+- **Extensión de una base relacional existente** (pgvector sobre
+  Postgres — la elección de Lorebase, ADR 0001). Cero infraestructura
+  nueva, transacciones consistentes con el resto de los datos. Techo más
+  bajo en volumen/tuning fino que una solución dedicada.
+- **Vector DB dedicada, self-hosted** (Qdrant, Weaviate, Milvus). Más
+  control y performance a gran escala, filtrado avanzado, soporte nativo
+  de sharding — a costa de un servicio más para operar y mantener
+  sincronizado con la fuente de verdad de los datos.
+- **Vector DB gestionada/SaaS** (Pinecone es la más nombrada en la
+  industria). Cero operación propia, escala manejada por el proveedor —
+  a costa de otro proveedor más del que depender, y costo que crece con
+  el volumen.
+- **Embebida/liviana** (Chroma, FAISS como librería). Buena para
+  prototipos, notebooks, o aplicaciones chicas que no justifican ni
+  siquiera un servicio aparte — no pensada para producción a escala ni
+  para concurrencia alta.
+
+**Cuándo elegir cada una** es, en esencia, la misma pregunta que responde
+ADR 0001: ¿ya tenés una base relacional en el stack? ¿el volumen
+justifica infraestructura dedicada? ¿necesitás filtrado muy selectivo a
+gran escala que una extensión no ofrece bien? La respuesta correcta
+cambia con la escala, no es fija — la habilidad que se evalúa en una
+entrevista es poder justificar la elección para el caso concreto que te
+plantean, no recitar cuál es "la mejor" en abstracto.
+
+### 18.7 Herramientas más usadas del ecosistema
+
+Un mapa rápido de lo que aparece seguido en descripciones de rol y en
+sistemas reales — con honestidad sobre qué usa Lorebase y qué no:
+
+| Categoría | Herramientas comunes | En Lorebase |
+|---|---|---|
+| Orquestación/framework RAG | LangChain, LlamaIndex, Haystack, DSPy | Ninguna — interfaces propias (sección 18.8 explica por qué) |
+| Agentes/grafos de LLM | LangGraph, CrewAI, AutoGen | Ninguna — el loop agéntico (sección 10) es ~100 líneas propias |
+| Vector DBs | Pinecone, Weaviate, Qdrant, Milvus, Chroma, pgvector | pgvector |
+| Embeddings | OpenAI, Cohere, Voyage, modelos abiertos vía `sentence-transformers` | Voyage AI o local (`intfloat/multilingual-e5-large`) |
+| Evaluación | RAGAS, DeepEval, Phoenix (Arize), TruLens, promptfoo | RAGAS |
+| Observabilidad de LLM | Langfuse, LangSmith, Helicone, Arize | Langfuse, sobre OpenTelemetry estándar |
+| Serving/inferencia self-hosted | vLLM, TGI (Text Generation Inference), Ollama | Ninguno — LLM vía API (Anthropic) |
+
+**Por qué importa poder nombrarlas aunque no las hayas usado:** una
+entrevista de system design frecuentemente pregunta "¿usarías LangChain
+acá?" o "¿qué vector DB elegirías?" — la respuesta madura no es "sí" o
+"la que más se usa", es poder comparar la opción con lo que ya se
+decidió y explicar el trade-off real, tal como hacen las ADRs de este
+proyecto.
+
+### 18.8 LangChain: qué es, para qué sirve, cómo se usa (y por qué Lorebase no lo usó)
+
+**Qué es.** Un framework que da abstracciones comunes sobre las piezas de
+un sistema de LLM — proveedores de modelos, vector stores, retrievers,
+document loaders, prompt templates — para no tener que escribir el
+código de integración con cada proveedor a mano. Su pieza central es
+`Runnable` (todo — un LLM, un retriever, un prompt template — implementa
+la misma interfaz componible) y **LCEL** (LangChain Expression Language),
+la sintaxis para encadenar `Runnable`s con el operador `|` (similar a un
+pipe de Unix): `prompt | llm | output_parser` arma una cadena que se
+ejecuta de punta a punta. Sobre esa base construye **chains** (secuencias
+predefinidas para tareas comunes, como un chain de RAG completo) y
+soporta agentes (el LLM decide qué `Runnable` invocar en cada paso —
+sección 10 y 17). **LangGraph** (de la misma familia) extiende esto para
+flujos con estado y control explícito sobre bifurcaciones/loops — más
+adecuado que LCEL simple para agentes con lógica compleja.
+
+**Para qué se usa en la práctica:** prototipar rápido (probar tres
+vector stores o dos proveedores de LLM cambiando una línea, gracias a
+que todos comparten la interfaz `Runnable`), y no reinventar
+integraciones ya resueltas (loaders de PDF/HTML/notion, text splitters,
+memory de conversación) cuando el objetivo es el producto, no la
+plumbing.
+
+**Por qué Lorebase construyó sus propias interfaces
+(`Retriever`/`EmbeddingProvider`/`LLMProvider`) en vez de usar
+LangChain** — una decisión real, buena para poder defender en una
+entrevista, no solo "no lo conocía": el proyecto es explícitamente un
+ejercicio de aprendizaje de los mecanismos de RAG de punta a punta (ver
+"Why it exists" en el README) — envolver todo en LangChain hubiera
+escondido justo el detalle que el proyecto existe para entender (cómo se
+arma RRF, cómo se valida una cita, cómo se estructura un prompt). El
+costo real de esa elección: se reescribió a mano lo que LangChain ya
+resuelve (parsers, un chain de RAG básico), y se perdió el ecosistema de
+integraciones ya construidas. Para un sistema de producción con plazos
+reales, en vez de un proyecto de aprendizaje, usar un framework
+establecido suele ser la elección correcta — la misma lógica de "no
+reinventar lo que ya está resuelto" que ya aparece en varias ADRs de este
+proyecto (no reinventar Postgres FTS con una librería propia, no
+reinventar el backoff de reintentos que el SDK de Voyage ya trae). Poder
+articular esta comparación — cuándo un framework ayuda y cuándo esconde
+justo lo que hace falta entender — es en sí mismo una señal de criterio
+que una entrevista está buscando.
+
+**Preguntas tipo (sección 18 completa):**
+- ¿Cuándo NO usarías RAG, aunque el caso de uso "suene" a RAG?
+- Diseñame, en voz alta, un sistema de Q&A sobre documentación interna de una empresa de 100 personas.
+- ¿Qué parte de un pipeline RAG se puede cachear, y cuál nunca?
+- Nombrame tres estrategias de retrieval más allá de hybrid search, y cuándo elegirías cada una.
+- ¿Por qué usarías (o no) LangChain para un proyecto nuevo de RAG?
