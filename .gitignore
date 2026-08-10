@@ -235,6 +235,7 @@ frontend/coverage/
 
 # Docker / infra
 infra/data/
+infra/backups/
 *.local.yml
 
 # Django runtime (backend/)
