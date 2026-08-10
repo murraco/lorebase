@@ -99,6 +99,34 @@ services:
       retries: 5
       start_period: 15s
 
+  mcp_server:
+    build: ../backend
+    command: python manage.py run_mcp_server
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://${POSTGRES_USER:-lorebase}:${POSTGRES_PASSWORD:-lorebase}@db:5432/${POSTGRES_DB:-lorebase}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      OTEL_SERVICE_NAME: lorebase-mcp-server
+    volumes:
+      - ../backend:/app
+      - backend_venv:/app/.venv
+      # No LOREBASE_NOTES_DIR mount here on purpose: unlike backend/worker,
+      # mcp_server never touches the filesystem directly -- its tools only
+      # ever go through the ORM (Chunk/Document/Source), same as the DRF
+      # API. Reuses the backend/.cache/huggingface directory for free via
+      # the bind mount above, so the reranker model already downloaded for
+      # backend/worker doesn't get fetched again for this service.
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
     build: ../frontend
     ports:

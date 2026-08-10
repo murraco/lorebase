@@ -104,6 +104,13 @@ LLM_COST_PER_MILLION_OUTPUT_TOKENS_USD = env.float(
     "LLM_COST_PER_MILLION_OUTPUT_TOKENS_USD", default=0.0
 )
 
+# Where the MCP server itself is reachable. Self-referential on purpose --
+# see mcp_server/server.py: the SDK's AuthSettings wants an issuer_url/
+# resource_server_url shaped like a real OAuth authorization server, but
+# this project verifies its own flat API keys directly (no separate OAuth
+# provider), so both point back at this same server.
+MCP_SERVER_URL = env("MCP_SERVER_URL", default="http://localhost:8001")
+
 # Safety net: parsing and chunking work entirely in memory, not streaming,
 # so a pathologically large single file could exhaust memory. Connectors
 # skip (and log) anything past this size rather than trying to process it.

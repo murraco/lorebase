@@ -126,3 +126,70 @@ honesto que "el agéntico no sirve": *no hace falta pagar su costo cuando
 el retrieval directo ya funciona bien sobre este corpus* — que es
 exactamente el tipo de conclusión medida, no adivinada, que este bloque
 entero existía para poder sacar.
+
+---
+
+## Model Context Protocol (MCP): qué es y cómo funciona
+
+_(Etapa 17 — Servidor MCP, 2026-08)_
+
+MCP es un protocolo abierto que estandariza cómo una aplicación de IA
+(Claude Desktop, Claude Code) se conecta a fuentes de datos y
+herramientas externas — la analogía oficial es "USB-C para aplicaciones
+de IA": en vez de una integración a medida por cada par cliente-tool,
+cualquier cliente MCP habla con cualquier servidor MCP con el mismo
+protocolo. Un **servidor** MCP expone capacidades (tools, resources,
+prompts); un **cliente** MCP (Claude Desktop/Code) las consume. Lorebase
+es el servidor: expone `search_knowledge`, `get_document`, `list_sources`
+como tools.
+
+**El puente con el retrieval agéntico de la Etapa 16**: ahí el LLM
+*interno* de Lorebase usaba una herramienta de búsqueda *interna*. MCP es
+el mismo patrón — herramienta con schema, el LLM decide cuándo llamarla —
+pero invertido: Lorebase pasa a ser el *proveedor* de la herramienta para
+un LLM *externo*. Mismo concepto, rol invertido.
+
+### stdio vs. Streamable HTTP: la pregunta que importa es quién arranca el proceso
+
+**stdio**: el cliente lanza el servidor como un subproceso propio, en su
+misma máquina, y hablan por stdin/stdout — como correr un script a mano.
+Así es como Claude Desktop maneja típicamente sus servidores locales. No
+sirve para un servicio que ya está corriendo de forma independiente en
+otro lado.
+
+**Streamable HTTP**: el servidor ya existe, corriendo solo, escuchando en
+un puerto — la misma diferencia que hay entre `python manage.py shell`
+(un proceso efímero) y `python manage.py runserver` (un servicio que
+cualquiera puede consultar). El cliente se conecta cuando quiere, vía
+HTTP normal (con la posibilidad de que el servidor devuelva una serie de
+eventos en el tiempo en vez de una sola respuesta, de ahí "streamable").
+
+Lorebase corre como "un servicio más en Docker Compose" — eso
+técnicamente excluye stdio (que necesita que el cliente lo lance él
+mismo) y define la elección de Streamable HTTP.
+
+### Autenticación: bearer tokens, sin necesidad de OAuth real
+
+Claude Code no es una persona logueada — es un proceso automatizado que
+tiene que probar, en cada pedido, que tiene permiso. La solución estándar
+(no es específica de MCP) es un **bearer token**: un secreto que el
+cliente manda en el header `Authorization: Bearer <token>` de cada
+pedido. Conceptualmente es el mismo trabajo que hace una cookie de sesión
+de Django, para un cliente que no es un browser.
+
+El flujo completo: se genera una key una vez (`manage.py
+create_mcp_api_key`), se guarda solo su hash (nunca la key real — mismo
+principio que un password), y esa key se pega en la config de Claude
+Code. En cada pedido, el SDK extrae el bearer token, llama a
+`verify_token()` (implementado por el proyecto), que hashea lo recibido
+y busca ese hash — si matchea, arma un `AccessToken` con la información
+de a qué workspace pertenece esa key, y lo deja disponible (vía un
+contextvar, no un parámetro explícito) durante ese pedido puntual, para
+que cada tool sepa a qué datos tiene permiso de acceder.
+
+`AccessToken` tiene forma de OAuth (`client_id`, `scopes`, `subject`)
+aunque no se implemente ningún flujo OAuth real — la interfaz del SDK
+está pensada para sostener dos casos con la misma forma (un bearer token
+simple, o un flujo OAuth completo con un authorization server real), y
+este proyecto usa el extremo simple: una key estática generada a mano,
+sin redirección ni login interactivo de por medio.

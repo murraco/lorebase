@@ -74,7 +74,9 @@ class LocalFolderConnector(Connector):
             # fetch_documents() is a generator, so one exception here would
             # abort every file after this one too. Same "skip and keep
             # going" precedent as the oversized-file case above.
-            logger.warning("Malformed front matter in %s, indexing as plain text: %s", file_path, exc)
+            logger.warning(
+                "Malformed front matter in %s, indexing as plain text: %s", file_path, exc
+            )
             post = frontmatter.Post(full_text)
         # YAML front matter can hold any type; metadata.get() is typed as
         # `object`, so coerce explicitly rather than trust the YAML author.

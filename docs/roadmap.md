@@ -29,7 +29,8 @@
 | 14 — Conector de GitHub | ✅ Hecha |
 | 15 — Feedback y dashboard | ✅ Hecha |
 | 16 — Observabilidad y evaluación | ✅ Hecha |
-| 17 en adelante | Pendiente |
+| 17 — Servidor MCP | ✅ Hecha |
+| 18 en adelante | Pendiente |
 
 Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
 ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
@@ -65,6 +66,7 @@ Cosas identificadas y **deliberadamente pospuestas**, no descubiertas después. 
 - **Lección operativa: un rebase interactivo masivo dejó el autoreloader de Django en un estado inconsistente** (2026-08, encontrado en vivo). Un `git rebase -i` sobre 130 commits recorre el árbol de trabajo commit por commit, así que `runserver` (con autoreload activo, viendo `backend/` vía bind mount) recibió cientos de eventos de cambio de archivo en segundos — y quedó sirviendo un estado a medio recargar: `MessageSerializer` tiraba `ImproperlyConfigured: Field name 'retrieved_count' is not valid for model 'Message'` en cada request a `/api/messages/`, pese a que el campo existe en el modelo desde hace varios commits. Confirmado que no era un bug de código: una instancia nueva de `django.setup()` (vía `docker exec`) veía el campo sin problema, y el archivo dentro del contenedor coincidía con el del host — solo el proceso del `runserver` ya arrancado estaba mal. `docker compose restart backend` lo resolvió al toque. No hace falta ningún cambio de código; queda como advertencia para la próxima vez que un rebase grande toque el árbol de trabajo con el stack corriendo.
 - **Documento educacional pendiente, a armar recién cuando el roadmap esté completo** (2026-08, pedido explícito). Durante la Etapa 16 empezamos a "pinear" explicaciones de conceptos (RAGAS, y las que sigan) en `docs/learning-notes.md` en vez de perderlas en la conversación — es un borrador acumulativo, no el documento final. Cuando se cierre la última etapa, hay que consolidar ese archivo en un documento educacional real, editado y organizado para enseñar, no solo una lista cronológica de notas pineadas.
 - **`ApiKey` (Etapa 17) no expira, pospuesto a propósito** (2026-08, pedido explícito del usuario al aprobar el diseño del modelo). El plan original solo pedía `key_hash` + `Membership` + `last_used_at` — no hay campo `expires_at` ni lógica que rechace una key vieja en `verify_token()`. Queda como deuda conocida desde el día uno, no descubierta después: agregar expiración a 30 días cuando se retome. Como el modelo ya tiene `created_at` (heredado de `BaseModel`), la expiración se puede calcular sin migración si se define como una ventana fija (`created_at + 30 días`) en vez de una columna propia — evaluar esa opción antes de asumir que hace falta un nuevo campo.
+- **Lección operativa: nginx cachea la IP de `backend` y no la actualiza sola cuando el contenedor se recrea** (2026-08, encontrado en vivo — login real tirando 502 Bad Gateway). Cada vez que este session recreó `backend` (rebuild de imagen + `docker compose up -d backend` para tomar dependencias nuevas, patrón repetido varias veces con OTel/RAGAS/agéntico) el contenedor recibe una IP nueva en la red de Docker, pero `frontend` (nginx, ya corriendo desde antes) resuelve el hostname `backend` una sola vez y cachea esa IP — así que sigue mandando tráfico a un contenedor que ya no existe. Confirmado leyendo el log de nginx (`connect() failed (111: Connection refused)` contra una IP que `docker inspect` mostraba que ya no era la de `backend`). Fix: `docker compose restart frontend` después de recrear `backend`, para forzar una resolución de DNS nueva. No hace falta si `backend` solo se reinicia (`restart`, no `up`/`rm`+`up`) — ahí la IP no cambia.
 
 ## Context
 
@@ -868,7 +870,7 @@ solo en verde.
 
 ---
 
-#### Etapa 17 — Servidor MCP
+#### Etapa 17 — Servidor MCP ✅
 
 **Objetivo:** exponer el retrieval de Lorebase como herramienta para Claude Desktop / Claude Code.
 
@@ -881,6 +883,15 @@ solo en verde.
 
 **Dependencias:** Etapa 10 (funcionalmente); se agenda después de la 16 para exponer un retrieval ya evaluado.
 **Hecho cuando:** Claude Code consulta tus notas vía MCP y devuelve respuestas citadas.
+
+**Notas de la implementación real:**
+- **`stream_tool()` (forzar una tool específica) no sirve para un loop agéntico ni para MCP** — acá el cliente MCP necesita elegir entre varias tools (`search_knowledge`, `get_document`, `list_sources`, y la que use internamente para decidir), así que el SDK expone su propio mecanismo (`tool_choice="any"`) manejado enteramente por el propio servidor MCP, no algo que este proyecto tuvo que construir — a diferencia del loop agéntico interno de la Etapa 16, que sí lo necesitó.
+- **`AuthSettings` pide campos con forma de OAuth completo (`issuer_url`, `resource_server_url`) aunque no se implemente un authorization server real** — son metadata que el propio servidor publica, no algo que se verifica contra un tercero. Se apuntan a sí mismos (`MCP_SERVER_URL`). La verificación real es 100% `LorebaseTokenVerifier`, una key plana hasheada contra `ApiKey`, sin ningún flujo OAuth de por medio.
+- **`ApiKey` (modelo nuevo) se ata a `Membership`, no a `User`/`Workspace` directo** — hereda exactamente el mismo límite de permisos que esa persona ya tiene, sin modelo de permisos nuevo. Solo se guarda `key_hash` (SHA-256); la key real se muestra una única vez, al crearla (`manage.py create_mcp_api_key`).
+- **`workspace_id` viaja en `AccessToken.claims`**, seteado por `LorebaseTokenVerifier.verify_token()` y leído por cada tool vía `get_access_token()` (un contextvar que el propio SDK llena antes de correr la tool) — mismo principio que `DocumentViewSet.get_queryset()` en la API REST, aplicado al mundo async de MCP.
+- **Hallazgo real de testing: los métodos async del ORM de Django (`afirst`/`asave`) corren en un connection/thread separado que no ve la transacción sin commitear de un test normal** — hace falta `pytest.mark.django_db(transaction=True)`, no el default, para que un test que mezcla un factory síncrono con una verificación async vea los mismos datos.
+- **Verificado en vivo con el cliente Python real del SDK** (`mcp.client.streamable_http` + `ClientSession`), no solo llamando las funciones Python directamente: las 3 tools funcionan de punta a punta sobre HTTP real, con un bearer token real, contra el corpus real. `list_sources`/`get_document` responden en milisegundos; `search_knowledge` tarda varios segundos la primera vez que corre en un proceso nuevo (carga en memoria los modelos locales de embedding y reranking) y unos ~6 segundos en corridas posteriores (el cross-encoder de reranking corriendo en CPU, no un bug) — el cliente de prueba necesitó un timeout HTTP explícito más generoso que el default de 5s de `httpx`, algo a tener en cuenta para cualquier cliente real.
+- **Lección operativa, encontrada en vivo durante esta etapa (no relacionada al código de MCP): nginx cachea la IP de `backend` y no la actualiza cuando el contenedor se recrea** — ver la entrada correspondiente en "Deuda técnica y pendientes conocidos".
 
 ---
 
