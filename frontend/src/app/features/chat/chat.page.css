@@ -1,5 +1,11 @@
+/* height: 100% rather than the shell's flex: 1 1 auto rule -- Angular
+   never stamps the parent's ngcontent attribute onto a component rendered
+   by <router-outlet>, so `.main > *:not(...)` in shell.component.css can
+   never match this host under emulated encapsulation. Percentage height
+   against .main's definite 100vh sidesteps that entirely. */
 :host {
   display: block;
+  height: 100%;
   min-height: 0;
 }
 

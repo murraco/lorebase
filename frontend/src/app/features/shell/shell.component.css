@@ -341,9 +341,12 @@
   flex-direction: column;
 }
 
-/* The routed component takes whatever the metrics strip leaves.
-   router-outlet is excluded too: it is a zero-size marker element that
-   sits beside the component it renders, not around it. */
+/* Dead in practice: Angular never stamps this stylesheet's ngcontent
+   attribute onto a component rendered by <router-outlet>, so this never
+   matches. Kept as documentation of intent -- each routed page sets its
+   own `height: 100%` against .main's definite 100vh instead (see e.g.
+   chat.page.css), which achieves the same result without depending on
+   a selector that can't reach across the router-outlet boundary. */
 .main > *:not(lorebase-metrics-bar):not(router-outlet) {
   flex: 1 1 auto;
   min-height: 0;
