@@ -30,7 +30,7 @@
 | 15 — Feedback y dashboard | ✅ Hecha |
 | 16 — Observabilidad y evaluación | ✅ Hecha |
 | 17 — Servidor MCP | ✅ Hecha |
-| 18 en adelante | Pendiente |
+| 18 — Hardening, deploy y documentación | ✅ Hecha |
 
 Desde que se cerró la Etapa 13, buena parte del trabajo **no corresponde a
 ninguna etapa del plan**: son bugs encontrados usando el sistema con datos
@@ -895,7 +895,7 @@ solo en verde.
 
 ---
 
-#### Etapa 18 — Hardening, deploy y documentación
+#### Etapa 18 — Hardening, deploy y documentación ✅
 
 **Objetivo:** dejar el proyecto presentable y operable.
 
@@ -930,6 +930,13 @@ solo en verde.
 - **Ventana fija con `cache.incr()` atómico**, no un patrón get-then-set: dos pedidos concurrentes no pueden pasarse del límite por una carrera. La única imprecisión aceptada es al arrancar una ventana nueva (dos pedidos concurrentes pueden inicializar el contador a la vez), un límite conocido y menor de este algoritmo, no vale la pena uno más complejo (sliding window, token bucket) a esta escala.
 - **Precedente real ya existente en el propio repo que hubiera mordido acá**: `config/settings/test.py` ya deshabilita el throttling de DRF en tests, con el comentario "el estado del throttle vive en el cache (Redis), no en la transacción de DB que cada test revierte". El nuevo decorador tiene el mismo riesgo — mitigado porque la key de rate limit incluye el `pk` (UUID) del usuario, y cada test crea un usuario nuevo vía factory, así que no hay colisión entre tests en la práctica; el test de integración igual limpia su propia key al terminar, por prolijidad.
 - **De paso, correr `mypy` sobre todo el scope gradual (`core/`, `rag/`) — no solo `ruff` archivo por archivo como se venía haciendo — encontró 6 errores reales de tipos** en `rag/evaluation/ragas_eval.py` y `rag/chat/agentic.py`, arrastrados desde las Etapas 16 y 17 sin haberlos notado (parámetros que pydantic marca como requeridos pero son opcionales en runtime, invariancia de `list` contra la unión de tipos que espera `EvaluationDataset`, y un `dict[str, object]` demasiado opaco donde hacía falta `Any`). Corregidos; `make lint` completo queda en verde.
+
+**Notas de la implementación real (Tareas 5 y 6 — README, ADRs, capturas):**
+- **Las 3 capturas del README (`docs/screenshots/`) son de la app real corriendo, con datos reales** (553 chunks, 4 documentos, 3 fuentes) — no mockups. Se generaron con Chrome headless manejado directamente por CDP (`Page.navigate`, `Runtime.evaluate`, `Input.dispatchKeyEvent`, `Page.captureScreenshot` vía websocket), inyectando una `sessionid` real creada por `SessionStore` para evitar loguearse a mano. Sesión y proceso de Chrome, ambos descartables, se cerraron después.
+- **Bug real encontrado armando la captura de una respuesta completa**: el flujo saltea el login normal (que es lo único que dispara `ensureCsrfCookie()` en `auth.service.ts`), así que la cookie `sessionid` inyectada nunca vino acompañada de una cookie `csrftoken` — el POST a `/api/conversations/` volvía 403 en silencio y Angular simplemente dejaba la pregunta tipeada sin enviar en el composer. Nada de esto es un bug de la app: es exactamente el comportamiento correcto de CSRF frente a un cliente que no pasó por el flujo real de auth. Fix en el script de captura (no en la app): pedir `/api/auth/csrf/` una vez, igual que hace el login real, antes de tipear y enviar.
+- **Las 3 conversaciones de prueba generadas mientras se depuraba ese bug se borraron** de la base real después (`Conversation.objects.filter(id__in=[...]).delete()`), para no dejar tráfico sintético mezclado con el historial real de uso.
+- El diagrama de arquitectura del README es Mermaid, no ASCII, y muestra el flujo real: las tres fuentes → el pipeline de ingestion compartido → `Chunk` (embedding + `search_vector`) → `HybridRetriever` (léxico + denso + RRF + reranker) → el LLM con validación de citas → los dos consumidores reales del mismo retrieval (la SPA y el servidor MCP), remarcando explícitamente que el MCP reusa `HybridRetriever` sin lógica duplicada (Etapa 17).
+- Tabla de comparación directo-vs-agéntico de la Etapa 16 llevada al README tal cual, como evidencia de una decisión de diseño medida en vez de supuesta.
 
 ---
 
