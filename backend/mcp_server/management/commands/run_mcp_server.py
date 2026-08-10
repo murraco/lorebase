@@ -14,7 +14,5 @@ class Command(BaseCommand):
         parser.add_argument("--port", type=int, default=8001)
 
     def handle(self, *args: Any, **options: Any) -> None:
-        self.stdout.write(
-            f"MCP server listening on {options['host']}:{options['port']}, path /mcp"
-        )
+        self.stdout.write(f"MCP server listening on {options['host']}:{options['port']}, path /mcp")
         mcp.run(transport="streamable-http", host=options["host"], port=options["port"])

@@ -20,9 +20,7 @@ class LorebaseTokenVerifier(TokenVerifier):
     async def verify_token(self, token: str) -> AccessToken | None:
         key_hash = hashlib.sha256(token.encode()).hexdigest()
         api_key = (
-            await ApiKey.objects.select_related("membership")
-            .filter(key_hash=key_hash)
-            .afirst()
+            await ApiKey.objects.select_related("membership").filter(key_hash=key_hash).afirst()
         )
         if api_key is None:
             return None
