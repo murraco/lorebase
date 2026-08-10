@@ -25,9 +25,9 @@ where the real decisions live.
 
 ## What it does
 
-- **Three source types**: a local folder of Markdown notes, PDFs (parsed to
-  Markdown and chunked through the exact same path as notes — one chunker,
-  not two), and GitHub repositories.
+- **Three source types**: a local folder of Markdown/plain-text notes,
+  PDFs (parsed to Markdown and chunked through the exact same path as
+  notes — one chunker, not two), and GitHub repositories.
 - **Hybrid search**: PostgreSQL full-text search (lexical) and pgvector
   cosine similarity (dense) fused with Reciprocal Rank Fusion, then
   re-ranked by a cross-encoder before the top-k reaches the LLM.
@@ -52,7 +52,7 @@ where the real decisions live.
 ```mermaid
 flowchart TB
     subgraph SRC["Sources"]
-        local["Local folder<br/>.md + .pdf"]
+        local["Local folder<br/>.md + .txt + .pdf"]
         gh["GitHub repo<br/>.md"]
     end
 
