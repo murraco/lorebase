@@ -17,10 +17,59 @@
   font-size: var(--text-base);
 }
 
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.back-btn svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 h3 {
   font-family: var(--font-serif);
-  margin: 0 0 14px;
+  margin: 0;
   font-size: var(--text-lg);
+  line-height: 1.2;
+}
+
+.modal-sub {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.modal-intro {
+  margin: 0 0 12px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
 .breadcrumb {
@@ -65,13 +114,45 @@ h3 {
   color: var(--text-muted);
 }
 
-.advanced {
+/* The label/input/hint stack is deliberately three different visual
+   weights (strong, ink, quiet) so the eye can tell at a glance which
+   line names the field and which is just supporting detail — before
+   this, both used the same muted body-text style and read as one
+   undifferentiated paragraph. */
+.field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.field-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-faint);
+}
+
+.field-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+
+.field-hint code {
+  font-family: var(--font-mono);
+  background: var(--surface-sunken);
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
 }
 
 .hint {
@@ -86,7 +167,8 @@ h3 {
   margin: 0 0 8px;
 }
 
-input {
+input,
+textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
@@ -94,6 +176,43 @@ input {
   font-family: var(--font-mono);
   color: var(--text);
   background: var(--surface);
+  resize: vertical;
+}
+
+.type-grid {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.type-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.type-card:hover {
+  border-color: var(--accent);
+}
+
+.type-card-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.type-card-desc {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-muted);
 }
 
 .primary {

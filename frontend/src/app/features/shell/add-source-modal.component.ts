@@ -1,11 +1,11 @@
-import { Component, inject, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AuthService } from '../../core/auth/auth.service';
-import type { DirectoryListing, Source } from '../../core/models';
+import type { DirectoryListing, Source, SourceType } from '../../core/models';
 import { SourcesService } from '../../core/sources/sources.service';
 
-type Step = 'browse' | 'progress';
+type Step = 'type' | 'browse' | 'github' | 'progress';
 
 @Component({
   selector: 'lorebase-add-source-modal',
@@ -13,27 +13,41 @@ type Step = 'browse' | 'progress';
   templateUrl: './add-source-modal.component.html',
   styleUrl: './add-source-modal.component.css',
 })
-export class AddSourceModalComponent implements OnInit, OnDestroy {
+export class AddSourceModalComponent {
   private readonly sourcesService = inject(SourcesService);
   private readonly auth = inject(AuthService);
-  private pollHandle?: ReturnType<typeof setInterval>;
 
   readonly closed = output<void>();
 
-  protected readonly step = signal<Step>('browse');
+  protected readonly step = signal<Step>('type');
   protected readonly listing = signal<DirectoryListing | null>(null);
   protected readonly browsing = signal(false);
-  protected readonly source = signal<Source | null>(null);
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
   protected sectionBoundaryPattern = '';
+  protected githubRepos = '';
+  protected githubBranch = '';
+  protected githubPathPrefixes = '';
 
-  async ngOnInit(): Promise<void> {
-    await this.browseTo('');
-  }
+  private readonly createdSourceId = signal<string | null>(null);
+  /** Reads live off the shared sources list rather than polling on its
+   * own — the shell's ambient poller and the pollUntilDone() call below
+   * already keep that list current while a sync is in flight, so a
+   * second polling loop here would just be a duplicate of one that
+   * already exists. */
+  protected readonly source = computed(() => {
+    const id = this.createdSourceId();
+    return id ? (this.sourcesService.sources().find((s) => s.id === id) ?? null) : null;
+  });
 
-  ngOnDestroy(): void {
-    this.stopPolling();
+  protected selectType(type: SourceType): void {
+    this.error.set(null);
+    if (type === 'local_folder') {
+      this.step.set('browse');
+      void this.browseTo('');
+    } else {
+      this.step.set('github');
+    }
   }
 
   protected async browseTo(path: string): Promise<void> {
@@ -56,9 +70,8 @@ export class AddSourceModalComponent implements OnInit, OnDestroy {
   }
 
   protected async useCurrentFolder(): Promise<void> {
-    const workspace = this.auth.primaryWorkspace();
     const listing = this.listing();
-    if (!workspace || !listing) return;
+    if (!listing) return;
 
     const name = listing.path === '' ? 'root' : (listing.path.split('/').pop() ?? listing.path);
     const config: Record<string, string> = { path: listing.absolute_path };
@@ -66,20 +79,45 @@ export class AddSourceModalComponent implements OnInit, OnDestroy {
     if (pattern) {
       config['section_boundary_pattern'] = pattern;
     }
+    await this.submitNewSource(name, 'local_folder', config);
+  }
+
+  protected async useGithubConfig(): Promise<void> {
+    const repos = this.githubRepos
+      .split(/[\n,]/)
+      .map((repo) => repo.trim())
+      .filter((repo) => repo.length > 0);
+    if (repos.length === 0) return;
+
+    const config: Record<string, unknown> = { repos };
+    const branch = this.githubBranch.trim();
+    if (branch) config['branch'] = branch;
+    const pathPrefixes = this.githubPathPrefixes
+      .split(',')
+      .map((prefix) => prefix.trim())
+      .filter((prefix) => prefix.length > 0);
+    if (pathPrefixes.length > 0) config['path_prefixes'] = pathPrefixes;
+
+    const name = repos.length === 1 ? repos[0] : `${repos[0]} +${repos.length - 1} more`;
+    await this.submitNewSource(name, 'github', config);
+  }
+
+  private async submitNewSource(
+    name: string,
+    type: SourceType,
+    config: Record<string, unknown>,
+  ): Promise<void> {
+    const workspace = this.auth.primaryWorkspace();
+    if (!workspace) return;
 
     this.submitting.set(true);
     this.error.set(null);
     try {
-      const created = await this.sourcesService.create({
-        workspace: workspace.id,
-        name,
-        type: 'local_folder',
-        config,
-      });
-      this.source.set(created);
+      const created = await this.sourcesService.create({ workspace: workspace.id, name, type, config });
+      this.createdSourceId.set(created.id);
       this.step.set('progress');
       await this.sourcesService.sync(created.id);
-      this.pollUntilDone(created.id);
+      await this.sourcesService.pollUntilDone(created.id);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Failed to add source.');
     } finally {
@@ -88,25 +126,6 @@ export class AddSourceModalComponent implements OnInit, OnDestroy {
   }
 
   protected close(): void {
-    this.stopPolling();
     this.closed.emit();
-  }
-
-  private pollUntilDone(id: string): void {
-    this.pollHandle = setInterval(async () => {
-      await this.sourcesService.refreshOne(id);
-      const updated = this.sourcesService.sources().find((s) => s.id === id) ?? null;
-      this.source.set(updated);
-      if (updated && updated.status !== 'pending' && updated.status !== 'syncing') {
-        this.stopPolling();
-      }
-    }, 1500);
-  }
-
-  private stopPolling(): void {
-    if (this.pollHandle !== undefined) {
-      clearInterval(this.pollHandle);
-      this.pollHandle = undefined;
-    }
   }
 }

@@ -940,6 +940,84 @@ solo en verde.
 
 ---
 
+### Trabajo posterior a la Etapa 18
+
+Mismo criterio que la sección equivalente de la Etapa 13: trabajo real que
+no corresponde a ninguna etapa del plan, ocurrido después de cerrarlo por
+completo.
+
+| # | Cambio | Origen | Nota detallada en |
+|---|---|---|---|
+| 8 | Picker de sources en 2 pasos (tipo → form) + sidebar agrupado por tipo | Pedido | Abajo |
+| 9 | ADRs 0004–0007 (citas verificadas, directo vs. agéntico, RRF, auth por sesión) | Pedido | `docs/adr/` |
+
+**Notas de la implementación real (#8 — picker de sources):**
+- **Solo existen dos `Source.type` reales** (`local_folder`, `github`) —
+  "PDF" no es un tercer tipo: es una extensión de archivo que
+  `LocalFolderConnector` ya detectaba dentro de una fuente de carpeta local
+  (Etapa 8). El alcance real era exponer GitHub en el frontend por primera
+  vez (existía desde la Etapa 14 solo por admin/API) y agrupar el sidebar,
+  no un picker de tres opciones.
+- **El modal pasa de un flujo fijo (browse de carpeta) a `type → browse |
+  github → progress`**: `selectType()` decide la rama, y ambas ramas
+  terminan en un `submitNewSource()` compartido (creación + `sync()` +
+  `pollUntilDone()`), en vez de duplicar esa cola de pasos por tipo.
+- **Se eliminó un poller duplicado, no se agregó uno nuevo**: el modal
+  tenía su propio `setInterval` manual para refrescar el progreso del
+  source recién creado, cuando `SourcesService.pollUntilDone()` (ya usado
+  por `shell.syncSource()` y `corpus.page.ts`) hace exactamente eso. El
+  paso de progreso ahora es un `computed()` que lee directo de la señal
+  compartida `sourcesService.sources()`, que `pollUntilDone()` actualiza en
+  cada tick — se cae también el `OnDestroy`/`stopPolling()` que existía
+  solo para cancelar ese poller propio.
+- **Corrección real sobre la primera versión: el sidebar agrupado por tipo
+  (dos niveles anidados — "Sources" y, adentro, "Local folders"/"GitHub")
+  se armó, se verificó visualmente, y se **revirtió** apenas Mauricio lo
+  vio en uso** — dos niveles de jerarquía para dos ítems por grupo era
+  ruido, no señal, aunque la propia pregunta de diseño (`AskUserQuestion`)
+  se lo había ofrecido como opción recomendada y él la había elegido: verla
+  renderizada reveló un problema que la descripción de la opción no
+  transmitía. Quedó como lista plana (como estaba antes de este cambio)
+  con un ícono chico de tipo (carpeta / GitHub, SVG de 12px, mismo estilo
+  que el resto de los íconos del sidebar) a la izquierda de cada fila —
+  exactamente lo pedido: "un ícono pequeño que indique el tipo", sin
+  agregar un nivel de anidamiento. Lección: una opción recomendada y
+  elegida en una pregunta de diseño no reemplaza verificar el resultado
+  renderizado antes de darlo por bueno.
+- **El modal tuvo una segunda pasada de diseño por el mismo motivo**:
+  la primera versión apilaba label/input/hint con el mismo peso visual
+  (texto muted del mismo tamaño para las tres cosas), lo que se reportó
+  como "no se entiende cómo se usa". Se rehizo con tres pesos distintos
+  (`.field-label` en mayúsculas y color pleno, el input, `.field-hint` más
+  chico y tenue) y un header de modal real: un botón de "atrás" circular
+  con ícono (no un link de texto chico) más un subtítulo bajo el título
+  ("GitHub repositories" / "Local folder") que dice en qué paso está el
+  usuario sin depender solo del botón de volver.
+- **Verificado en vivo de punta a punta, en ambas pasadas**, no solo
+  revisando el código: Chrome headless por CDP creó realmente una fuente
+  GitHub (`octocat/Spoon-Knife`) desde el picker nuevo, confirmó que
+  terminó "ready" con su chunk embebido, y que apareció en el sidebar con
+  su ícono de tipo correcto — la fuente de prueba se borró después para no
+  dejar datos sintéticos. `ng build` y `ng lint` corridos dentro de un
+  contenedor Linux (el host tiene un mismatch de arquitectura de `esbuild` que rompe
+  el build local, no relacionado con este cambio) confirmaron cero errores
+  de tipos y cero warnings de lint nuevos.
+
+**Notas de la implementación real (#9 — ADRs nuevos):**
+- Las 4 decisiones elegidas para documentar (de una lista más larga de
+  candidatas) fueron las más distintivas y menos obvias, no las más
+  fáciles de escribir: la validación de citas por tool-use es el mecanismo
+  más particular del proyecto; directo-vs-agéntico ya tenía evidencia
+  medida (Etapa 16) en vez de ser una intuición; RRF y auth por sesión son
+  ambas decisiones con una alternativa "de manual" (fusión ponderada, JWT)
+  que alguien familiarizado con esos patrones esperaría por defecto.
+- Se dejaron afuera, a propósito, candidatas más débiles para un ADR
+  propio por ya estar bien cubiertas como hallazgos/deuda técnica en este
+  mismo documento (ej. `Membership` para multi-workspace desde el día uno,
+  proveedores de embeddings/reranking intercambiables entre local y API).
+
+---
+
 ## Grafo de dependencias
 
 ```

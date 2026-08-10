@@ -1,6 +1,36 @@
 <div class="modal-bg">
   <div class="modal">
-    <h3>Add source</h3>
+    <div class="modal-head">
+      @if (step() !== 'type') {
+        <button type="button" class="back-btn" aria-label="Back" (click)="step.set('type')">
+          <svg viewBox="0 0 12 12" aria-hidden="true">
+            <polyline points="7.5 2 3.5 6 7.5 10" />
+          </svg>
+        </button>
+      }
+      <div>
+        <h3>Add source</h3>
+        @if (step() === 'browse') {
+          <p class="modal-sub">Local folder</p>
+        } @else if (step() === 'github') {
+          <p class="modal-sub">GitHub repositories</p>
+        }
+      </div>
+    </div>
+
+    @if (step() === 'type') {
+      <p class="modal-intro">Choose what to index.</p>
+      <div class="type-grid">
+        <button type="button" class="type-card" (click)="selectType('local_folder')">
+          <span class="type-card-title">📁 Local folder</span>
+          <span class="type-card-desc">Markdown notes and PDFs from a folder Lorebase can reach.</span>
+        </button>
+        <button type="button" class="type-card" (click)="selectType('github')">
+          <span class="type-card-title">GitHub repo</span>
+          <span class="type-card-desc">Markdown files and READMEs from one or more repositories.</span>
+        </button>
+      </div>
+    }
 
     @if (step() === 'browse') {
       <!-- Says what is being browsed, because it is not obvious and the
@@ -34,23 +64,23 @@
         }
       </div>
 
-      <label class="advanced">
-        Section boundary pattern (optional, advanced)
+      <div class="field">
+        <label class="field-label" for="sectionBoundaryPattern">
+          Section boundary pattern <span class="field-optional">(optional, advanced)</span>
+        </label>
         <input
+          id="sectionBoundaryPattern"
           name="sectionBoundaryPattern"
           type="text"
           [(ngModel)]="sectionBoundaryPattern"
           placeholder="e.g. ^\d{4}-\d{2}-\d{2}"
         />
-      </label>
-      <p class="hint">
-        For files with no Markdown headings but a repeating line pattern (like a daily journal's
-        date stamps) — treats matching lines as section boundaries instead of chunking blindly.
-      </p>
-
-      @if (error()) {
-        <p class="error">{{ error() }}</p>
-      }
+        <p class="field-hint">
+          For files with no Markdown headings but a repeating line pattern (like a daily
+          journal's date stamps) — treats matching lines as section boundaries instead of
+          chunking blindly.
+        </p>
+      </div>
 
       <button
         type="button"
@@ -60,6 +90,67 @@
       >
         {{ submitting() ? 'Adding…' : 'Use this folder' }}
       </button>
+    }
+
+    @if (step() === 'github') {
+      <div class="field">
+        <label class="field-label" for="githubRepos">Repositories</label>
+        <textarea
+          id="githubRepos"
+          name="githubRepos"
+          rows="3"
+          [(ngModel)]="githubRepos"
+          placeholder="owner/name, one per line"
+        ></textarea>
+        <p class="field-hint">One repository per line, in <code>owner/name</code> form.</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="githubBranch">
+          Branch <span class="field-optional">(optional)</span>
+        </label>
+        <input
+          id="githubBranch"
+          name="githubBranch"
+          type="text"
+          [(ngModel)]="githubBranch"
+          placeholder="defaults to each repo's default branch"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="githubPathPrefixes">
+          Path prefixes <span class="field-optional">(optional)</span>
+        </label>
+        <input
+          id="githubPathPrefixes"
+          name="githubPathPrefixes"
+          type="text"
+          [(ngModel)]="githubPathPrefixes"
+          placeholder="e.g. docs/, notes/"
+        />
+        <p class="field-hint">Only index files under these paths — leave empty for the whole repo.</p>
+      </div>
+
+      <p class="scope">
+        Only Markdown files and READMEs are indexed, using a GitHub access token already
+        configured on the server.
+      </p>
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="submitting() || !githubRepos.trim()"
+        (click)="useGithubConfig()"
+      >
+        {{ submitting() ? 'Adding…' : 'Add repositories' }}
+      </button>
+    }
+
+    @if (step() === 'browse' || step() === 'github') {
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
     }
 
     @if (step() === 'progress') {
