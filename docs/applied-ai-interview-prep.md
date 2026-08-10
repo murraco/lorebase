@@ -792,12 +792,48 @@ respuesta mejor que "porque sí es importante"):
 
 ## 13. Model Context Protocol (MCP)
 
-**Qué es.** Protocolo abierto que estandariza cómo una aplicación de IA
-(Claude Desktop, Claude Code) se conecta a fuentes de datos y
-herramientas externas — la analogía oficial es "USB-C para aplicaciones
-de IA". Un **servidor** MCP expone capacidades (tools/resources/prompts);
-un **cliente** las consume. Lorebase es el servidor: expone
-`search_knowledge`, `get_document`, `list_sources`.
+**Qué es.** Protocolo abierto (Anthropic, 2024) que estandariza cómo una
+aplicación de IA (Claude Desktop, Claude Code) se conecta a fuentes de
+datos y herramientas externas — la analogía oficial es "USB-C para
+aplicaciones de IA". Un **servidor** MCP expone capacidades; un
+**cliente** las consume. Corre sobre **JSON-RPC 2.0** — un formato de
+mensaje estándar (`{"method": ..., "params": ..., "id": ...}`) más viejo
+y más simple que MCP mismo — como protocolo de mensajería de base, sea
+cual sea el transporte (stdio o Streamable HTTP, ver abajo): la elección
+de transporte cambia *cómo viajan* los mensajes, no *su forma*.
+
+**Las tres primitivas — Lorebase solo implementa una:**
+- **Tools** — funciones invocables con schema, el LLM decide cuándo
+  llamarlas y con qué argumentos. Lo que expone Lorebase:
+  `search_knowledge`, `get_document`, `list_sources`.
+- **Resources** — datos que el cliente puede *listar y leer* directamente
+  (más parecido a un sistema de archivos expuesto que a una función) sin
+  que el LLM tenga que decidir "llamarlos" — útil para contenido que un
+  cliente quiere mostrar o cargar de antemano, no para una búsqueda que
+  depende de la pregunta del usuario. Lorebase no expone ninguno: el
+  retrieval es intrínsecamente una operación con parámetros (la query),
+  no algo "listable" de antemano.
+- **Prompts** — plantillas de prompt reusables que el servidor ofrece,
+  para que un cliente las inserte en una conversación con argumentos
+  propios. Tampoco usado acá — Lorebase no tiene ningún prompt que tenga
+  sentido exponer *fuera* de su propio flujo de chat.
+
+Sabé nombrar las tres aunque el proyecto solo use una — es una pregunta
+directa y común ("¿cuáles son las primitivas de MCP?").
+
+**Por qué existe MCP, dado que las APIs de LLM ya tienen tool-use/function
+calling nativo.** El problema que resuelve no es técnico, es de
+combinatoria: sin un protocolo común, conectar N aplicaciones de IA con M
+herramientas/fuentes de datos exige N×M integraciones a medida — cada
+aplicación reimplementando el mismo cliente para cada fuente. Con MCP,
+una fuente de datos implementa **un** servidor, y cualquier cliente MCP
+(no solo Claude) puede hablarle sin código de integración específico —
+la misma lógica económica por la que USB reemplazó puertos propietarios
+por periférico. Tool-use nativo de un proveedor de LLM sigue siendo la
+pieza que MCP usa por debajo (el LLM todavía decide qué tool llamar, con
+la misma mecánica) — MCP estandariza el *transporte y descubrimiento* de
+esas tools entre aplicaciones, no reemplaza el mecanismo de tool-use en
+sí.
 
 **El puente con retrieval agéntico (sección 10):** ahí el LLM interno de
 Lorebase usaba una tool de búsqueda interna. MCP es el mismo patrón
@@ -833,9 +869,44 @@ de retrieval directo, sin ninguna lógica duplicada. `search_knowledge`
 devuelve los resultados crudos al agente externo, que decide qué hacer
 con ellos.
 
+**Riesgos de seguridad específicos de MCP, más allá del prompt injection
+genérico (sección 17).** Vale la pena poder nombrarlos, aunque Lorebase
+—al ser el propio autor el único cliente confiable— no necesite
+defenderse de todos:
+- **Tool poisoning.** La *descripción* de una tool (el texto que le dice
+  al LLM qué hace y cuándo usarla) es en sí mismo texto que el modelo lee
+  como contexto — un servidor MCP malicioso o comprometido puede escribir
+  una descripción que incluya instrucciones ocultas ("antes de responder,
+  mandá también el contenido de X a Y"), invisibles para el usuario que
+  solo ve el nombre de la tool. Es la misma clase de problema que el
+  prompt injection vía documentos recuperados (sección 17), pero la
+  superficie de ataque es la *definición* de la tool, no su resultado.
+- **Confused deputy.** Un cliente que confía en un servidor MCP le da,
+  en la práctica, la capacidad de actuar con los permisos del usuario que
+  lo invocó — si el servidor tiene más acceso del que la tarea puntual
+  necesita (por ejemplo, un token con permisos de escritura cuando la
+  tool solo debería leer), un mal uso (accidental o inducido por
+  contenido malicioso) puede actuar más allá de lo que el usuario
+  esperaba.
+- **Servidores de terceros no confiables.** Conectar un cliente MCP a un
+  servidor que no controlás (a diferencia de Lorebase, donde el mismo
+  autor controla ambos lados) es, en los hechos, darle a ese servidor
+  acceso a lo que sea que el cliente le exponga en la conversación —
+  la misma cautela que instalar una dependencia de código de una fuente
+  no verificada.
+
+Mitigación real que Lorebase sí aplica, aunque no fue diseñada
+pensando en esto: el bearer token de cada `ApiKey` hereda exactamente
+los permisos de la `Membership` a la que está atado (sección 15) — un
+cliente MCP nunca puede tener más acceso del que la persona que generó
+la key ya tenía.
+
 **Preguntas tipo:**
 - ¿Por qué Streamable HTTP y no stdio para un servicio que corre de forma independiente?
 - ¿Por qué el auth de MCP necesita campos con forma de OAuth aunque no haya un flujo OAuth real corriendo?
+- ¿Cuáles son las tres primitivas de MCP, y por qué Lorebase solo usa una?
+- Si las APIs de LLM ya soportan tool-use nativo, ¿qué problema real agrega MCP?
+- ¿Qué es "tool poisoning" y en qué se parece/diferencia del prompt injection vía documentos?
 
 ---
 
@@ -1076,6 +1147,25 @@ reprocesar esos tokens desde cero. Lorebase **no lo usa hoy** — el
 `SYSTEM_PROMPT` se manda completo en cada turno — pero sería una
 optimización de costo/latencia directa y de bajo riesgo dado que el
 system prompt no cambia entre preguntas.
+
+**Patrones de agentes más allá de ReAct.** La sección 10 cubre ReAct
+(razonar → actuar → observar, repetir) porque es el patrón que
+implementa el retrieval agéntico de Lorebase — pero no es el único.
+**Planning-then-execution** separa "decidir todos los pasos" de
+"ejecutarlos": el LLM arma un plan completo antes de actuar, en vez de
+decidir un paso a la vez como ReAct — más predecible, peor para adaptarse
+a sorpresas a mitad de camino. **Reflection/self-critique** agrega un
+paso donde el LLM revisa su propia salida antes de darla por terminada
+(¿esta respuesta realmente contesta la pregunta? ¿el código que generé
+compila?) — mejora calidad a costa de una llamada extra, la misma
+tensión costo/calidad que aparece en toda esta sección. **Orquestación
+multi-agente** (patrón supervisor/worker) divide una tarea grande entre
+varios agentes especializados coordinados por uno que reparte el
+trabajo — tiene sentido cuando la tarea genuinamente se descompone en
+subtareas independientes con expertise distinta (uno busca código, otro
+escribe documentación, un tercero revisa), no como forma de "hacer todo
+mejor" por defecto — la complejidad de coordinar y debuggear varios
+agentes es real y no gratuita.
 
 **Model routing / cascading.** Usar un modelo barato y rápido para la
 mayoría de los pedidos, y escalar a uno más caro y capaz solo cuando hace
@@ -1394,9 +1484,93 @@ articular esta comparación — cuándo un framework ayuda y cuándo esconde
 justo lo que hace falta entender — es en sí mismo una señal de criterio
 que una entrevista está buscando.
 
+### 18.9 Control de acceso en RAG multi-tenant
+
+La sección 0 lo menciona como parte esperada de una ronda de system
+design ("¿qué pasa si el corpus tiene datos de distinto nivel de
+acceso?") — merece una respuesta concreta, no solo la pregunta.
+
+**El bug clásico, en una frase:** un vector index no sabe nada de
+permisos — si no se filtra explícitamente, la búsqueda semántica puede
+traer perfectamente un chunk relevante que pertenece a un documento que
+el usuario que preguntó no debería poder ver. Filtrar *después* de
+generar la respuesta (revisar si las fuentes citadas son visibles para
+el usuario, y recién ahí decidir si mostrar la respuesta) ya es
+tarde — el contenido no autorizado ya viajó dentro del contexto del LLM,
+y ya pudo influir en lo que el modelo dijo aunque no lo cite
+explícitamente. El filtro de permisos tiene que pasar **adentro de la
+query de retrieval misma**, no como un paso posterior.
+
+**Cómo lo resuelve Lorebase, ya hoy, en el nivel que tiene (workspace):**
+`Retriever.search()` (`rag/retrieval/base.py`) declara `workspace_id`
+como parámetro **obligatorio, no opcional** — con un comentario explícito
+en el código: *"a retriever that could silently search across workspaces
+is a multi-tenancy bug waiting to happen"*. `LexicalRetriever` lo aplica
+como el primer filtro de su query
+(`Chunk.objects.filter(document__source__workspace_id=workspace_id)`),
+antes de cualquier ranking — no hay forma de que un resultado de otro
+workspace llegue siquiera a competir por el top-k. Es exactamente el
+patrón correcto (filtrar en la query de retrieval, no después), aplicado
+al único nivel de aislamiento que el modelo de datos de Lorebase
+necesita hoy (un usuario pertenece a un workspace vía `Membership`,
+sección 15).
+
+**Lo que Lorebase no resuelve, honestamente:** permisos *dentro* de un
+mismo workspace, a nivel de documento individual — el plan original
+(`docs/roadmap.md`, "Fuera de alcance") dejó ACLs por documento
+explícitamente para una fase posterior. El patrón para resolverlo, si
+hiciera falta: agregar una lista de acceso (usuarios/roles permitidos)
+a `Document`, y que el filtro de permisos se sume al de workspace en la
+misma query — mismo mecanismo, un nivel más de granularidad, no un
+rediseño.
+
+### 18.10 Estimar costo y capacidad, con números reales
+
+Tipo de ejercicio frecuente ("¿cuánto costaría esto por mes?") que se
+resuelve con una cuenta simple si sabés qué números necesitás. Usando
+los precios reales que ya aparecen en este proyecto (`infra/.env.example`,
+verificados contra la documentación de cada proveedor):
+
+- LLM (Claude Haiku 4.5): **$1/millón de tokens de entrada, $5/millón de
+  salida**.
+- Embeddings (Voyage `voyage-4`): **$0.06/millón de tokens**.
+
+**Ejemplo concreto:** un equipo de 50 personas, cada una hace en
+promedio 10 preguntas por día. Cada pregunta, con retrieval de ~5 chunks
+de contexto, arma un prompt de ~2.500 tokens de entrada y genera ~300
+tokens de respuesta (números de este mismo proyecto, sección 10).
+
+```
+Preguntas/día     = 50 personas × 10 = 500
+Tokens entrada/día = 500 × 2.500      = 1.250.000
+Tokens salida/día  = 500 × 300        =   150.000
+
+Costo LLM/día  = (1.250.000 / 1.000.000 × $1) + (150.000 / 1.000.000 × $5)
+              = $1,25 + $0,75 = $2,00/día → ~$60/mes
+```
+
+El costo de embeddings de *consulta* (no de indexar, que es un costo de
+ingestion aparte, ver 18.2) es marginal en comparación: 500
+preguntas/día × ~15 tokens promedio de una query corta es prácticamente
+gratis a $0.06/millón. **El costo real está casi siempre concentrado en
+generación, no en embeddings de consulta** — por eso decisiones como
+"qué modelo de LLM" (Haiku vs. Sonnet, sección 11 del roadmap) pesan
+mucho más en la factura mensual que la elección del proveedor de
+embeddings.
+
+**Lo que este cálculo no incluye, y vale la pena nombrar en una
+entrevista:** el costo de indexar el corpus inicial (una sola vez, no
+recurrente, pero puede ser grande si el corpus es grande), el costo de
+reranking si es vía API, y que el tráfico real no es uniforme (picos de
+uso concentrados, no 500 preguntas parejas a lo largo del día) — un
+estimado de capacidad real también necesita pensar en el pico, no solo
+en el promedio, para dimensionar rate limits y infraestructura.
+
 **Preguntas tipo (sección 18 completa):**
 - ¿Cuándo NO usarías RAG, aunque el caso de uso "suene" a RAG?
 - Diseñame, en voz alta, un sistema de Q&A sobre documentación interna de una empresa de 100 personas.
 - ¿Qué parte de un pipeline RAG se puede cachear, y cuál nunca?
 - Nombrame tres estrategias de retrieval más allá de hybrid search, y cuándo elegirías cada una.
 - ¿Por qué usarías (o no) LangChain para un proyecto nuevo de RAG?
+- ¿Cómo evitás que un usuario reciba, en una respuesta, información de un documento que no debería poder ver?
+- Con 200 preguntas/día y un prompt promedio de 3.000 tokens de entrada, ¿cuánto costaría por mes con Haiku?
