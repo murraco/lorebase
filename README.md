@@ -103,8 +103,8 @@ it costs to add a fourth source type or switch vector databases.
 
 ## Key design decisions
 
-Three choices that weren't forced or obvious enough to skip past, written up
-as ADRs:
+Choices that weren't forced or obvious enough to skip past, written up as
+ADRs:
 
 - **[pgvector instead of a dedicated vector database](docs/adr/0001-pgvector-over-qdrant.md)**
   — one database, transactionally consistent with everything else, at a
@@ -116,6 +116,19 @@ as ADRs:
 - **[Local filesystem storage instead of S3](docs/adr/0003-filesystem-storage-over-s3.md)**
   — Django's own pluggable storage API, with the swap to S3-compatible
   storage left as a config change, not a rewrite, if it's ever needed.
+- **[Server-verified citations via structured tool-use](docs/adr/0004-verified-citations-via-tool-use.md)**
+  — the model returns `chunk_id`s through a tool call, and any id that
+  wasn't genuinely in its retrieved context is dropped before anything is
+  persisted, so a citation is a guarantee, not a prompt request.
+- **[Direct retrieval over agentic retrieval](docs/adr/0005-direct-over-agentic-retrieval.md)**
+  — measured, not assumed: see the comparison below.
+- **[Reciprocal Rank Fusion over a weighted score fusion](docs/adr/0006-reciprocal-rank-fusion.md)**
+  — combines lexical and dense rankings by position, sidestepping the need
+  to normalize two incomparable score scales or tune weights.
+- **[Session-cookie auth instead of JWT/OAuth](docs/adr/0007-session-auth-over-jwt.md)**
+  — the SPA and API share one origin behind Nginx, so a session cookie
+  needs no refresh-token machinery; the MCP server, a genuinely separate
+  client, uses its own bearer API-key auth instead.
 
 ## Direct vs. agentic retrieval: a measured decision
 
