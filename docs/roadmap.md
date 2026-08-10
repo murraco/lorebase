@@ -1,11 +1,11 @@
 # Lorebase — Roadmap de implementación
 
 > Documento vivo: se actualiza a medida que avanzamos o cambian decisiones.
-> Es una re-división más fina de todo el roadmap de `plan-ai-knowledge-platform.md`
-> (no solo su Fase 1), e incorpora las correcciones señaladas en la sección
-> "Hallazgos" más abajo. La sección 7.1 de ese documento ("Hitos") queda como
-> referencia histórica; **las "Etapas" de acá son las que efectivamente se
-> están implementando.**
+> Nació como una re-división más fina del plan de diseño original (documento
+> de planificación previo al código, ya no versionado en el repo — superado
+> por completo por este roadmap y las ADRs), incorporando las correcciones
+> señaladas en la sección "Hallazgos" más abajo. **Las "Etapas" de acá son
+> las que efectivamente se implementaron.**
 
 ## Estado actual
 
@@ -70,7 +70,7 @@ Cosas identificadas y **deliberadamente pospuestas**, no descubiertas después. 
 
 ## Context
 
-El objetivo es llevar el diseño de `plan-ai-knowledge-platform.md` a código siguiendo etapas pequeñas y verificables, evitando retrabajo. El plan cubre hasta **Fase 4 + servidor MCP**: un segundo cerebro personal completo (conectores local/PDF/GitHub, hybrid search con reranker, chat con citas verificables, feedback, dashboard, observabilidad y evaluación) más exposición del retrieval vía Model Context Protocol.
+El objetivo era llevar el plan de diseño original a código siguiendo etapas pequeñas y verificables, evitando retrabajo. Ese plan cubría hasta **Fase 4 + servidor MCP**: indexar notas/PDFs/repos propios, hybrid search con reranker, chat con citas verificables, feedback, dashboard, observabilidad y evaluación, más exposición del retrieval vía Model Context Protocol — todo hoy implementado y descrito por este roadmap y las ADRs, no por el documento original (eliminado del repo una vez superado por completo).
 
 ### Decisiones de alcance
 

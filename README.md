@@ -296,8 +296,6 @@ COMPOSE_FILE=docker-compose.prod.yml ENV_FILE=.env.prod infra/scripts/restore.sh
   RAGAS, direct vs. agentic retrieval, and MCP, pinned during the build for
   an eventual write-up.
 - [`docs/adr/`](docs/adr) — architecture decision records.
-- [`docs/plan-ai-knowledge-platform.md`](docs/plan-ai-knowledge-platform.md)
-  — the original design document.
 
 ## License
 

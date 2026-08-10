@@ -10,9 +10,9 @@ options were: extend the relational database Lorebase already runs
 (PostgreSQL) with the `pgvector` extension, or run a purpose-built vector
 database (Qdrant, Weaviate, Milvus) as a separate service.
 
-This decision was made at the very start of the project (`docs/
-plan-ai-knowledge-platform.md` §4.10), before any retrieval code existed,
-not discovered as a limitation later.
+This decision was made at the very start of the project, in the original
+design document, before any retrieval code existed — not discovered as a
+limitation later.
 
 ## Decision
 
