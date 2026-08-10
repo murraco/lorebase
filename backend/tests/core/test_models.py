@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError
 
-from core.factories import MembershipFactory, UserFactory, WorkspaceFactory
+from core.factories import ApiKeyFactory, MembershipFactory, UserFactory, WorkspaceFactory
 from core.models import Membership
 
 pytestmark = pytest.mark.django_db
@@ -44,3 +44,21 @@ def test_duplicate_membership_is_rejected() -> None:
 
     with pytest.raises(IntegrityError):
         MembershipFactory(user=user, workspace=workspace)
+
+
+def test_api_key_belongs_to_a_membership() -> None:
+    membership = MembershipFactory()
+
+    api_key = ApiKeyFactory(membership=membership)
+
+    assert api_key in membership.api_keys.all()
+
+
+def test_duplicate_key_hash_is_rejected() -> None:
+    """The actual security property key_hash's uniqueness buys: two keys
+    can never hash to the same value and silently authenticate as each
+    other's owner."""
+    ApiKeyFactory(key_hash="same-hash")
+
+    with pytest.raises(IntegrityError):
+        ApiKeyFactory(key_hash="same-hash")

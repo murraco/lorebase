@@ -45,3 +45,20 @@ class Membership(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.user} @ {self.workspace} ({self.role})"
+
+
+class ApiKey(BaseModel):
+    """Ties an MCP client to a Membership, so it inherits exactly the same
+    workspace/user permission boundary a person already has -- no separate
+    permission model to keep in sync. Only `key_hash` is ever stored; the
+    real key is shown once, at creation, and is unrecoverable after that
+    (same pattern as Stripe/GitHub tokens).
+    """
+
+    membership = models.ForeignKey(Membership, on_delete=models.CASCADE, related_name="api_keys")
+    name = models.CharField(max_length=100)
+    key_hash = models.CharField(max_length=64, unique=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.membership})"
