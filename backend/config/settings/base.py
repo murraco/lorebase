@@ -116,6 +116,13 @@ MCP_SERVER_URL = env("MCP_SERVER_URL", default="http://localhost:8001")
 # skip (and log) anything past this size rather than trying to process it.
 MAX_DOCUMENT_SIZE_BYTES = env.int("MAX_DOCUMENT_SIZE_BYTES", default=10 * 1024 * 1024)  # 10 MB
 
+# Per-user, per-minute cap on the chat endpoint (core/ratelimit.py) --
+# every call is a real Anthropic API charge, so this bounds the blast
+# radius of a runaway retry loop or a leaked session, not legitimate
+# heavy use. 20/min is generous for a chat UI a person is actually typing
+# into.
+CHAT_RATE_LIMIT_PER_MINUTE = env.int("CHAT_RATE_LIMIT_PER_MINUTE", default=20)
+
 # A classic personal access token (repo scope for private repos, none
 # needed for public ones), not an OAuth app: this connector reads the
 # owner's own repos, so there's no second party to authorize on behalf

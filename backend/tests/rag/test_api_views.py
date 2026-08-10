@@ -2,6 +2,8 @@ import json
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from core.factories import MembershipFactory, WorkspaceFactory
@@ -160,6 +162,48 @@ def test_chat_stream_persists_and_returns_a_validated_citation() -> None:
     assert done_payload["done"] is True
     assert done_payload["citations"][0]["path"] == document.path
     assert conversation.messages.filter(role=Message.Role.ASSISTANT).exists()
+
+
+def test_chat_stream_is_rate_limited_per_user() -> None:
+    """core/ratelimit.py's own tests cover the decorator generically;
+    this only confirms it's really wired onto chat_stream_view with the
+    configured limit -- Redis-backed state doesn't roll back with the
+    test's DB transaction, so this cleans up after itself explicitly
+    rather than relying on that (same reasoning settings/test.py gives
+    for turning off DRF's own throttling in tests).
+    """
+    membership = MembershipFactory()
+    conversation = ConversationFactory(workspace=membership.workspace, user=membership.user)
+    document = DocumentFactory(source__workspace=membership.workspace)
+    chunk = ChunkFactory(document=document, content="content")
+
+    fake_llm = get_llm_provider()
+    fake_llm.next_tool_result = ToolCallResult(
+        output={"answer": "the answer", "cited_chunk_ids": []}, input_tokens=1, output_tokens=1
+    )
+
+    client = _authed_client(membership.user)
+
+    def _ask() -> int:
+        with patch(
+            "rag.chat.service.get_retriever",
+            return_value=_StubRetriever([RetrievalResult(chunk=chunk, score=1.0)]),
+        ):
+            response = client.post(
+                f"/api/conversations/{conversation.id}/chat/",
+                data=json.dumps({"question": "what is it?"}),
+                content_type="application/json",
+            )
+            if response.status_code == 200:
+                list(response.streaming_content)  # drain the SSE body
+        return response.status_code
+
+    try:
+        for _ in range(settings.CHAT_RATE_LIMIT_PER_MINUTE):
+            assert _ask() == 200
+        assert _ask() == 429
+    finally:
+        cache.delete(f"ratelimit:chat:{membership.user.pk}")
 
 
 def test_chat_stream_on_another_workspaces_conversation_is_not_found() -> None:

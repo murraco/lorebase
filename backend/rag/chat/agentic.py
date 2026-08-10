@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -76,16 +77,21 @@ def ask_agentic(conversation: Conversation, question: str) -> tuple[Message, lis
 
         retriever = get_retriever()
         all_results: list[RetrievalResult] = []
-        chunks_by_id: dict[str, object] = {}
+        chunks_by_id: dict[str, Any] = {}
         provenance: dict[str, tuple[int, float]] = {}
         seen_chunk_ids: set[str] = set()
         search_count = 0
         total_input_tokens = 0
         total_output_tokens = 0
-        messages: list[object] = [{"role": "user", "content": question}]
+        # Any, not a stricter type: these are provider-native message
+        # blocks (see AgentStepResult.raw_assistant_content in
+        # rag/llm/base.py) -- opaque to this function by design, only
+        # ever round-tripped into the next stream_tools()/stream_tool()
+        # call on the same provider.
+        messages: list[Any] = [{"role": "user", "content": question}]
 
         start = time.monotonic()
-        answer_output: dict[str, object] | None = None
+        answer_output: dict[str, Any] | None = None
         for _iteration in range(_MAX_ITERATIONS):
             with _tracer.start_as_current_span("rag.agent_step") as step_span:
                 step_span.set_attribute(gen_ai.GEN_AI_PROVIDER_NAME, settings.LLM_PROVIDER)

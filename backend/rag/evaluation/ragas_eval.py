@@ -1,4 +1,5 @@
 import os
+from collections.abc import Sequence
 from functools import lru_cache
 
 # Must run before `import ragas`: ragas/experiment.py imports GitPython at
@@ -12,7 +13,7 @@ os.environ.setdefault("GIT_PYTHON_REFRESH", "quiet")
 from django.conf import settings  # noqa: E402
 from langchain_anthropic import ChatAnthropic  # noqa: E402
 from langchain_core.embeddings import Embeddings  # noqa: E402
-from ragas import EvaluationDataset, SingleTurnSample, evaluate  # noqa: E402
+from ragas import EvaluationDataset, MultiTurnSample, SingleTurnSample, evaluate  # noqa: E402
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper  # noqa: E402
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper  # noqa: E402
 from ragas.metrics import (  # noqa: E402
@@ -66,7 +67,16 @@ def _build_llm() -> BaseRagasLLM:
     # documented self-preference bias in the evaluation literature. Worth
     # keeping in mind when reading scores, not a reason to avoid the
     # approach here.
-    chat_model = ChatAnthropic(model_name=settings.LLM_MODEL, api_key=settings.ANTHROPIC_API_KEY)
+    # timeout/stop: mypy's view of ChatAnthropic's pydantic-generated
+    # __init__ marks these as required, but both are genuinely optional
+    # at runtime (default=None per ChatAnthropic.model_fields) -- passed
+    # explicitly as their real default, not a workaround.
+    chat_model = ChatAnthropic(
+        model_name=settings.LLM_MODEL,
+        api_key=settings.ANTHROPIC_API_KEY,
+        timeout=None,
+        stop=None,
+    )
     return LangchainLLMWrapper(chat_model)
 
 
@@ -102,12 +112,18 @@ def build_sample(
     )
 
 
-def run_evaluation(samples: list[SingleTurnSample]):
+def run_evaluation(samples: Sequence[SingleTurnSample]):
     """Scores a batch of already-run pipeline turns against the four
     metrics. Building `samples` (running retrieval + the LLM for each
     golden-set question) is the caller's job -- this function only ever
     talks to the judge LLM, never to the pipeline under evaluation, so a
     test can fake the former without needing to fake the latter too.
     """
-    dataset = EvaluationDataset(samples=samples)
+    # Explicitly widened, not just `list(samples)`: list is invariant, so
+    # a list[SingleTurnSample] doesn't satisfy EvaluationDataset's
+    # list[SingleTurnSample | MultiTurnSample] on its own -- this project
+    # only ever builds SingleTurnSamples (see build_sample above), never
+    # multi-turn ones.
+    dataset_samples: list[SingleTurnSample | MultiTurnSample] = list(samples)
+    dataset = EvaluationDataset(samples=dataset_samples)
     return evaluate(dataset, metrics=build_metrics())

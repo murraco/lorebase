@@ -2,6 +2,7 @@ import json
 import logging
 from typing import cast
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import (
     HttpRequest,
@@ -12,6 +13,7 @@ from django.http import (
 from django.views.decorators.http import require_POST
 
 from core.models import User
+from core.ratelimit import rate_limit
 from rag.chat.streaming import stream_chat_response
 from rag.embeddings.base import EmbeddingProviderUnavailableError
 from rag.llm.base import LLMProviderUnavailableError
@@ -22,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 @login_required
 @require_POST
+@rate_limit(
+    scope="chat", limit=settings.CHAT_RATE_LIMIT_PER_MINUTE, window_seconds=60
+)
 def chat_stream_view(request: HttpRequest, conversation_id: str) -> HttpResponseBase:
     # A single membership-filtered lookup rather than "fetch, then check
     # workspace separately": returning 404 either way (doesn't exist vs.
