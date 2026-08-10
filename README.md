@@ -54,8 +54,8 @@ where the real decisions live.
 ```mermaid
 flowchart TB
     subgraph SRC["Sources"]
-        local["Local folder<br/>.md + .txt + .pdf"]
-        gh["GitHub repo<br/>.md"]
+        local["Local folder (.md + .txt + .pdf)"]
+        gh["GitHub (.md)"]
     end
 
     subgraph ING["Ingestion"]
@@ -65,14 +65,14 @@ flowchart TB
         parse --> chunk
     end
 
-    store[("Chunk<br/>pgvector embedding<br/>+ FTS index")]
+    store[("Chunk (pgvector embedding + FTS index)")]
 
     subgraph RET["HybridRetriever"]
         direction TB
-        lex["Lexical<br/>Postgres FTS"]
-        dense["Dense<br/>pgvector cosine"]
-        rrf["Reciprocal<br/>Rank Fusion"]
-        rerank["Cross-encoder<br/>rerank"]
+        lex["Lexical (Postgres FTS)"]
+        dense["Dense (pgvector cosine)"]
+        rrf["Reciprocal Rank Fusion"]
+        rerank["Cross-encoder rerank"]
         lex --> rrf
         dense --> rrf
         rrf --> rerank
@@ -80,8 +80,8 @@ flowchart TB
 
     subgraph CHAT["Lorebase chat"]
         direction TB
-        llm["LLM<br/>structured tool-use"]
-        verify["Validate citations<br/>against retrieved chunks"]
+        llm["LLM (structured tool-use)"]
+        verify["Validate citations against retrieved chunks"]
         llm --> verify
     end
 
@@ -91,8 +91,8 @@ flowchart TB
     store -->|indexed by| lex
     store -->|indexed by| dense
 
-    rerank -->|"wrapped in an LLM,<br/>citations checked"| llm
-    rerank -->|"same retrieval,<br/>no LLM in the loop"| mcp["MCP tool response"]
+    rerank -->|"wrapped in an LLM, citations checked"| llm
+    rerank -->|"same retrieval, no LLM in the loop"| mcp["MCP tool response"]
 
     verify --> spa["Angular SPA"]
     mcp --> claude["Claude Code / Desktop"]
