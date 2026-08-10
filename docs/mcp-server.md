@@ -4,8 +4,8 @@ Expone el retrieval de Lorebase (`search_knowledge`, `get_document`,
 `list_sources`) como herramientas MCP, para consultar tus notas desde
 Claude Code o Claude Desktop. Corre como un servicio más de Docker Compose
 (`mcp_server`), sobre Streamable HTTP — ver `docs/roadmap.md` (Etapa 17) y
-`docs/learning-notes.md` para la explicación conceptual de por qué HTTP y
-no stdio, y cómo funciona la autenticación por token.
+`docs/applied-ai-interview-prep.md` para la explicación conceptual de por
+qué HTTP y no stdio, y cómo funciona la autenticación por token.
 
 ## 1. Levantar el servicio
 

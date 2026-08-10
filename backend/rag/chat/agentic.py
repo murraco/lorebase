@@ -63,11 +63,11 @@ def ask_agentic(conversation: Conversation, question: str) -> tuple[Message, lis
     """Same contract as rag.chat.service.ask_with_contexts (persists a
     Message, returns it with what was retrieved) but retrieval is a tool
     the model itself decides whether and how many times to call, instead
-    of a fixed pre-fetch step -- see docs/learning-notes.md ("Retrieval
-    directo vs. agéntico") for why this exists and how to compare it
-    against the direct pipeline. No query rewriting here: an agent that
-    can already reformulate its own search query on a second call has no
-    separate need for it on the first.
+    of a fixed pre-fetch step -- see docs/applied-ai-interview-prep.md
+    ("Retrieval directo vs. agéntico") for why this exists and how to
+    compare it against the direct pipeline. No query rewriting here: an
+    agent that can already reformulate its own search query on a second
+    call has no separate need for it on the first.
     """
     with _tracer.start_as_current_span("rag.ask_agentic") as turn_span:
         turn_span.set_attribute("lorebase.conversation_id", str(conversation.id))

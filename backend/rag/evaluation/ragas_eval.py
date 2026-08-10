@@ -86,8 +86,8 @@ def _build_embeddings() -> BaseRagasEmbeddings:
 
 
 def build_metrics() -> list[Metric]:
-    """The four RAGAS metrics pinned in docs/learning-notes.md: context
-    precision and context recall each judge retrieval (noise vs. gaps),
+    """The four RAGAS metrics explained in docs/applied-ai-interview-prep.md:
+    context precision and context recall each judge retrieval (noise vs. gaps),
     faithfulness and answer relevancy each judge generation (grounded vs.
     hallucinated, on-topic vs. not) -- four separate signals precisely so
     a regression in one doesn't get averaged away by the other three.
