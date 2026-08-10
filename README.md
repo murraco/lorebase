@@ -1,5 +1,7 @@
 # Lorebase
 
+[![CI](https://github.com/murraco/lorebase/actions/workflows/ci.yml/badge.svg)](https://github.com/murraco/lorebase/actions/workflows/ci.yml)
+
 Self-hosted RAG for your own notes, PDFs, and GitHub repos — with citations
 you can verify. Ask a question in plain English (or Spanish) and get an
 answer that points back to the exact file and line it came from.
@@ -190,27 +192,27 @@ for exactly that kind of multi-hop question, not deleted.
 ```
 lorebase/
 │
-├── backend/                  * Django project, managed with uv
-│   ├── config/                 * settings/, urls, celery, asgi/wsgi, logging
-│   ├── core/                   * User, Workspace, Membership, ApiKey, rate limiting
-│   ├── sources/                 * Source, Document, connectors/ (local folder, GitHub)
-│   ├── ingestion/                 * parsers/, chunking/, pipeline, Celery tasks
-│   ├── rag/                        * embeddings/, retrieval/, llm/, chat/, evaluation/
-│   ├── analytics/                   * Feedback, dashboard metrics
-│   ├── mcp_server/                   * MCP tools: search_knowledge, get_document, list_sources
+├── backend/           * Django project, managed with uv
+│   ├── config/        * settings/, urls, celery, asgi/wsgi, logging
+│   ├── core/          * User, Workspace, Membership, ApiKey, rate limiting
+│   ├── sources/       * Source, Document, connectors/ (local folder, GitHub)
+│   ├── ingestion/     * parsers/, chunking/, pipeline, Celery tasks
+│   ├── rag/           * embeddings/, retrieval/, llm/, chat/, evaluation/
+│   ├── analytics/     * Feedback, dashboard metrics
+│   ├── mcp_server/    * MCP tools: search_knowledge, get_document, list_sources
 │   └── tests/
 │
-├── frontend/                 * Angular workspace (standalone components + signals)
+├── frontend/          * Angular workspace (standalone components + signals)
 │   └── src/app/
-│       ├── core/                * services: API client, auth, sources, chat, conversations
-│       └── features/             * pages: chat, corpus, panel, login, shell
+│       ├── core/      * services: API client, auth, sources, chat, conversations
+│       └── features/  * pages: chat, corpus, panel, login, shell
 │
-├── infra/                    * docker-compose.yml / .prod.yml, .env.example, backup/restore scripts
+├── infra/             * docker-compose.yml / .prod.yml, .env.example, backup/restore scripts
 │
-├── docs/                     * roadmap.md, ADRs, MCP setup, screenshots
+├── docs/              * roadmap.md, ADRs, MCP setup, screenshots
 │
-├── LICENSE                   * MIT License
-└── README.md                 * This file
+├── LICENSE            * MIT License
+└── README.md          * This file
 ```
 
 ## Getting started (development)
@@ -292,11 +294,24 @@ COMPOSE_FILE=docker-compose.prod.yml ENV_FILE=.env.prod infra/scripts/restore.sh
   reasoning behind every non-obvious choice, stage by stage.
 - [`docs/mcp-server.md`](docs/mcp-server.md) — setting up and using the MCP
   server.
-- [`docs/learning-notes.md`](docs/learning-notes.md) — working notes on
-  RAGAS, direct vs. agentic retrieval, and MCP, pinned during the build for
-  an eventual write-up.
+- [`docs/applied-ai-interview-prep.md`](docs/applied-ai-interview-prep.md) —
+  a consolidated study guide covering every RAG/LLM concept the project
+  touches, written for interview prep.
 - [`docs/adr/`](docs/adr) — architecture decision records.
+
+## Contribution
+
+- Report issues
+- Open pull request with improvements
+- Spread the word
+- Reach out to me directly at <mauriurraco@gmail.com>
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Released under the [MIT License](LICENSE).
+
+## Support
+
+If this project helped you, consider buying me a coffee ☕️
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/murraco)
