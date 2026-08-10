@@ -85,6 +85,20 @@ export class ChatPage implements OnInit {
   // — invisible before there was a history list, obvious noise now.
   private conversationId: string | null = null;
 
+  // A send() keeps streaming in the background regardless of navigation
+  // (chatService.ask() isn't tied to an AbortSignal), but `messages` gets
+  // replaced wholesale by loadConversation()/resetToNewConversation() the
+  // moment the user looks elsewhere. Without this, appendDelta/
+  // finalizeAnswer keep updating a turn that no longer exists in the
+  // visible array -- the answer is computed and persisted, but silently
+  // never rendered, even on navigating back before the stream finished.
+  // loadConversation() re-attaches to this if its conversationId matches.
+  private inFlight: {
+    conversationId: string;
+    userMessage: ThreadMessage;
+    assistantMessage: ThreadMessage;
+  } | null = null;
+
   ngOnInit(): void {
     // Subscribed, not read once from `snapshot`. Angular reuses this
     // component when navigating between two /chat/:id routes, so
@@ -123,20 +137,25 @@ export class ChatPage implements OnInit {
     try {
       const messages = await this.conversationsService.listMessages(conversationId);
       this.conversationId = conversationId;
-      this.messages.set(
-        messages.map((message) => ({
-          id: message.id,
-          role: message.role as 'user' | 'assistant',
-          content: message.content,
-          citations: message.citations,
-          latencyMs: message.latency_ms,
-          cost: message.cost === null ? null : Number(message.cost),
-          retrievedCount: message.retrieved_count,
-          pending: false,
-          feedbackRating: message.feedback?.rating ?? null,
-          feedbackComment: message.feedback?.comment ?? '',
-        })),
-      );
+      const loaded: ThreadMessage[] = messages.map((message) => ({
+        id: message.id,
+        role: message.role as 'user' | 'assistant',
+        content: message.content,
+        citations: message.citations,
+        latencyMs: message.latency_ms,
+        cost: message.cost === null ? null : Number(message.cost),
+        retrievedCount: message.retrieved_count,
+        pending: false,
+        feedbackRating: message.feedback?.rating ?? null,
+        feedbackComment: message.feedback?.comment ?? '',
+      }));
+      // The stream that's still filling this in hasn't persisted anything
+      // yet (see the `inFlight` field's comment) -- the fetch above can
+      // only have found the turns that existed before it started.
+      if (this.inFlight?.conversationId === conversationId) {
+        loaded.push(this.inFlight.userMessage, this.inFlight.assistantMessage);
+      }
+      this.messages.set(loaded);
       // Jump, not smooth: this is the initial position of a conversation
       // being opened, not a movement the reader should watch.
       this.scrollToLatest('auto');
@@ -241,16 +260,25 @@ export class ChatPage implements OnInit {
 
     this.question = '';
     this.resetComposerHeight();
-    this.messages.update((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: 'user', content: question, citations: [], pending: false },
-    ]);
+    const userMessage: ThreadMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: question,
+      citations: [],
+      pending: false,
+    };
+    this.messages.update((current) => [...current, userMessage]);
 
     const assistantId = crypto.randomUUID();
-    this.messages.update((current) => [
-      ...current,
-      { id: assistantId, role: 'assistant', content: '', citations: [], pending: true },
-    ]);
+    const assistantMessage: ThreadMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      citations: [],
+      pending: true,
+    };
+    this.messages.update((current) => [...current, assistantMessage]);
+    this.inFlight = { conversationId, userMessage, assistantMessage };
     this.sending.set(true);
     this.scrollToLatest();
 
@@ -270,6 +298,7 @@ export class ChatPage implements OnInit {
       this.appendDelta(assistantId, 'Something went wrong answering that.');
     } finally {
       this.sending.set(false);
+      this.inFlight = null;
     }
   }
 
@@ -298,6 +327,10 @@ export class ChatPage implements OnInit {
           : message,
       ),
     );
+    if (this.inFlight?.assistantMessage.id === assistantId) {
+      this.inFlight.assistantMessage.content += delta;
+      this.inFlight.assistantMessage.pending = false;
+    }
   }
 
   private finalizeAnswer(assistantId: string, event: ChatDoneEvent): void {
@@ -316,6 +349,13 @@ export class ChatPage implements OnInit {
           : message,
       ),
     );
+    // Cleared here rather than left to send()'s finally: the turn is
+    // complete and persisted server-side from this point on, so a
+    // loadConversation() racing right after this should trust its own
+    // fetch instead of appending a now-redundant copy of this message.
+    if (this.inFlight?.assistantMessage.id === assistantId) {
+      this.inFlight = null;
+    }
   }
 
   /** A citation's score drawn against the best score in the same answer.

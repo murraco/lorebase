@@ -44,8 +44,12 @@ export class PanelPage implements OnInit {
     return new Date(isoDate).toLocaleDateString('en-US', { weekday: 'short' });
   }
 
+  // Four decimals, not two: at light usage a month's total is still
+  // fractions of a cent, and toFixed(2) prints a misleading "$0.00" for
+  // any real, nonzero cost below half a cent (same reasoning as the
+  // per-answer cost in chat.page.ts).
   protected formatCost(usd: number | null): string {
-    return usd === null ? '—' : `$${usd.toFixed(2)}`;
+    return usd === null ? '—' : `$${usd.toFixed(4)}`;
   }
 
   protected formatPercent(value: number | null): string {

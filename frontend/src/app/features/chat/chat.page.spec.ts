@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from '../../core/auth/auth.service';
@@ -222,6 +222,101 @@ describe('ChatPage', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'Something went wrong answering that.',
     );
+    fixture.destroy();
+  });
+
+  it('restores the pending turn on navigating back before its answer arrives', async () => {
+    let releaseFirstDelta!: () => void;
+    const gate = new Promise<void>((resolve) => (releaseFirstDelta = resolve));
+
+    async function* controlledAsk(): AsyncGenerator<ChatEvent> {
+      await gate;
+      yield { delta: 'Hello' };
+      yield doneEvent();
+    }
+
+    // conv-1 is the one send() creates and streams into; conv-2 stands in
+    // for whatever else the user clicks on mid-stream. Re-fetching conv-1
+    // (the "navigate back") returns only the question -- the answer
+    // hasn't been persisted yet, same as the real backend mid-stream.
+    const paramMap = new BehaviorSubject(convertToParamMap({}));
+    const listMessages = vi.fn().mockImplementation((conversationId: string) => {
+      if (conversationId === 'conv-1') {
+        return Promise.resolve([
+          {
+            id: 'q1',
+            conversation: 'conv-1',
+            role: 'user',
+            content: 'question',
+            citations: [],
+            feedback: null,
+            created_at: '2026-01-01T00:00:00Z',
+          },
+        ]);
+      }
+      return Promise.resolve([]);
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [ChatPage],
+      providers: [
+        {
+          provide: AuthService,
+          useValue: { primaryWorkspace: () => ({ id: 'ws-1', name: 'Workspace' }) },
+        },
+        {
+          provide: ConversationsService,
+          useValue: {
+            create: vi.fn().mockResolvedValue({ id: 'conv-1' }),
+            listMessages,
+            refresh: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        { provide: ChatService, useValue: { ask: () => controlledAsk() } },
+        { provide: ActivatedRoute, useValue: { paramMap } },
+        { provide: Router, useValue: { navigate: vi.fn().mockResolvedValue(true) } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ChatPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const page = fixture.componentInstance;
+    page['question'] = 'question';
+    const sendPromise = page['send']();
+    const el = fixture.nativeElement as HTMLElement;
+
+    // Wait for the placeholder turn to land, same polling reasoning as
+    // the typing-indicator test above.
+    let indicatorShown = false;
+    for (let i = 0; i < 10 && !indicatorShown; i++) {
+      await Promise.resolve();
+      fixture.detectChanges();
+      indicatorShown = el.querySelector('.typing-indicator') !== null;
+    }
+    expect(indicatorShown).toBeTruthy();
+
+    // Navigate away before the stream has produced anything.
+    paramMap.next(convertToParamMap({ conversationId: 'conv-2' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('.typing-indicator')).toBeFalsy();
+
+    // Navigate back to the conversation the still-running send() belongs
+    // to. Its answer isn't in listMessages's response, but the pending
+    // turn should reappear anyway.
+    paramMap.next(convertToParamMap({ conversationId: 'conv-1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('.typing-indicator')).toBeTruthy();
+
+    // Once the stream actually finishes, the answer renders normally.
+    releaseFirstDelta();
+    await sendPromise;
+    fixture.detectChanges();
+    expect(el.querySelector('.typing-indicator')).toBeFalsy();
+    expect(el.textContent).toContain('Hello');
     fixture.destroy();
   });
 });

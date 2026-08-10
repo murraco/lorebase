@@ -208,9 +208,7 @@ lorebase/
 │       └── features/  * pages: chat, corpus, panel, login, shell
 │
 ├── infra/             * docker-compose.yml / .prod.yml, .env.example, backup/restore scripts
-│
 ├── docs/              * roadmap.md, ADRs, MCP setup, screenshots
-│
 ├── LICENSE            * MIT License
 └── README.md          * This file
 ```
