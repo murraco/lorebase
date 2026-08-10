@@ -948,8 +948,9 @@ completo.
 
 | # | Cambio | Origen | Nota detallada en |
 |---|---|---|---|
-| 8 | Picker de sources en 2 pasos (tipo → form) + sidebar agrupado por tipo | Pedido | Abajo |
+| 8 | Picker de sources en 2 pasos (tipo → form) + ícono de tipo en el sidebar (revertido de un sidebar anidado en 2 niveles) | Pedido + corrección en vivo | Abajo |
 | 9 | ADRs 0004–0007 (citas verificadas, directo vs. agéntico, RRF, auth por sesión) | Pedido | `docs/adr/` |
+| 10 | Reescritura del README: capturas reales, diagrama de arquitectura corregido, File structure/Configuration/Usage | Pedido | Abajo |
 
 **Notas de la implementación real (#8 — picker de sources):**
 - **Solo existen dos `Source.type` reales** (`local_folder`, `github`) —
@@ -1015,6 +1016,48 @@ completo.
   propio por ya estar bien cubiertas como hallazgos/deuda técnica en este
   mismo documento (ej. `Membership` para multi-workspace desde el día uno,
   proveedores de embeddings/reranking intercambiables entre local y API).
+
+**Notas de la implementación real (#10 — reescritura del README):**
+- **Capturas re-tomadas, no reutilizadas**: la primera tanda mostraba dos
+  conversaciones de título distinto pero truncadas al mismo texto visible
+  ("What can you say about me ...") — no eran duplicados de datos, pero se
+  leían como tal. Se borró la más liviana de las dos (4 mensajes contra
+  10) más una conversación de prueba huérfana de un mensaje (sin respuesta,
+  resto de un intento fallido de la Etapa 18), y se volvió a capturar con
+  la sesión ya limpia.
+- **El diagrama de arquitectura tenía dos errores reales, no solo un
+  problema de legibilidad**: mostraba "PDF" como una fuente separada de
+  "Local folder" cuando en realidad es una extensión de archivo que la
+  misma `LocalFolderConnector` ya maneja (mismo error conceptual que se
+  había corregido en las notas de la Etapa 18 pero no en el diagrama); y
+  ruteaba el servidor MCP *a través* del validador de citas del chat
+  (`verify --> mcp`), lo cual es incorrecto — `mcp_server/tools.py` llama a
+  `get_retriever().search()` directo, sin pasar nunca por `LLMProvider` ni
+  por la validación de citas. Verificado leyendo el código antes de
+  corregir el diagrama, no asumido. El diagrama nuevo es `flowchart LR` en
+  vez de `TB` (menos cruce de líneas en un flujo mayormente lineal), separa
+  las dos ramas de consumo (chat con LLM+validación vs. MCP sin LLM) desde
+  el mismo nodo de retrieval con flechas etiquetadas explicando por qué
+  divergen, y se verificó renderizado de verdad con `@mermaid-js/mermaid-cli`
+  localmente (no solo leyendo la sintaxis) antes de darlo por bueno.
+- **Un bug real de contenido, no solo de diseño**: el bullet de "Verifiable
+  citations" en "What it does" linkeaba a `docs/adr/0001-pgvector-over-qdrant.md`
+  (la ADR de pgvector) en vez de `0004-verified-citations-via-tool-use.md`
+  — encontrado releyendo el documento completo antes de darlo por
+  terminado, no reportado por Mauricio.
+- **`CHAT_RATE_LIMIT_PER_MINUTE` (Etapa 18, Tarea 4) nunca se había
+  documentado en `infra/.env.example`**, pese a que el resto de settings sí
+  — hueco encontrado al armar la tabla de Configuration del README;
+  corregido en el mismo cambio para que la tabla y el archivo real no
+  queden desalineados.
+- Secciones nuevas (`File structure`, `Configuration`, `Usage`) siguiendo
+  el estilo ya establecido en otros repos de Mauricio (`node-jwt`,
+  `node-url-shortener`, `paint-shop-problem-ts`, `jekyll-theme-minimal-resume`,
+  entre otros): árbol de directorios con comentarios inline, tabla
+  Variable/Purpose/Default para configuración. Deliberadamente **no** se
+  copiaron las secciones `Contribution`/`Support` (ko-fi) de esos repos —
+  encajan en una librería open-source que acepta colaboración externa, no
+  en un proyecto de portfolio de aprendizaje.
 
 ---
 

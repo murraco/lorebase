@@ -33,8 +33,8 @@ where the real decisions live.
   re-ranked by a cross-encoder before the top-k reaches the LLM.
 - **Verifiable citations**: structured tool-use output, validated against
   the real retrieved context before anything is saved — see
-  [ADR 0001](docs/adr/0001-pgvector-over-qdrant.md) and the design notes
-  below for why this matters more than prompting for citations.
+  [ADR 0004](docs/adr/0004-verified-citations-via-tool-use.md) for why this
+  matters more than prompting for citations.
 - **Streaming chat** over SSE from an async Django view, with per-message
   latency/token/cost tracking and a feedback (👎/👍 + comment) loop.
 - **A dashboard** (chunk/doc counts, query volume, cost, latency p50/p95,
@@ -51,51 +51,56 @@ where the real decisions live.
 
 ```mermaid
 flowchart TB
-    subgraph sources["Sources"]
-        local["Local folder<br/>(.md)"]
-        pdf["PDF"]
-        gh["GitHub repo"]
+    subgraph SRC["Sources"]
+        local["Local folder<br/>.md + .pdf"]
+        gh["GitHub repo<br/>.md"]
     end
 
-    subgraph ingest["Ingestion pipeline"]
-        parse["Parser<br/>(Markdown / pymupdf4llm)"]
-        chunk["HeadingChunker"]
+    subgraph ING["Ingestion"]
+        direction TB
+        parse["Parse to Markdown"]
+        chunk["Chunk by heading"]
+        parse --> chunk
     end
 
-    local --> parse
-    pdf --> parse
-    gh --> parse
-    parse --> chunk
-    chunk --> db[("Chunk<br/>content + embedding (pgvector) + search_vector (FTS)")]
+    store[("Chunk<br/>pgvector embedding<br/>+ FTS index")]
 
-    subgraph retrieval["HybridRetriever"]
-        lex["LexicalRetriever<br/>(Postgres FTS)"]
-        dense["DenseRetriever<br/>(pgvector cosine)"]
-        rrf["Reciprocal Rank Fusion"]
-        rerank["Cross-encoder reranker"]
+    subgraph RET["HybridRetriever"]
+        direction TB
+        lex["Lexical<br/>Postgres FTS"]
+        dense["Dense<br/>pgvector cosine"]
+        rrf["Reciprocal<br/>Rank Fusion"]
+        rerank["Cross-encoder<br/>rerank"]
         lex --> rrf
         dense --> rrf
         rrf --> rerank
     end
 
-    db -.-> lex
-    db -.-> dense
-
-    subgraph chat["Chat"]
-        llm["LLMProvider<br/>(Anthropic, structured tool-use)"]
-        verify["Citation validator<br/>(reject any chunk_id not in context)"]
+    subgraph CHAT["Lorebase chat"]
+        direction TB
+        llm["LLM<br/>structured tool-use"]
+        verify["Validate citations<br/>against retrieved chunks"]
         llm --> verify
     end
 
-    rerank --> llm
+    local --> parse
+    gh --> parse
+    chunk --> store
+    store -->|indexed by| lex
+    store -->|indexed by| dense
 
-    verify --> angular["Angular SPA<br/>(chat, citations, dashboard)"]
-    verify --> mcp["MCP server<br/>(Streamable HTTP, bearer auth)"]
+    rerank -->|"wrapped in an LLM,<br/>citations checked"| llm
+    rerank -->|"same retrieval,<br/>no LLM in the loop"| mcp["MCP tool response"]
 
-    angular -.->|"same-origin,<br/>session cookie"| api["Django + DRF API"]
-    mcp -.->|"reuses the same<br/>HybridRetriever, no duplicated logic"| retrieval
+    verify --> spa["Angular SPA"]
+    mcp --> claude["Claude Code / Desktop"]
 ```
 
+The same `HybridRetriever` feeds two different consumers: Lorebase's own
+chat wraps it in an LLM call with server-side citation validation, while
+the MCP server hands the raw retrieval results straight to an external
+agent — no LLM or validation layer of Lorebase's own in that path, since
+the calling agent is the one deciding what to do with the results.
 Sources, embedding providers, rerankers, and the LLM provider are all
 swappable behind small interfaces (`Connector`, `EmbeddingProvider`,
 `Retriever`, `LLMProvider`) — new implementations, not redesigns, are what
@@ -180,9 +185,38 @@ for exactly that kind of multi-hop question, not deleted.
 - **Infra:** Docker Compose (separate dev/prod stacks), Nginx as the
   same-origin reverse proxy.
 
+## File structure
+
+```
+lorebase/
+│
+├── backend/                  * Django project, managed with uv
+│   ├── config/                 * settings/, urls, celery, asgi/wsgi, logging
+│   ├── core/                   * User, Workspace, Membership, ApiKey, rate limiting
+│   ├── sources/                 * Source, Document, connectors/ (local folder, GitHub)
+│   ├── ingestion/                 * parsers/, chunking/, pipeline, Celery tasks
+│   ├── rag/                        * embeddings/, retrieval/, llm/, chat/, evaluation/
+│   ├── analytics/                   * Feedback, dashboard metrics
+│   ├── mcp_server/                   * MCP tools: search_knowledge, get_document, list_sources
+│   └── tests/
+│
+├── frontend/                 * Angular workspace (standalone components + signals)
+│   └── src/app/
+│       ├── core/                * services: API client, auth, sources, chat, conversations
+│       └── features/             * pages: chat, corpus, panel, login, shell
+│
+├── infra/                    * docker-compose.yml / .prod.yml, .env.example, backup/restore scripts
+│
+├── docs/                     * roadmap.md, ADRs, MCP setup, screenshots
+│
+├── LICENSE                   * MIT License
+└── README.md                 * This file
+```
+
 ## Getting started (development)
 
 ```bash
+cp infra/.env.example infra/.env    # fill in ANTHROPIC_API_KEY at minimum
 docker compose -f infra/docker-compose.yml up --build
 ```
 
@@ -191,8 +225,42 @@ Angular app and proxies `/api` to the backend, so it's all one origin (the
 session cookie and CSRF just work). The API is also reachable directly at
 `http://localhost:8000` (Swagger UI at `/api/schema/swagger-ui/`).
 
-To try the MCP server from Claude Code, see
-[`docs/mcp-server.md`](docs/mcp-server.md).
+## Configuration
+
+Every variable Lorebase reads is documented in
+[`infra/.env.example`](infra/.env.example), copy-pasteable as a working
+config. The ones worth knowing about going in:
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Required to answer questions. Not needed to index or search — only to generate an answer. | — |
+| `LOREBASE_NOTES_DIR` | Host folder bind-mounted into the container so the source picker can browse it. | unset — nothing to browse until set |
+| `GITHUB_TOKEN` | Personal access token for the GitHub connector. | unset — public repos still work, at GitHub's much lower unauthenticated rate limit |
+| `EMBEDDING_PROVIDER` / `RERANK_PROVIDER` | `local` (in-process models, no API key or rate limit) or `voyage` (Voyage AI's API). | `local` |
+| `VOYAGE_API_KEY` | Only needed if either provider above is set to `voyage`. | — |
+| `LLM_PROVIDER` / `LLM_MODEL` | Which LLM answers chat questions. | `anthropic` / `claude-haiku-4-5-...` |
+| `RETRIEVAL_STRATEGY` | `lexical`, `dense`, `hybrid`, or `hybrid_reranked` — mainly for comparing strategies, not something you need to change. | `hybrid_reranked` |
+| `CHAT_RATE_LIMIT_PER_MINUTE` | Per-user cap on the chat endpoint, the one that costs money. | `20` |
+| `MCP_SERVER_URL` | The URL a client (Claude Code/Desktop) reaches the MCP server at — not an internal Docker address. | `http://localhost:8001` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` | Send traces to an OpenTelemetry backend (e.g. Langfuse Cloud). | unset — spans are created but never exported |
+
+## Usage
+
+1. **Add a source.** Click **+** next to Sources in the sidebar, choose
+   *Local folder* (browse the mounted `LOREBASE_NOTES_DIR`) or *GitHub repo*
+   (`owner/name`, one or more), and watch it sync — parsing, chunking, and
+   embedding progress shows live.
+2. **Ask a question.** Every answer shows what was retrieved vs. cited,
+   latency, and cost, with clickable source chips that open the exact
+   passage a claim came from.
+3. **Give feedback.** 👍/👎 with an optional comment on any answer — it
+   feeds the Panel's feedback-rate stat and the "never retrieved" signal
+   for notes nothing ever surfaces.
+4. **Check the Panel** for document/chunk counts, query volume, latency
+   percentiles, and cost — real usage data, not configuration.
+5. **Connect Claude Code or Desktop over MCP** to query the same notes
+   from outside the app — see [`docs/mcp-server.md`](docs/mcp-server.md)
+   for generating an API key and configuring the client.
 
 ## Running in production
 
