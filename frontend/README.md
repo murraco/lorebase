@@ -44,15 +44,17 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
-## Running end-to-end tests
+## Regenerating the API client
 
-For end-to-end (e2e) testing, run:
+The TypeScript types under `src/app/core/api/` are generated from the backend's OpenAPI
+schema. After changing a Django serializer or view, regenerate them with:
 
 ```bash
-ng e2e
+npm run generate:api
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+This runs `manage.py spectacular` against the backend code (no running server needed) and
+feeds the result through `openapi-typescript`.
 
 ## Additional Resources
 

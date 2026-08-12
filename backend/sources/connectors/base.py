@@ -16,15 +16,14 @@ class ConnectorConnectionError(Exception):
 class RawDocument:
     """What a connector hands back for one document, before it becomes a
     `Document` row. `content` and `binary` are mutually exclusive: text
-    formats (Markdown) set `content`, binary formats (PDF, once that support
-    is added) set `binary` instead.
+    formats (Markdown) set `content`, binary formats (PDF) set `binary`
+    instead.
 
     `content_hash` is an opaque, connector-defined fingerprint: it only has
     to change if and only if the document's content changed. Connectors are
     free to derive it however makes sense for their source — a sha256 of
-    the raw bytes for local files, a git blob SHA for a future GitHub
-    connector — reconciliation only ever compares it as a string, never how
-    it was made.
+    the raw bytes for local files, a git blob SHA for the GitHub connector —
+    reconciliation only ever compares it as a string, never how it was made.
     """
 
     external_id: str
